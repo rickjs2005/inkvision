@@ -1,17 +1,26 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
-import { ArrowUpRight, Search } from "lucide-react";
+import { ArrowRight, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HeroSimulation } from "./hero-simulation";
 
-const POPULAR = ["Fine Line", "Blackwork", "Realismo", "Old School"];
+const MODES = [
+  { key: "tatuador", label: "Tatuador", placeholder: "Nome do tatuador ou estilo" },
+  { key: "estudio", label: "Estúdio", placeholder: "Nome do estúdio" },
+  { key: "estilo", label: "Estilo", placeholder: "Fine line, blackwork, realismo…" },
+  { key: "cidade", label: "Cidade", placeholder: "Sua cidade" },
+] as const;
 
 export function Hero() {
   const router = useRouter();
   const reduce = useReducedMotion();
+  const [mode, setMode] = useState<(typeof MODES)[number]["key"]>("tatuador");
   const [q, setQ] = useState("");
+  const active = MODES.find((x) => x.key === mode)!;
 
   function search(e: React.FormEvent) {
     e.preventDefault();
@@ -27,20 +36,15 @@ export function Hero() {
   return (
     <LazyMotion features={domAnimation}>
       <section className="relative overflow-hidden border-b border-border">
-        {/* halo de tinta atrás, discreto */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-40 -top-40 -z-10 h-[520px] w-[520px] rounded-full opacity-[0.14] blur-3xl"
+          className="pointer-events-none absolute -right-40 -top-40 -z-10 h-[560px] w-[560px] rounded-full opacity-[0.16] blur-3xl"
           style={{ background: "radial-gradient(closest-side, var(--primary), transparent)" }}
         />
 
-        <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 lg:grid-cols-[1.05fr_0.95fr] lg:py-28">
-          {/* Coluna editorial (esquerda) */}
-          <m.div
-            initial="hidden"
-            animate="show"
-            variants={{ show: { transition: { staggerChildren: 0.09 } } }}
-          >
+        <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 py-20 lg:grid-cols-[1.02fr_0.98fr] lg:py-24">
+          {/* ─────────── Coluna editorial ─────────── */}
+          <m.div initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.09 } } }}>
             <m.div variants={rise} className="flex items-center gap-3">
               <span className="h-px w-8 bg-primary" />
               <span className="eyebrow">Ateliê digital de tatuagem</span>
@@ -57,105 +61,102 @@ export function Hero() {
               antes da agulha.
             </m.h1>
 
-            <m.p
-              variants={rise}
-              className="mt-7 max-w-md text-[15px] leading-relaxed text-muted-foreground"
-            >
-              Encontre o artista certo, aprove o desenho no chat e veja a simulação na sua própria
-              foto — com IA. Agende e pague num só lugar.
+            <m.p variants={rise} className="mt-7 max-w-md text-[15px] leading-relaxed text-muted-foreground">
+              Envie uma foto do seu corpo e a IA aplica o desenho na sua pele — perspectiva, luz e
+              sombra. Aprove a arte no chat, agende e pague num só lugar.
             </m.p>
 
-            {/* Busca editorial — barra baixa, não pílula centralizada */}
-            <m.form variants={rise} onSubmit={search} className="mt-9 max-w-md">
-              <div className="group flex items-center gap-3 border-b-2 border-foreground/15 pb-2 transition-colors focus-within:border-primary">
-                <Search className="size-5 shrink-0 text-muted-foreground" />
-                <input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Tatuador, estilo ou estúdio"
-                  aria-label="Buscar"
-                  className="w-full bg-transparent text-base outline-none placeholder:text-muted-foreground/60"
-                />
-                <Button type="submit" size="sm" className="shrink-0">
-                  Buscar
-                </Button>
-              </div>
-              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1">
-                <span className="eyebrow">Popular</span>
-                {POPULAR.map((t) => (
+            {/* CTA dominante */}
+            <m.div variants={rise} className="mt-9 flex flex-wrap items-center gap-3">
+              <Button asChild size="lg" className="group/cta">
+                <Link href="/cadastro">
+                  <Sparkles className="transition-transform group-hover/cta:rotate-12" />
+                  Simular minha tatuagem
+                  <ArrowRight className="transition-transform group-hover/cta:translate-x-0.5" />
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/tatuadores">Ver tatuadores</Link>
+              </Button>
+            </m.div>
+
+            {/* Busca inteligente segmentada */}
+            <m.div variants={rise} className="mt-8 max-w-md">
+              <div className="flex flex-wrap gap-1">
+                {MODES.map((mo) => (
                   <button
-                    key={t}
+                    key={mo.key}
                     type="button"
-                    onClick={() => router.push(`/tatuadores?q=${encodeURIComponent(t)}`)}
-                    className="ink-link text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    onClick={() => setMode(mo.key)}
+                    className={`rounded-t-md px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-colors ${
+                      mode === mo.key
+                        ? "border border-b-0 border-border bg-card text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
                   >
-                    {t}
+                    {mo.label}
                   </button>
                 ))}
               </div>
-            </m.form>
+              <form
+                onSubmit={search}
+                className="flex items-center gap-2 rounded-md rounded-tl-none border border-border bg-card p-2 shadow-[var(--shadow-ink)] transition-colors focus-within:border-primary/50"
+              >
+                <Search className="ml-1.5 size-4 shrink-0 text-muted-foreground" />
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder={active.placeholder}
+                  aria-label={`Buscar ${active.label}`}
+                  className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+                />
+                <Button type="submit" size="sm" variant="ink" aria-label="Buscar">
+                  <Search />
+                </Button>
+              </form>
+            </m.div>
+
+            {/* Prova social */}
+            <m.div
+              variants={rise}
+              className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-xs text-muted-foreground"
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <span className="text-primary">★</span> 4.9 · 320 avaliações
+              </span>
+              <span className="h-3 w-px bg-border" />
+              <span>+2.400 simulações geradas</span>
+              <span className="h-3 w-px bg-border" />
+              <span>120 estúdios</span>
+            </m.div>
           </m.div>
 
-          {/* Espécime de tinta em camadas (direita) */}
+          {/* ─────────── Demonstração viva (direita) ─────────── */}
           <m.div
             initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            className="relative mx-auto hidden aspect-[4/5] w-full max-w-sm lg:block"
+            className="relative mx-auto hidden w-full max-w-sm lg:block"
           >
-            <InkSpecimen reduce={!!reduce} />
+            {/* cartão-sombra atrás, para profundidade */}
+            <div className="absolute -right-5 top-8 -z-10 h-full w-full -rotate-3 rounded-xl border border-border bg-card/60 shadow-[var(--shadow-ink)]" />
+            <HeroSimulation />
+            {/* chip que "sai" da moldura — quebra o container */}
+            <div className="absolute -bottom-4 -left-6 flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 shadow-[var(--shadow-lift)]">
+              <span className="font-display text-2xl leading-none text-primary">↔</span>
+              <div className="leading-tight">
+                <p className="eyebrow">Antes / Depois</p>
+                <p className="font-mono text-[11px] text-muted-foreground">resultado realista</p>
+              </div>
+            </div>
           </m.div>
         </div>
 
-        {/* faixa marquee de estilos, contida */}
         <div className="border-t border-border py-3.5">
-          <Marquee />
+          <Marquee reduce={!!reduce} />
         </div>
       </section>
     </LazyMotion>
-  );
-}
-
-function InkSpecimen({ reduce }: { reduce: boolean }) {
-  const float = reduce
-    ? {}
-    : { animate: { y: [0, -10, 0] }, transition: { duration: 7, repeat: Infinity, ease: "easeInOut" as const } };
-  return (
-    <>
-      {/* cartão de fundo, deslocado */}
-      <div className="absolute right-0 top-6 h-full w-[86%] -rotate-3 rounded-xl border border-border bg-card shadow-[var(--shadow-ink)]" />
-      {/* cartão principal — espécime tipográfico */}
-      <m.div
-        {...float}
-        className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-7 shadow-[var(--shadow-lift)]"
-      >
-        <div className="flex items-start justify-between">
-          <span className="eyebrow">Espécime · 01</span>
-          <span className="inline-flex items-center gap-1.5 rounded-[4px] border border-primary/25 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-            <span className="size-1.5 animate-pulse rounded-full bg-primary" />
-            Simulação IA
-          </span>
-        </div>
-
-        <div className="relative">
-          <span className="pointer-events-none absolute -left-2 -top-10 select-none font-display text-[10rem] leading-none text-foreground/[0.05]">
-            &amp;
-          </span>
-          <p className="font-display text-6xl italic leading-none">Tinta</p>
-          <p className="mt-2 font-display text-6xl leading-none tracking-[-0.02em]">na pele</p>
-          {/* pingo de tinta */}
-          <span className="mt-5 block h-16 w-px bg-gradient-to-b from-primary to-transparent" />
-        </div>
-
-        <div className="flex items-end justify-between border-t border-border pt-4">
-          <div className="font-mono text-[11px] leading-relaxed text-muted-foreground">
-            <div>REALISMO · FINE LINE</div>
-            <div>BLACKWORK · OLD SCHOOL</div>
-          </div>
-          <ArrowUpRight className="size-5 text-primary" />
-        </div>
-      </m.div>
-    </>
   );
 }
 
@@ -164,12 +165,12 @@ const STYLES = [
   "Geométrico", "Minimalista", "Oriental", "Tribal", "Lettering",
 ];
 
-function Marquee() {
+function Marquee({ reduce }: { reduce: boolean }) {
   return (
     <div className="flex overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
       <m.div
-        animate={{ x: ["0%", "-50%"] }}
-        transition={{ duration: 32, repeat: Infinity, ease: "linear" }}
+        animate={reduce ? undefined : { x: ["0%", "-50%"] }}
+        transition={reduce ? undefined : { duration: 32, repeat: Infinity, ease: "linear" }}
         className="flex shrink-0 items-center gap-8 pr-8"
       >
         {[...STYLES, ...STYLES].map((s, i) => (
