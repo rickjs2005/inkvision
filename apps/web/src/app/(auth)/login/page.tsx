@@ -3,11 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mail, Lock } from "lucide-react";
+import { Mail } from "lucide-react";
 import { signIn } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, PasswordField, SocialButtons, AuthDivider, AuthProof } from "@/components/auth/auth-ui";
+
+const isEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,43 +33,19 @@ export default function LoginPage() {
   return (
     <div>
       <span className="eyebrow">Ateliê digital · Acesso</span>
-      <h1 className="mt-3 font-display text-4xl font-light tracking-[-0.02em]">Entrar</h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-        Acesse sua conta InkVision.
-      </p>
+      <h1 className="mt-3 font-display text-4xl font-light tracking-[-0.02em]">Bem-vindo de volta</h1>
+      <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">Acesse sua conta InkVision.</p>
 
-      <form onSubmit={onSubmit} className="mt-9 flex flex-col gap-5">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="email">E-mail</Label>
-          <div className="relative">
-            <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/70" />
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              required
-              autoComplete="email"
-              placeholder="voce@email.com"
-              className="pl-10"
-            />
-          </div>
-        </div>
+      <div className="mt-8">
+        <SocialButtons />
+      </div>
+      <div className="my-6">
+        <AuthDivider />
+      </div>
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="password">Senha</Label>
-          <div className="relative">
-            <Lock className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/70" />
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              required
-              autoComplete="current-password"
-              placeholder="••••••••"
-              className="pl-10"
-            />
-          </div>
-        </div>
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        <Field id="email" name="email" type="email" label="E-mail" icon={Mail} autoComplete="email" validate={isEmail} />
+        <PasswordField autoComplete="current-password" />
 
         {error && (
           <p role="alert" className="text-sm text-destructive">
@@ -76,17 +53,21 @@ export default function LoginPage() {
           </p>
         )}
 
-        <Button type="submit" disabled={loading} className="w-full">
+        <Button type="submit" size="lg" disabled={loading} className="mt-2 w-full">
           {loading ? "Entrando…" : "Entrar"}
         </Button>
       </form>
 
-      <p className="mt-8 text-sm text-muted-foreground">
+      <p className="mt-7 text-sm text-muted-foreground">
         Não tem conta?{" "}
         <Link href="/cadastro" className="ink-link font-medium text-foreground">
-          Cadastre-se
+          Cadastre-se grátis
         </Link>
       </p>
+
+      <div className="mt-8">
+        <AuthProof />
+      </div>
     </div>
   );
 }
