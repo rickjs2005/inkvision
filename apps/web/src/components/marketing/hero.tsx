@@ -103,7 +103,7 @@ export function Hero() {
             <m.div variants={rise} className="mt-9">
               <div className="flex flex-wrap items-center gap-3">
                 <Button asChild size="lg" className="group/cta">
-                  <Link href="/cadastro">
+                  <Link href="/simular">
                     <Sparkles className="transition-transform group-hover/cta:rotate-12" />
                     Simular minha tatuagem
                     <ArrowRight className="transition-transform group-hover/cta:translate-x-0.5" />

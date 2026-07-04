@@ -8,9 +8,9 @@ import { cn } from "@/lib/utils";
 import { AuthNav } from "./auth-nav";
 
 const NAV = [
+  { href: "/simular", label: "Simular" },
   { href: "/tatuadores", label: "Tatuadores" },
   { href: "/estudios", label: "Estúdios" },
-  { href: "/#estilos", label: "Estilos" },
 ];
 
 /** Header com estado de scroll — a moldura se firma ao rolar. */
