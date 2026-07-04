@@ -29,8 +29,8 @@ export function SiteHeader() {
       className={cn(
         "sticky top-0 z-40 transition-all duration-300",
         scrolled
-          ? "border-b border-border bg-background/80 shadow-[var(--shadow-ink)] backdrop-blur-xl"
-          : "border-b border-transparent bg-background/40 backdrop-blur-md",
+          ? "border-b border-border bg-background/85 shadow-[var(--shadow-ink)] backdrop-blur-2xl backdrop-saturate-150"
+          : "border-b border-border/60 bg-background/60 backdrop-blur-xl",
       )}
     >
       <div

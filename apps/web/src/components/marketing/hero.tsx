@@ -1,14 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
+import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
 import { ArrowRight, Check, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroSimulation } from "./hero-simulation";
 
 const FEATURES = ["Simulação IA", "Chat com o artista", "Aprovação da arte", "Agendamento"];
+
+const ARTISTS = [
+  { initials: "RC", name: "Rafa Costa", meta: "Fine line · ★ 4.9" },
+  { initials: "AB", name: "Ana Black", meta: "Blackwork · ★ 5.0" },
+  { initials: "LF", name: "Lucas Faria", meta: "Realismo · ★ 4.8" },
+];
+
+const STATS = [
+  { value: "12.000+", label: "simulações geradas" },
+  { value: "140", label: "estúdios ativos" },
+  { value: "4.9★", label: "320 avaliações" },
+];
 
 const MODES = [
   { key: "tatuador", label: "Tatuador", placeholder: "Nome do tatuador ou estilo" },
@@ -23,6 +35,15 @@ export function Hero() {
   const [mode, setMode] = useState<(typeof MODES)[number]["key"]>("tatuador");
   const [q, setQ] = useState("");
   const active = MODES.find((x) => x.key === mode)!;
+
+  // Marketplace "vivo": o artista em destaque troca a cada ~3.2s.
+  const [artistIdx, setArtistIdx] = useState(0);
+  useEffect(() => {
+    if (reduce) return;
+    const id = setInterval(() => setArtistIdx((i) => (i + 1) % ARTISTS.length), 3200);
+    return () => clearInterval(id);
+  }, [reduce]);
+  const artist = ARTISTS[artistIdx]!;
 
   function search(e: React.FormEvent) {
     e.preventDefault();
@@ -54,7 +75,7 @@ export function Hero() {
 
             <m.h1
               variants={rise}
-              className="mt-6 font-display text-[3.25rem] font-light leading-[0.98] tracking-[-0.025em] sm:text-7xl"
+              className="mt-6 font-display text-[3.3rem] font-light leading-[0.9] tracking-[-0.03em] sm:text-7xl"
             >
               Veja a arte
               <br />
@@ -64,8 +85,8 @@ export function Hero() {
             </m.h1>
 
             <m.p variants={rise} className="mt-7 max-w-md text-[15px] leading-relaxed text-muted-foreground">
-              Envie uma foto do seu corpo e a IA aplica o desenho na sua pele — perspectiva, luz e
-              sombra. Encontre o artista, aprove a arte no chat, agende e pague num só lugar.
+              Escolha um artista, aprove o desenho no chat e veja exatamente como a tatuagem vai
+              ficar na sua pele — antes da primeira sessão.
             </m.p>
 
             {/* Diferenciais do marketplace */}
@@ -79,17 +100,22 @@ export function Hero() {
             </m.ul>
 
             {/* CTA dominante */}
-            <m.div variants={rise} className="mt-9 flex flex-wrap items-center gap-3">
-              <Button asChild size="lg" className="group/cta">
-                <Link href="/cadastro">
-                  <Sparkles className="transition-transform group-hover/cta:rotate-12" />
-                  Simular minha tatuagem
-                  <ArrowRight className="transition-transform group-hover/cta:translate-x-0.5" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link href="/tatuadores">Ver tatuadores</Link>
-              </Button>
+            <m.div variants={rise} className="mt-9">
+              <div className="flex flex-wrap items-center gap-3">
+                <Button asChild size="lg" className="group/cta">
+                  <Link href="/cadastro">
+                    <Sparkles className="transition-transform group-hover/cta:rotate-12" />
+                    Simular minha tatuagem
+                    <ArrowRight className="transition-transform group-hover/cta:translate-x-0.5" />
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline">
+                  <Link href="/tatuadores">Ver tatuadores</Link>
+                </Button>
+              </div>
+              <p className="mt-3 font-mono text-xs text-muted-foreground">
+                Grátis <span className="text-primary">·</span> leva menos de 1 minuto
+              </p>
             </m.div>
 
             {/* Busca inteligente segmentada */}
@@ -122,25 +148,26 @@ export function Hero() {
                   aria-label={`Buscar ${active.label}`}
                   className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
                 />
+                <kbd className="hidden shrink-0 rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline-block">
+                  ↵
+                </kbd>
                 <Button type="submit" size="sm" variant="ink" aria-label="Buscar">
                   <Search />
                 </Button>
               </form>
             </m.div>
 
-            {/* Prova social */}
-            <m.div
-              variants={rise}
-              className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-xs text-muted-foreground"
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <span className="text-primary">★</span> 4.9 · 320 avaliações
-              </span>
-              <span className="h-3 w-px bg-border" />
-              <span>+2.400 simulações geradas</span>
-              <span className="h-3 w-px bg-border" />
-              <span>120 estúdios</span>
-            </m.div>
+            {/* Prova social — números de autoridade */}
+            <m.dl variants={rise} className="mt-10 flex flex-wrap gap-x-10 gap-y-4 border-t border-border pt-7">
+              {STATS.map((s) => (
+                <div key={s.label}>
+                  <dt className="font-display text-3xl leading-none tracking-tight sm:text-4xl">{s.value}</dt>
+                  <dd className="mt-1.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                    {s.label}
+                  </dd>
+                </div>
+              ))}
+            </m.dl>
           </m.div>
 
           {/* ─────────── Demonstração viva (direita) ─────────── */}
@@ -153,17 +180,28 @@ export function Hero() {
             {/* cartão-sombra atrás, para profundidade */}
             <div className="absolute -right-6 top-8 -z-10 h-full w-full -rotate-3 rounded-2xl border border-border bg-card/60 shadow-[var(--shadow-ink)]" />
             <HeroSimulation />
-            {/* chip de artista — elemento humano/marketplace saindo da moldura */}
-            <div className="absolute -bottom-5 -left-7 flex items-center gap-3 rounded-md border border-border bg-background px-3.5 py-2.5 shadow-[var(--shadow-lift)]">
-              <span className="flex size-9 items-center justify-center rounded-full bg-foreground font-display text-sm text-background">
-                RC
-              </span>
-              <div className="leading-tight">
-                <p className="text-sm font-medium">Rafa Costa</p>
-                <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Fine line · ★ 4.9
-                </p>
-              </div>
+            {/* chip de artista ROTATIVO — marketplace vivo, saindo da moldura */}
+            <div className="absolute -bottom-5 -left-7 flex h-[68px] w-64 items-center overflow-hidden rounded-md border border-border bg-background px-3.5 shadow-[var(--shadow-lift)]">
+              <AnimatePresence mode="wait">
+                <m.div
+                  key={artist.name}
+                  initial={reduce ? false : { opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduce ? undefined : { opacity: 0, y: -12 }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                  className="flex items-center gap-3"
+                >
+                  <span className="flex size-9 items-center justify-center rounded-full bg-foreground font-display text-sm text-background">
+                    {artist.initials}
+                  </span>
+                  <div className="leading-tight">
+                    <p className="text-sm font-medium">{artist.name}</p>
+                    <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {artist.meta}
+                    </p>
+                  </div>
+                </m.div>
+              </AnimatePresence>
             </div>
           </m.div>
         </div>

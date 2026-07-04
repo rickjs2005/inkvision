@@ -28,18 +28,19 @@ export function InkMark({ className }: { className?: string }) {
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
       {/* gota de tinta */}
       <path
-        d="M12 2.5c3.6 4.2 6 7.4 6 10.6a6 6 0 1 1-12 0c0-3.2 2.4-6.4 6-10.6Z"
+        d="M12 2.5c3.7 4.3 6 7.5 6 10.7a6 6 0 0 1-12 0c0-3.2 2.3-6.4 6-10.7Z"
         fill="currentColor"
       />
-      {/* reflexo/agulha em vermelhão */}
+      {/* agulha em linha contínua — sobe pela gota e aponta (vermelhão) */}
       <path
-        d="M12 8.5c1.8 2 2.9 3.6 2.9 5.1a2.9 2.9 0 0 1-2.9 2.9"
+        d="M12 21.5V12.5L17.5 4.5"
         stroke="var(--primary)"
         strokeWidth="1.6"
         strokeLinecap="round"
+        strokeLinejoin="round"
         fill="none"
-        opacity="0.9"
       />
+      <circle cx="17.5" cy="4.5" r="1.5" fill="var(--primary)" />
     </svg>
   );
 }
