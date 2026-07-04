@@ -26,12 +26,12 @@ function HeroMetric({
   className?: string;
 }) {
   return (
-    <div className={cn("bg-card p-6", className)}>
+    <div className={cn("group bg-card p-6 transition-colors hover:bg-muted/20", className)}>
       <p className="eyebrow">{eyebrow}</p>
       <p
         className={cn(
-          "mt-3 font-display font-light tracking-tight tabular-nums",
-          primary ? "text-5xl sm:text-6xl" : "text-4xl",
+          "mt-3 font-display font-light leading-[0.95] tracking-tight tabular-nums",
+          primary ? "text-6xl sm:text-7xl" : "text-4xl sm:text-5xl",
         )}
       >
         {value}
@@ -41,12 +41,12 @@ function HeroMetric({
   );
 }
 
-// Métrica secundária — numeral mono compacto.
+// Métrica secundária — numeral display menor, hierarquia abaixo das métricas de receita.
 function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="bg-card p-5">
+    <div className="bg-card p-5 transition-colors hover:bg-muted/20">
       <p className="eyebrow">{label}</p>
-      <p className="mt-2 font-mono text-2xl font-medium tabular-nums">{value}</p>
+      <p className="mt-2 font-display text-3xl font-light tabular-nums">{value}</p>
       {hint && <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{hint}</p>}
     </div>
   );

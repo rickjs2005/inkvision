@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { MapPin, Phone } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, MapPin, Phone, Sparkles, Users } from "lucide-react";
 import { DomainError } from "@inkvision/core";
 import { getActor } from "@/server/auth-context";
 import { useCases } from "@/server/container";
 import { getPublicStudio } from "@/server/public-cache";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { LocalBusinessJsonLd } from "@/components/seo/json-ld";
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
@@ -94,6 +96,26 @@ export default async function StudioPublicPage({
             {studio.description}
           </p>
         )}
+
+        {/* CTA dominante — começar projeto / conhecer os artistas */}
+        <div className="mt-9 flex flex-wrap items-center gap-3">
+          <Button size="lg" asChild className="group/cta">
+            <Link href="/cadastro">
+              <Sparkles className="transition-transform group-hover/cta:rotate-12" />
+              Começar projeto
+              <ArrowRight className="transition-transform group-hover/cta:translate-x-0.5" />
+            </Link>
+          </Button>
+          <Button size="lg" variant="outline" asChild>
+            <Link href="/tatuadores">
+              <Users />
+              Ver tatuadores do estúdio
+            </Link>
+          </Button>
+        </div>
+        <p className="mt-3 font-mono text-xs text-muted-foreground">
+          Simulação de IA grátis <span className="text-primary">·</span> aprove a arte no chat antes da agulha
+        </p>
       </header>
 
       {/* Coordenadas em régua mono */}

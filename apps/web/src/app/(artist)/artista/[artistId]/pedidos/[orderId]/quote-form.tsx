@@ -4,8 +4,70 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { sendQuoteAction } from "@/server/actions/order";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+
+const baseInput =
+  "peer w-full rounded-md border border-input bg-background/40 text-sm outline-none transition-[border-color,box-shadow,background-color] hover:border-foreground/25 focus:border-primary/60 focus:bg-background focus:ring-4 focus:ring-primary/12";
+
+/** Campo monetário premium: label flutuante + prefixo R$ mono (foco vermelhão). */
+function MoneyField({
+  id,
+  name,
+  label,
+  defaultValue,
+  required,
+  min = 1,
+}: {
+  id: string;
+  name: string;
+  label: string;
+  defaultValue?: string | number;
+  required?: boolean;
+  min?: number;
+}) {
+  const [val, setVal] = useState(defaultValue != null ? String(defaultValue) : "");
+  const [focused, setFocused] = useState(false);
+  const active = focused || val.length > 0;
+
+  return (
+    <div className="relative">
+      <span
+        className={cn(
+          "pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-sm transition-colors",
+          focused ? "text-primary" : "text-muted-foreground/70",
+        )}
+      >
+        R$
+      </span>
+      <input
+        id={id}
+        name={name}
+        type="number"
+        inputMode="decimal"
+        min={min}
+        step="0.01"
+        required={required}
+        defaultValue={defaultValue}
+        placeholder=" "
+        onChange={(e) => setVal(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        className={cn(baseInput, "h-14 pl-10 pr-3.5 pt-4 font-mono tabular-nums")}
+      />
+      <label
+        htmlFor={id}
+        className={cn(
+          "pointer-events-none absolute left-10 origin-left transition-all",
+          active
+            ? "top-2 text-[11px] font-medium text-muted-foreground"
+            : "top-1/2 -translate-y-1/2 text-sm text-muted-foreground/70",
+        )}
+      >
+        {label}
+      </label>
+    </div>
+  );
+}
 
 export function QuoteForm({
   studioId,
@@ -39,47 +101,23 @@ export function QuoteForm({
 
   return (
     <form onSubmit={onSubmit} className="grid gap-5 sm:grid-cols-2">
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="quoteAmount" className="eyebrow">
-          Valor total
-        </Label>
-        <div className="relative">
-          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-sm text-muted-foreground">
-            R$
-          </span>
-          <Input
-            id="quoteAmount"
-            name="quoteAmount"
-            type="number"
-            min={1}
-            step="0.01"
-            required
-            defaultValue={defaultQuote}
-            className="pl-10 font-mono tabular-nums"
-          />
-        </div>
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="depositAmount" className="eyebrow">
-          Sinal
-        </Label>
-        <div className="relative">
-          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-sm text-muted-foreground">
-            R$
-          </span>
-          <Input
-            id="depositAmount"
-            name="depositAmount"
-            type="number"
-            min={1}
-            step="0.01"
-            required
-            defaultValue={defaultDeposit}
-            className="pl-10 font-mono tabular-nums"
-          />
-        </div>
-      </div>
-      <div className="flex items-center gap-4 sm:col-span-2">
+      <MoneyField
+        id="quoteAmount"
+        name="quoteAmount"
+        label="Valor total"
+        min={1}
+        required
+        defaultValue={defaultQuote}
+      />
+      <MoneyField
+        id="depositAmount"
+        name="depositAmount"
+        label="Sinal"
+        min={1}
+        required
+        defaultValue={defaultDeposit}
+      />
+      <div className="flex items-center gap-4 border-t border-border pt-5 sm:col-span-2">
         <Button type="submit" disabled={pending}>
           {pending ? "Enviando…" : "Enviar orçamento"}
         </Button>

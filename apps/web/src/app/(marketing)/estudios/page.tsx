@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
-import { ArrowUpRight, MapPin } from "lucide-react";
+import { ArrowUpRight, MapPin, Star } from "lucide-react";
 import { prisma } from "@inkvision/db";
 
 export const metadata: Metadata = {
@@ -46,6 +46,25 @@ export default async function StudiosPage() {
           {String(studios.length).padStart(2, "0")}{" "}
           {studios.length === 1 ? "estúdio" : "estúdios"}
         </p>
+      </div>
+
+      {/* Faixa de prova social — autoridade da rede */}
+      <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <Star className="size-3.5 fill-primary text-primary" />
+          <span className="font-display text-sm tracking-normal text-foreground">4.9</span>
+          média
+        </span>
+        <span className="text-border">·</span>
+        <span>
+          <span className="font-display text-sm tracking-normal text-foreground">12.000+</span>{" "}
+          simulações
+        </span>
+        <span className="text-border">·</span>
+        <span>
+          <span className="font-display text-sm tracking-normal text-foreground">320</span>{" "}
+          avaliações
+        </span>
       </div>
 
       {studios.length === 0 ? (

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowUpRight, Instagram, Star } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Instagram, Sparkles, Star } from "lucide-react";
 import { getActor } from "@/server/auth-context";
 import { useCases } from "@/server/container";
 import { getPublicArtist, getPublicArtistReviews } from "@/server/public-cache";
@@ -45,6 +45,7 @@ export default async function ArtistPublicPage({
     useCases.listPortfolio.execute(artistId, actor?.userId),
     getPublicArtistReviews(artistId),
   ]);
+  const firstName = artist.name.split(" ")[0] ?? artist.name;
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-16">
@@ -127,14 +128,58 @@ export default async function ArtistPublicPage({
           </p>
         )}
 
-        <div className="mt-8">
-          <Button size="lg" asChild>
+        {/* Prova de autoridade — números reais do artista */}
+        <dl className="mt-9 flex flex-wrap gap-x-10 gap-y-5 border-t border-border pt-7">
+          {artist.ratingCount > 0 && (
+            <div>
+              <dt className="inline-flex items-center gap-1.5 font-display text-3xl leading-none tracking-tight sm:text-4xl">
+                <Star className="size-6 fill-primary text-primary sm:size-7" />
+                {artist.ratingAvg?.toFixed(1)}
+              </dt>
+              <dd className="mt-2 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                {artist.ratingCount} {artist.ratingCount === 1 ? "avaliação" : "avaliações"}
+              </dd>
+            </div>
+          )}
+          <div>
+            <dt className="font-display text-3xl leading-none tracking-tight sm:text-4xl">
+              {String(items.length).padStart(2, "0")}
+            </dt>
+            <dd className="mt-2 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+              {items.length === 1 ? "trabalho no portfólio" : "trabalhos no portfólio"}
+            </dd>
+          </div>
+          {reviews.length > 0 && (
+            <div>
+              <dt className="font-display text-3xl leading-none tracking-tight sm:text-4xl">
+                {String(reviews.length).padStart(2, "0")}
+              </dt>
+              <dd className="mt-2 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                relatos de clientes
+              </dd>
+            </div>
+          )}
+        </dl>
+
+        {/* CTA dominante — simular na própria pele */}
+        <div className="mt-9 flex flex-wrap items-center gap-3">
+          <Button size="lg" asChild className="group/cta">
+            <Link href="/cadastro">
+              <Sparkles className="transition-transform group-hover/cta:rotate-12" />
+              Simular tatuagem com {firstName}
+              <ArrowRight className="transition-transform group-hover/cta:translate-x-0.5" />
+            </Link>
+          </Button>
+          <Button size="lg" variant="outline" asChild>
             <Link href={`/pedidos/novo/${artist.id}`}>
               Iniciar um projeto
               <ArrowUpRight className="transition-transform group-hover/btn:-translate-y-0.5 group-hover/btn:translate-x-0.5" />
             </Link>
           </Button>
         </div>
+        <p className="mt-3 font-mono text-xs text-muted-foreground">
+          Grátis <span className="text-primary">·</span> veja na sua pele antes da agulha
+        </p>
       </header>
 
       {/* Portfólio */}

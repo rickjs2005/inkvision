@@ -1,14 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ImagePlus, X } from "lucide-react";
+import { ArrowRight, ChevronDown, Clock, FileText, ImagePlus, MapPin, Palette, Ruler, X } from "lucide-react";
 import type { Style } from "@inkvision/core";
 import { createOrderAction } from "@/server/actions/order";
 import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FloatingInput, FloatingTextarea } from "@/components/ui/field";
+
+/* Cabeçalho de seção — eyebrow numerada + régua de ateliê, com slot à direita. */
+function SectionHeader({ n, title, aside }: { n: string; title: string; aside?: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="eyebrow">
+        {n} · {title}
+      </span>
+      <span className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+      {aside}
+    </div>
+  );
+}
+
+/* Miniatura de referência — thumbnail para imagens, ícone para PDFs. Só preview:
+   o envio lê os arquivos direto do <input>, este estado é puramente visual. */
+function ReferenceThumb({ file, index }: { file: File; index: number }) {
+  const url = useMemo(() => (file.type.startsWith("image/") ? URL.createObjectURL(file) : null), [file]);
+  useEffect(() => () => { if (url) URL.revokeObjectURL(url); }, [url]);
+
+  return (
+    <li className="group flex items-center gap-3 bg-card px-3 py-2.5">
+      <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded border border-border bg-muted/50">
+        {url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="" className="size-full object-cover" />
+        ) : (
+          <FileText className="size-4 text-muted-foreground" />
+        )}
+      </span>
+      <span className="font-mono text-xs text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
+      <span className="min-w-0 flex-1 truncate text-sm">{file.name}</span>
+      <span className="font-mono text-[11px] text-muted-foreground/70">{(file.size / 1024).toFixed(0)} KB</span>
+      <X className="size-3.5 shrink-0 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" aria-hidden />
+    </li>
+  );
+}
 
 export function OrderForm({
   artistId,
@@ -22,7 +58,7 @@ export function OrderForm({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pickedNames, setPickedNames] = useState<string[]>([]);
+  const [picked, setPicked] = useState<File[]>([]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -53,67 +89,66 @@ export function OrderForm({
 
   return (
     <form onSubmit={onSubmit} className="grid gap-12">
-      {/* Seção · O desenho */}
-      <section className="grid gap-5">
-        <div className="flex items-center gap-3">
-          <span className="eyebrow">01 · O desenho</span>
-          <span className="h-px flex-1 bg-border" />
-        </div>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="styleId" className="eyebrow">Estilo</Label>
+      {/* ── 01 · O desenho ── */}
+      <section className="grid gap-6">
+        <SectionHeader n="01" title="O desenho" />
+
+        {/* Estilo — <select> nativo estilizado à altura dos campos premium */}
+        <div className="flex flex-col gap-2">
+          <label htmlFor="styleId" className="eyebrow">Estilo</label>
+          <div className="group relative">
+            <Palette className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/70 transition-colors group-focus-within:text-primary" />
             <select
               id="styleId"
               name="styleId"
               defaultValue=""
-              className="flex h-11 w-full rounded-md border border-input bg-background/40 px-3.5 text-sm transition-[border-color,box-shadow,background-color] hover:border-foreground/25 focus-visible:border-primary/60 focus-visible:bg-background focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/12"
+              className="h-14 w-full appearance-none rounded-md border border-input bg-background/40 pl-10 pr-10 text-sm outline-none transition-[border-color,box-shadow,background-color] hover:border-foreground/25 focus:border-primary/60 focus:bg-background focus:ring-4 focus:ring-primary/12"
             >
-              <option value="">A definir</option>
+              <option value="">A definir com o artista</option>
               {styles.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="bodyPart" className="eyebrow">Parte do corpo</Label>
-            <Input id="bodyPart" name="bodyPart" required placeholder="Antebraço direito" />
+            <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/70 transition-transform group-focus-within:text-primary" />
           </div>
         </div>
-        <div className="flex flex-col gap-2 sm:max-w-[220px]">
-          <Label htmlFor="approxSizeCm" className="eyebrow">Tamanho aproximado</Label>
-          <div className="relative">
-            <Input
-              id="approxSizeCm"
-              name="approxSizeCm"
-              type="number"
-              min={1}
-              max={200}
-              placeholder="12"
-              className="pr-12 font-mono"
-            />
-            <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 font-mono text-xs text-muted-foreground">
-              cm
-            </span>
-          </div>
+
+        {/* Parte do corpo + tamanho — dupla assimétrica */}
+        <div className="grid gap-5 sm:grid-cols-[1fr_11rem]">
+          <FloatingInput
+            id="bodyPart"
+            name="bodyPart"
+            label="Parte do corpo"
+            icon={MapPin}
+            required
+            validate={(v) => v.trim().length >= 2}
+          />
+          <FloatingInput
+            id="approxSizeCm"
+            name="approxSizeCm"
+            label="Tamanho (cm)"
+            icon={Ruler}
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={200}
+            validate={(v) => Number(v) > 0 && Number(v) <= 200}
+            className="font-mono"
+          />
         </div>
       </section>
 
-      {/* Seção · A ideia */}
-      <section className="grid gap-5">
-        <div className="flex items-center gap-3">
-          <span className="eyebrow">02 · A ideia</span>
-          <span className="h-px flex-1 bg-border" />
-        </div>
+      {/* ── 02 · A ideia ── */}
+      <section className="grid gap-6">
+        <SectionHeader n="02" title="A ideia" />
         <div className="flex flex-col gap-2">
-          <Label htmlFor="briefing" className="eyebrow">Descreva o projeto</Label>
-          <textarea
+          <FloatingTextarea
             id="briefing"
             name="briefing"
+            label="Descreva o projeto — elementos, posição, referências de estilo…"
             rows={5}
             required
             minLength={10}
-            placeholder="Conte o que você imagina: elementos, posição, referências de estilo…"
-            className="flex w-full rounded-md border border-input bg-background/40 px-3.5 py-2.5 text-sm leading-relaxed transition-[border-color,box-shadow,background-color] placeholder:text-muted-foreground/70 hover:border-foreground/25 focus-visible:border-primary/60 focus-visible:bg-background focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/12"
           />
           <p className="text-xs text-muted-foreground">
             Quanto mais detalhe, mais preciso o orçamento.
@@ -121,26 +156,30 @@ export function OrderForm({
         </div>
       </section>
 
-      {/* Seção · Referências */}
-      <section className="grid gap-5">
-        <div className="flex items-center gap-3">
-          <span className="eyebrow">03 · Referências</span>
-          <span className="h-px flex-1 bg-border" />
-          <span className="font-mono text-xs text-muted-foreground">
-            {String(pickedNames.length).padStart(2, "0")} / 08
-          </span>
-        </div>
+      {/* ── 03 · Referências ── */}
+      <section className="grid gap-6">
+        <SectionHeader
+          n="03"
+          title="Referências"
+          aside={
+            <span className="font-mono text-xs text-muted-foreground">
+              {String(picked.length).padStart(2, "0")} / 08
+            </span>
+          }
+        />
 
         <label
           htmlFor="references"
-          className="group flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-background/40 px-6 py-10 text-center transition-colors hover:border-primary/50 hover:bg-muted/40"
+          className="group relative flex cursor-pointer flex-col items-center justify-center gap-2.5 overflow-hidden rounded-lg border border-dashed border-border bg-background/40 px-6 py-11 text-center transition-[border-color,background-color] hover:border-primary/50 hover:bg-muted/40"
         >
-          <ImagePlus className="size-6 text-muted-foreground transition-colors group-hover:text-primary" />
+          <span className="grid size-12 place-items-center rounded-full border border-border bg-card shadow-[var(--shadow-ink)] transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-0.5 group-hover:border-primary/40">
+            <ImagePlus className="size-5 text-muted-foreground transition-colors group-hover:text-primary" />
+          </span>
           <span className="text-sm font-medium">
             Arraste ou selecione imagens
           </span>
           <span className="eyebrow">Imagens ou PDF · até 8 arquivos</span>
-          <Input
+          <input
             id="references"
             name="references"
             type="file"
@@ -148,46 +187,40 @@ export function OrderForm({
             multiple
             className="sr-only"
             onChange={(e) =>
-              setPickedNames(
+              setPicked(
                 Array.from(e.currentTarget.files ?? [])
                   .filter((f) => f.size > 0)
-                  .slice(0, 8)
-                  .map((f) => f.name),
+                  .slice(0, 8),
               )
             }
           />
         </label>
 
-        {pickedNames.length > 0 && (
+        {picked.length > 0 && (
           <ul className="grid gap-px overflow-hidden rounded-md border border-border">
-            {pickedNames.map((name, i) => (
-              <li
-                key={`${name}-${i}`}
-                className="flex items-center gap-3 bg-card px-3.5 py-2.5"
-              >
-                <span className="font-mono text-xs text-muted-foreground">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-sm">{name}</span>
-                <X className="size-3.5 shrink-0 text-muted-foreground/50" aria-hidden />
-              </li>
+            {picked.map((file, i) => (
+              <ReferenceThumb key={`${file.name}-${i}`} file={file} index={i} />
             ))}
           </ul>
         )}
       </section>
 
-      {/* Régua + envio */}
-      <div className="flex flex-wrap items-center gap-4 border-t border-border pt-8">
-        <Button type="submit" disabled={busy}>
-          {busy ? "Enviando…" : "Enviar pedido"}
-        </Button>
-        <span className="text-xs text-muted-foreground">
-          O tatuador responde com o orçamento no chat.
-        </span>
-        {error && (
-          <span className="w-full text-sm text-destructive" role="alert">
-            {error}
+      {/* ── Régua + envio ── */}
+      <div className="border-t border-border pt-8">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-4">
+          <Button type="submit" size="lg" disabled={busy} className="group/cta">
+            {busy ? "Enviando…" : "Enviar pedido"}
+            {!busy && <ArrowRight className="transition-transform group-hover/cta:translate-x-0.5" />}
+          </Button>
+          <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
+            <Clock className="size-3.5 text-primary" />
+            Resposta em até 24h <span className="text-primary">·</span> orçamento sob medida no chat
           </span>
+        </div>
+        {error && (
+          <p className="mt-4 text-sm text-destructive" role="alert">
+            {error}
+          </p>
         )}
       </div>
     </form>

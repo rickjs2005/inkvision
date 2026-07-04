@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Check } from "lucide-react";
 import type { Style } from "@inkvision/core";
 import { setArtistStylesAction } from "@/server/actions/artist";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ export function StylesSelector({
   const [selected, setSelected] = useState<Set<string>>(new Set(selectedIds));
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -31,7 +33,8 @@ export function StylesSelector({
     setMsg(null);
     startTransition(async () => {
       const res = await setArtistStylesAction(artistId, [...selected]);
-      setMsg(res.ok ? "Estilos salvos." : res.error);
+      setOk(res.ok);
+      setMsg(res.ok ? "Estilos salvos" : res.error);
     });
   }
 
@@ -53,12 +56,19 @@ export function StylesSelector({
               onClick={() => toggle(s.id)}
               aria-pressed={active}
               className={cn(
-                "rounded-sm border px-3.5 py-1.5 text-[13px] transition-colors",
+                "group inline-flex items-center gap-1.5 rounded-sm border px-3.5 py-1.5 text-[13px] transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] active:translate-y-px",
                 active
                   ? "border-primary bg-primary text-primary-foreground shadow-[var(--shadow-ink)]"
-                  : "border-border text-muted-foreground hover:border-foreground/35 hover:text-foreground",
+                  : "border-border text-muted-foreground hover:-translate-y-0.5 hover:border-foreground/35 hover:text-foreground",
               )}
             >
+              <Check
+                className={cn(
+                  "size-3.5 transition-all duration-200",
+                  active ? "scale-100 opacity-100" : "-ml-1.5 w-0 scale-0 opacity-0",
+                )}
+                strokeWidth={2.5}
+              />
               {s.name}
             </button>
           );
@@ -68,7 +78,15 @@ export function StylesSelector({
         <Button size="sm" onClick={save} disabled={pending}>
           {pending ? "Salvando…" : "Salvar estilos"}
         </Button>
-        {msg && <span className="text-sm text-muted-foreground">{msg}</span>}
+        {msg &&
+          (ok ? (
+            <span className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-emerald-500">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              {msg}
+            </span>
+          ) : (
+            <span className="text-sm text-destructive">{msg}</span>
+          ))}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Compass, Inbox } from "lucide-react";
 import { requireActor } from "@/server/auth-context";
 import { prisma } from "@inkvision/db";
 import { repositories } from "@/server/container";
@@ -73,7 +73,22 @@ export default async function PainelPage() {
           {hasUnread && <MarkReadButton />}
         </div>
         {notifications.length === 0 ? (
-          <p className="py-6 text-sm text-muted-foreground">Nada por aqui ainda.</p>
+          <div className="flex flex-col items-center gap-4 py-16 text-center">
+            <Inbox className="size-7 text-muted-foreground/50" strokeWidth={1.5} />
+            <div>
+              <p className="eyebrow">Caixa vazia</p>
+              <p className="mt-2 font-display text-2xl font-light leading-tight">Nada por aqui ainda</p>
+              <p className="mx-auto mt-2 max-w-xs text-sm text-muted-foreground">
+                Atualizações dos seus pedidos e mensagens vão aparecer aqui.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/tatuadores">
+                <Compass />
+                Explorar tatuadores
+              </Link>
+            </Button>
+          </div>
         ) : (
           <ul>
             {notifications.map((n) => {
@@ -146,7 +161,7 @@ export default async function PainelPage() {
               return (
                 <li
                   key={s.id}
-                  className="flex flex-wrap items-center justify-between gap-4 border-b border-border py-5"
+                  className="flex flex-wrap items-center justify-between gap-4 rounded-sm border-b border-border py-5 transition-colors hover:bg-muted/40"
                 >
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="font-display text-xl leading-tight">{s.name}</span>
@@ -181,13 +196,28 @@ export default async function PainelPage() {
       )}
 
       {studios.length === 0 && actor.platformRole !== "ADMIN" && (
-        <p className="mt-14 text-muted-foreground">
-          Explore{" "}
-          <Link href="/tatuadores" className="ink-link text-foreground">
-            tatuadores
-          </Link>{" "}
-          para começar um projeto.
-        </p>
+        <section className="mt-14 border-t border-border">
+          <div className="flex flex-col items-center gap-5 py-20 text-center">
+            <Compass className="size-8 text-muted-foreground/50" strokeWidth={1.5} />
+            <div>
+              <p className="eyebrow">Comece um projeto</p>
+              <p className="mt-3 font-display text-3xl font-light leading-[1.05] tracking-[-0.02em] sm:text-4xl">
+                Sua próxima tatuagem
+                <br />
+                começa <span className="italic text-primary">aqui</span>
+              </p>
+              <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                Explore tatuadores por estilo, converse no chat e veja a arte na sua pele antes da agulha.
+              </p>
+            </div>
+            <Button asChild>
+              <Link href="/tatuadores">
+                Explorar tatuadores
+                <ArrowUpRight />
+              </Link>
+            </Button>
+          </div>
+        </section>
       )}
     </div>
   );

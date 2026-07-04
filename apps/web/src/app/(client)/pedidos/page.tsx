@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, PenTool } from "lucide-react";
 import { requireActor } from "@/server/auth-context";
 import { useCases } from "@/server/container";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/order/status-badge";
 
 export default async function ClientOrdersPage() {
@@ -25,20 +26,33 @@ export default async function ClientOrdersPage() {
       </div>
 
       {orders.length === 0 ? (
-        <p className="mt-16 font-display text-2xl text-muted-foreground">
-          Você ainda não tem pedidos.{" "}
-          <Link href="/tatuadores" className="ink-link text-foreground">
-            Encontre um tatuador
-          </Link>{" "}
-          para começar.
-        </p>
+        <div className="mt-8 flex flex-col items-center gap-5 border-t border-border py-24 text-center">
+          <PenTool className="size-8 text-muted-foreground/50" strokeWidth={1.5} />
+          <div>
+            <p className="eyebrow">Nenhum projeto ainda</p>
+            <p className="mt-3 font-display text-3xl font-light leading-[1.05] tracking-[-0.02em] sm:text-4xl">
+              Seu primeiro pedido
+              <br />
+              espera por <span className="italic text-primary">você</span>
+            </p>
+            <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
+              Escolha um artista, aprove a arte no chat e acompanhe cada etapa por aqui.
+            </p>
+          </div>
+          <Button asChild>
+            <Link href="/tatuadores">
+              Encontrar um tatuador
+              <ArrowUpRight />
+            </Link>
+          </Button>
+        </div>
       ) : (
         <ul className="mt-8 border-t border-border">
           {orders.map((o, i) => (
             <li key={o.id}>
               <Link
                 href={`/pedidos/${o.id}`}
-                className="group grid grid-cols-[2rem_1fr_auto] items-center gap-4 border-b border-border py-5 transition-colors hover:bg-muted/40 sm:gap-6 sm:px-2"
+                className="group grid grid-cols-[2rem_1fr_auto] items-center gap-4 rounded-sm border-b border-border py-5 transition-colors hover:bg-muted/40 sm:gap-6 sm:px-2"
               >
                 <span className="font-mono text-xs text-muted-foreground">
                   {String(i + 1).padStart(2, "0")}

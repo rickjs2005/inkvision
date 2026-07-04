@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { UploadCloud } from "lucide-react";
 import { sendDesignAction } from "@/server/actions/simulation";
 import { uploadFile } from "@/lib/upload";
+import { FloatingTextarea } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -97,12 +98,12 @@ export function SendDesignPanel({
         />
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="notes" className="eyebrow">
-          Observações
-        </Label>
-        <Input id="notes" name="notes" placeholder="Notas para o cliente (opcional)" />
-      </div>
+      <FloatingTextarea
+        id="notes"
+        name="notes"
+        label="Observações para o cliente (opcional)"
+        rows={3}
+      />
 
       <div>
         <Button type="submit" disabled={busy}>
