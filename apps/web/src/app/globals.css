@@ -3,55 +3,67 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * InkVision — sistema "Ateliê de Tinta".
+ * Paleta Ink Noir + Vermilion: osso (papel), tinta preta quente e um vermelhão
+ * saturado como único acento. Nada de violeta genérico.
+ */
 :root {
-  --radius: 0.75rem;
+  --radius: 0.4rem;
 
-  --background: oklch(0.99 0 0);
-  --foreground: oklch(0.16 0.01 285);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.16 0.01 285);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.16 0.01 285);
+  --background: #f4f1ea;   /* osso / papel */
+  --foreground: #16130f;   /* tinta preta quente */
+  --card: #fbf9f4;         /* papel um tom acima */
+  --card-foreground: #16130f;
+  --popover: #fbf9f4;
+  --popover-foreground: #16130f;
 
-  /* Accent InkVision — violeta tinta */
-  --primary: oklch(0.55 0.22 295);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.96 0.01 285);
-  --secondary-foreground: oklch(0.21 0.01 285);
-  --muted: oklch(0.96 0.01 285);
-  --muted-foreground: oklch(0.5 0.02 285);
-  --accent: oklch(0.96 0.01 285);
-  --accent-foreground: oklch(0.21 0.01 285);
-  --destructive: oklch(0.58 0.23 27);
-  --destructive-foreground: oklch(0.99 0 0);
+  --primary: #d6381f;      /* vermelhão de tinta */
+  --primary-foreground: #fdf6ee;
+  --secondary: #ece7db;
+  --secondary-foreground: #2a251d;
+  --muted: #ebe6da;
+  --muted-foreground: #6d6557;   /* cinza quente */
+  --accent: #eee6d6;
+  --accent-foreground: #2a251d;
+  --destructive: #b3261e;
+  --destructive-foreground: #fdf6ee;
 
-  --border: oklch(0.92 0.01 285);
-  --input: oklch(0.92 0.01 285);
-  --ring: oklch(0.55 0.22 295);
+  --sand: #b8ae9c;         /* areia — apoio */
+  --border: #ddd5c5;       /* hairline quente */
+  --input: #d4cbb9;
+  --ring: #d6381f;
+
+  --shadow-ink: 0 1px 2px rgba(22, 19, 15, 0.06), 0 8px 24px -12px rgba(22, 19, 15, 0.18);
+  --shadow-lift: 0 2px 4px rgba(22, 19, 15, 0.05), 0 22px 48px -20px rgba(22, 19, 15, 0.35);
 }
 
 .dark {
-  --background: oklch(0.14 0.008 285);
-  --foreground: oklch(0.97 0 0);
-  --card: oklch(0.17 0.01 285);
-  --card-foreground: oklch(0.97 0 0);
-  --popover: oklch(0.17 0.01 285);
-  --popover-foreground: oklch(0.97 0 0);
+  --background: #14110e;   /* tinta */
+  --foreground: #f2eee6;   /* osso */
+  --card: #1b1712;
+  --card-foreground: #f2eee6;
+  --popover: #1b1712;
+  --popover-foreground: #f2eee6;
 
-  --primary: oklch(0.68 0.19 295);
-  --primary-foreground: oklch(0.14 0.008 285);
-  --secondary: oklch(0.24 0.01 285);
-  --secondary-foreground: oklch(0.97 0 0);
-  --muted: oklch(0.24 0.01 285);
-  --muted-foreground: oklch(0.68 0.02 285);
-  --accent: oklch(0.28 0.02 295);
-  --accent-foreground: oklch(0.97 0 0);
-  --destructive: oklch(0.65 0.2 25);
-  --destructive-foreground: oklch(0.97 0 0);
+  --primary: #ff5a40;      /* vermelhão mais vivo no escuro */
+  --primary-foreground: #14110e;
+  --secondary: #241f19;
+  --secondary-foreground: #f2eee6;
+  --muted: #221d17;
+  --muted-foreground: #a79e8e;
+  --accent: #2a2119;
+  --accent-foreground: #f2eee6;
+  --destructive: #ff6b53;
+  --destructive-foreground: #14110e;
 
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.68 0.19 295);
+  --sand: #8a8071;
+  --border: rgba(242, 238, 230, 0.11);
+  --input: rgba(242, 238, 230, 0.14);
+  --ring: #ff5a40;
+
+  --shadow-ink: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+  --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.5), 0 26px 60px -24px rgba(0, 0, 0, 0.8);
 }
 
 @theme inline {
@@ -71,23 +83,122 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-sand: var(--sand);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 10px);
+
+  --shadow-ink: var(--shadow-ink);
+  --shadow-lift: var(--shadow-lift);
 }
 
 @layer base {
   * {
     border-color: var(--border);
   }
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01" 1, "cv01" 1, "calt" 1;
+  }
+
+  /* Grão de filme fino — material de ateliê, custo zero (data URI fixo). */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.035;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .dark body::after {
+    mix-blend-mode: screen;
+    opacity: 0.045;
+  }
+
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 400;
+  }
+
+  ::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, var(--foreground) 22%, transparent);
+    border: 3px solid var(--background);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklab, var(--foreground) 36%, transparent);
+  }
+}
+
+@layer components {
+  /* Eyebrow / label em small-caps monoespaçado — assinatura tipográfica. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  /* Título display com ligaduras/opsz da Fraunces. */
+  .font-display {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+  }
+
+  /* Régua fina de ateliê. */
+  .rule {
+    height: 1px;
+    background: linear-gradient(to right, var(--border), transparent);
+  }
+
+  /* Link com sublinhado que "cresce" (sangria de tinta). */
+  .ink-link {
+    background-image: linear-gradient(var(--primary), var(--primary));
+    background-size: 0% 1.5px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .ink-link:hover {
+    background-size: 100% 1.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

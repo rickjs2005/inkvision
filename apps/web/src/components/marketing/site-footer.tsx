@@ -1,46 +1,71 @@
 import Link from "next/link";
 import { TATTOO_STYLES } from "@inkvision/shared";
+import { Wordmark } from "@/components/brand/wordmark";
+
+const COLUMNS = [
+  {
+    label: "Plataforma",
+    links: [
+      { href: "/tatuadores", label: "Tatuadores" },
+      { href: "/estudios", label: "Estúdios" },
+      { href: "/cadastro", label: "Criar conta" },
+    ],
+  },
+  {
+    label: "Estilos",
+    links: TATTOO_STYLES.slice(0, 5).map((s) => ({
+      href: `/tatuadores?estilo=${s.slug}`,
+      label: s.name,
+    })),
+  },
+  {
+    label: "Para estúdios",
+    links: [
+      { href: "/cadastro", label: "Comece grátis" },
+      { href: "/login", label: "Entrar" },
+    ],
+  },
+];
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border">
-      <div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
+    <footer className="mt-24 border-t border-border">
+      {/* Declaração editorial em display, sobreposta à régua. */}
+      <div className="mx-auto max-w-6xl px-6 pt-16">
+        <p className="max-w-3xl font-display text-3xl leading-[1.1] tracking-[-0.02em] sm:text-[2.6rem]">
+          Sua próxima tatuagem,{" "}
+          <span className="text-muted-foreground">visualizada antes da agulha.</span>
+        </p>
+      </div>
+
+      <div className="mx-auto grid max-w-6xl gap-12 px-6 py-14 md:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div>
-          <p className="text-lg font-bold">◈ InkVision</p>
-          <p className="mt-3 max-w-xs text-sm text-muted-foreground">
-            Encontre artistas, aprove a arte e veja sua tatuagem na própria pele antes da agulha.
+          <Wordmark />
+          <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
+            Encontre artistas, aprove a arte no chat e veja o resultado na sua própria pele.
           </p>
         </div>
-        <div>
-          <p className="mb-3 text-sm font-medium">Plataforma</p>
-          <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-            <li><Link href="/tatuadores" className="hover:text-foreground">Tatuadores</Link></li>
-            <li><Link href="/estudios" className="hover:text-foreground">Estúdios</Link></li>
-            <li><Link href="/cadastro" className="hover:text-foreground">Criar conta</Link></li>
-          </ul>
-        </div>
-        <div>
-          <p className="mb-3 text-sm font-medium">Estilos</p>
-          <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-            {TATTOO_STYLES.slice(0, 5).map((s) => (
-              <li key={s.slug}>
-                <Link href={`/tatuadores?estilo=${s.slug}`} className="hover:text-foreground">
-                  {s.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <p className="mb-3 text-sm font-medium">Para estúdios</p>
-          <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-            <li><Link href="/cadastro" className="hover:text-foreground">Comece grátis</Link></li>
-            <li><Link href="/login" className="hover:text-foreground">Entrar</Link></li>
-          </ul>
-        </div>
+        {COLUMNS.map((col) => (
+          <div key={col.label}>
+            <p className="eyebrow mb-4">{col.label}</p>
+            <ul className="flex flex-col gap-2.5 text-sm text-muted-foreground">
+              {col.links.map((l) => (
+                <li key={l.href + l.label}>
+                  <Link href={l.href} className="ink-link transition-colors hover:text-foreground">
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
-      <div className="border-t border-border py-6 text-center text-sm text-muted-foreground">
-        © InkVision · SaaS para estúdios de tatuagem
+
+      <div className="border-t border-border">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-6 py-6 text-xs text-muted-foreground sm:flex-row">
+          <span className="font-mono tracking-wide">© {new Date().getFullYear()} INKVISION</span>
+          <span className="font-mono tracking-wide">SAAS PARA ESTÚDIOS DE TATUAGEM · FEITO NO BRASIL</span>
+        </div>
       </div>
     </footer>
   );

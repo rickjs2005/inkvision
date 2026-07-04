@@ -1,11 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Fraunces } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PwaRegister } from "@/components/pwa-register";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+// Serifa de display editorial (opsz alto p/ títulos com contraste).
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  axes: ["opsz"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -34,15 +42,19 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#141416" },
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#14110e" },
+    { media: "(prefers-color-scheme: light)", color: "#f4f1ea" },
   ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
+    <html
+      lang="pt-BR"
+      suppressHydrationWarning
+      className={`${fraunces.variable} ${GeistSans.variable} ${GeistMono.variable}`}
+    >
+      <body className="font-sans antialiased">
         <ThemeProvider>{children}</ThemeProvider>
         <Toaster />
         <PwaRegister />

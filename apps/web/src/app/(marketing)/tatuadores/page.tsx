@@ -1,9 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { ArrowUpRight, Star } from "lucide-react";
 import { repositories } from "@/server/container";
 import { getDiscoveryArtists } from "@/server/public-cache";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
@@ -44,16 +43,28 @@ export default async function ArtistsDiscoveryPage({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12">
-      <h1 className="text-3xl font-bold tracking-tight">Tatuadores</h1>
-      <p className="mt-1 text-muted-foreground">{total} artista(s) disponíveis</p>
+    <div className="mx-auto max-w-6xl px-6 py-16">
+      {/* Cabeçalho editorial */}
+      <div className="flex items-center gap-3">
+        <span className="h-px w-8 bg-primary" />
+        <span className="eyebrow">O diretório · Ateliês & artistas</span>
+      </div>
+      <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+        <h1 className="font-display text-5xl font-light leading-[0.95] tracking-[-0.025em] sm:text-6xl">
+          Tatuadores
+        </h1>
+        <p className="font-mono text-sm text-muted-foreground">
+          {String(total).padStart(2, "0")} {total === 1 ? "artista" : "artistas"}
+        </p>
+      </div>
 
-      <div className="mt-6 flex flex-wrap gap-2">
+      {/* Filtros — ticks editoriais, não pílulas */}
+      <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 border-y border-border py-4">
         <Link
           href="/tatuadores"
           className={cn(
-            "rounded-full border px-4 py-2 text-sm",
-            !sp.estilo ? "border-primary bg-primary/15 text-primary" : "border-border text-muted-foreground",
+            "text-sm transition-colors",
+            !sp.estilo ? "font-medium text-primary" : "text-muted-foreground hover:text-foreground",
           )}
         >
           Todos
@@ -63,10 +74,10 @@ export default async function ArtistsDiscoveryPage({
             key={s.id}
             href={`/tatuadores?estilo=${s.slug}`}
             className={cn(
-              "rounded-full border px-4 py-2 text-sm",
+              "text-sm transition-colors",
               sp.estilo === s.slug
-                ? "border-primary bg-primary/15 text-primary"
-                : "border-border text-muted-foreground hover:text-foreground",
+                ? "font-medium text-primary"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             {s.name}
@@ -75,66 +86,73 @@ export default async function ArtistsDiscoveryPage({
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-12 text-muted-foreground">Nenhum tatuador encontrado para este filtro.</p>
+        <p className="mt-16 font-display text-2xl text-muted-foreground">
+          Nenhum tatuador para este filtro.
+        </p>
       ) : (
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((a) => (
-            <Link key={a.id} href={`/t/${a.id}`}>
-              <Card className="h-full transition-colors hover:border-primary">
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">{a.name}</span>
-                    {a.ratingCount > 0 && (
-                      <span className="text-sm text-muted-foreground">★ {a.ratingAvg?.toFixed(1)}</span>
-                    )}
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-1">
-                    {a.styles.slice(0, 3).map((s) => (
-                      <Badge key={s.id} variant="neutral">
-                        {s.name}
-                      </Badge>
-                    ))}
-                  </div>
+        <ul className="mt-4">
+          {items.map((a, i) => (
+            <li key={a.id}>
+              <Link
+                href={`/t/${a.id}`}
+                className="group grid grid-cols-[2rem_1fr_auto] items-center gap-4 border-b border-border py-6 transition-colors hover:bg-muted/40 sm:grid-cols-[3rem_1.4fr_1fr_auto] sm:gap-6 sm:px-2"
+              >
+                <span className="font-mono text-xs text-muted-foreground">
+                  {String((page - 1) * PAGE_SIZE + i + 1).padStart(2, "0")}
+                </span>
+                <div className="min-w-0">
+                  <span className="font-display text-2xl leading-tight transition-colors group-hover:text-primary sm:text-3xl">
+                    {a.name}
+                  </span>
                   {a.avgPriceCents != null && (
-                    <p className="mt-3 text-sm text-muted-foreground">
-                      ⌀ R$ {(a.avgPriceCents / 100).toFixed(0)}
-                    </p>
+                    <span className="ml-3 font-mono text-xs text-muted-foreground">
+                      a partir de R$ {(a.avgPriceCents / 100).toFixed(0)}
+                    </span>
                   )}
-                </CardContent>
-              </Card>
-            </Link>
+                </div>
+                <div className="hidden flex-wrap gap-1.5 sm:flex">
+                  {a.styles.slice(0, 3).map((s) => (
+                    <span
+                      key={s.id}
+                      className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground"
+                    >
+                      {s.name}
+                    </span>
+                  ))}
+                </div>
+                <div className="flex items-center gap-4 justify-self-end">
+                  {a.ratingCount > 0 && (
+                    <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+                      <Star className="size-3.5 fill-primary text-primary" />
+                      {a.ratingAvg?.toFixed(1)}
+                    </span>
+                  )}
+                  <ArrowUpRight className="size-5 text-muted-foreground transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
+                </div>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       {totalPages > 1 && (
-        <div className="mt-10 flex items-center justify-between">
+        <div className="mt-12 flex items-center justify-between">
           {page > 1 ? (
-            <Link
-              href={pageHref(sp, page - 1)}
-              className="rounded-full border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
-            >
+            <Link href={pageHref(sp, page - 1)} className="ink-link text-sm hover:text-primary">
               ← Anterior
             </Link>
           ) : (
-            <span className="rounded-full border border-border/40 px-4 py-2 text-sm text-muted-foreground/40">
-              ← Anterior
-            </span>
+            <span className="text-sm text-muted-foreground/40">← Anterior</span>
           )}
-          <span className="text-sm text-muted-foreground">
-            Página {page} de {totalPages}
+          <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            {String(page).padStart(2, "0")} / {String(totalPages).padStart(2, "0")}
           </span>
           {page < totalPages ? (
-            <Link
-              href={pageHref(sp, page + 1)}
-              className="rounded-full border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
-            >
+            <Link href={pageHref(sp, page + 1)} className="ink-link text-sm hover:text-primary">
               Próxima →
             </Link>
           ) : (
-            <span className="rounded-full border border-border/40 px-4 py-2 text-sm text-muted-foreground/40">
-              Próxima →
-            </span>
+            <span className="text-sm text-muted-foreground/40">Próxima →</span>
           )}
         </div>
       )}

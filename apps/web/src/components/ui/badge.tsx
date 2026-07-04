@@ -2,16 +2,17 @@ import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
 import { cn } from "@/lib/utils";
 
+// Tick quadrado com hairline — mais editorial que a pílula default.
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+  "inline-flex items-center rounded-[4px] border px-2 py-0.5 text-[11px] font-medium tracking-tight",
   {
     variants: {
       variant: {
-        default: "border-transparent bg-primary/15 text-primary",
-        neutral: "border-border bg-muted text-muted-foreground",
-        success: "border-transparent bg-emerald-500/15 text-emerald-500",
-        warning: "border-transparent bg-amber-500/15 text-amber-500",
-        destructive: "border-transparent bg-destructive/15 text-destructive",
+        default: "border-primary/25 bg-primary/10 text-primary",
+        neutral: "border-border bg-transparent text-muted-foreground",
+        success: "border-emerald-600/25 bg-emerald-600/10 text-emerald-700 dark:text-emerald-400",
+        warning: "border-amber-600/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+        destructive: "border-destructive/25 bg-destructive/10 text-destructive",
       },
     },
     defaultVariants: { variant: "default" },
