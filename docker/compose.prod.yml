@@ -1,0 +1,101 @@
+name: inkvision
+
+# Deploy de produção. Preencha os segredos em docker/.env.prod (ver .env.prod.example).
+#   docker compose -f docker/compose.prod.yml --env-file docker/.env.prod up -d --build
+
+x-app-env: &app-env
+  NODE_ENV: production
+  APP_URL: ${APP_URL}
+  NEXT_PUBLIC_APP_URL: ${APP_URL}
+  ROOT_DOMAIN: ${ROOT_DOMAIN}
+  # App conecta como role NÃO-superusuário (RLS vale).
+  DATABASE_URL: postgres://inkvision_app:${APP_DB_PASSWORD}@postgres:5432/inkvision
+  REDIS_URL: redis://redis:6379
+  BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+  BETTER_AUTH_URL: ${APP_URL}
+  NEXT_PUBLIC_REALTIME_URL: ${REALTIME_PUBLIC_URL}
+  REALTIME_EMIT_URL: http://realtime:4000
+  REALTIME_EMIT_SECRET: ${REALTIME_EMIT_SECRET}
+  R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
+  R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+  R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+  R2_BUCKET: ${R2_BUCKET}
+  R2_PUBLIC_URL: ${R2_PUBLIC_URL}
+  STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+  STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+  STRIPE_PLATFORM_FEE_PERCENT: ${STRIPE_PLATFORM_FEE_PERCENT:-10}
+  AI_SIMULATION_PROVIDER: ${AI_SIMULATION_PROVIDER:-mock}
+  FAL_API_KEY: ${FAL_API_KEY:-}
+  REPLICATE_API_TOKEN: ${REPLICATE_API_TOKEN:-}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: inkvision
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Init: migrations + role do app + RLS (como superusuário). Roda e sai.
+  migrate:
+    build: { context: .., dockerfile: docker/migrate.Dockerfile }
+    restart: "no"
+    environment:
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/inkvision
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  web:
+    build: { context: .., dockerfile: docker/web.Dockerfile }
+    restart: unless-stopped
+    environment: *app-env
+    ports: ["3000:3000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+
+  realtime:
+    build: { context: .., dockerfile: docker/realtime.Dockerfile }
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      REALTIME_PORT: "4000"
+      APP_URL: ${APP_URL}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      REALTIME_EMIT_SECRET: ${REALTIME_EMIT_SECRET}
+    ports: ["4000:4000"]
+
+  worker:
+    build: { context: .., dockerfile: docker/worker.Dockerfile }
+    restart: unless-stopped
+    environment: *app-env
+    depends_on:
+      redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+
+volumes:
+  pgdata:
+  redisdata:

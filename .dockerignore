@@ -1,0 +1,12 @@
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/.git
+**/*.log
+.env
+.env.*
+!.env.example
+**/.env
+docker/.env.prod
+scratchpad

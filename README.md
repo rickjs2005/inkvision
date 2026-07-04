@@ -55,7 +55,7 @@ apps/web  (presentation + composition root)
 - **Sprint 11 — Admin + LGPD ✅** dashboard com métricas (MRR, receita, estúdios, uso de IA, gráficos) via bypass de RLS por admin (`withAdmin`), logs de auditoria, e autoatendimento LGPD em `/conta` (exportar dados em JSON + excluir conta com anonimização).
 - **Sprint 12 — Hardening ✅** headers de segurança (CSP, HSTS, X-Frame-Options, etc.) verificados no servidor real, rate limiting (janela deslizante) na rota de upload, checagem de origem (CSRF), sanitização de texto livre, e **PWA** (manifest + service worker offline). Checklist em [docs/SECURITY.md](docs/SECURITY.md).
 - **Fluxo completo verificado ponta-a-ponta contra Postgres real**: `verify-flow.ts` (orçamento→avaliação) e `verify-admin.ts` (métricas cross-tenant + authz). 59 testes.
-- **Produto pronto.** Falta só o **deploy** (Dockerfiles + Coolify na VPS) — combinado de fazer depois.
+- **Deploy pronto ✅** Dockerfiles (web standalone, realtime, worker, migrate/init), `docker/compose.prod.yml`, migration inicial, init que cria o role não-superusuário + aplica RLS, e o guia [docs/DEPLOY.md](docs/DEPLOY.md) (Docker Compose e Coolify). Falta só rodar na VPS.
 
 `AI_SIMULATION_PROVIDER=mock` (padrão) roda sem chaves. `pnpm dev` sobe web + realtime + worker.
 

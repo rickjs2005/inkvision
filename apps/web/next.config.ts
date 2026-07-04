@@ -39,6 +39,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Imagem Docker enxuta. O Next infere a raiz do monorepo pelo lockfile (no
+  // container, /app) para o tracing do standalone.
+  output: "standalone",
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
