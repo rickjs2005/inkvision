@@ -16,6 +16,32 @@ export const prisma =
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 /**
+ * Guard de boot: garante que o app NÃO está conectado como superusuário nem como
+ * um role com BYPASSRLS. Se estiver, o RLS é silenciosamente ignorado pelo
+ * Postgres e há vazamento cross-tenant. Em produção isso é fatal (throw); fora
+ * de produção apenas avisa, para não travar o dev que usa o role local.
+ *
+ * Não é chamada aqui de propósito — o boot da aplicação deve invocá-la.
+ */
+export async function assertAppRoleSafe(): Promise<void> {
+  const rows = await prisma.$queryRaw<{ unsafe: boolean }[]>`
+    SELECT COALESCE(rolsuper, false) OR COALESCE(rolbypassrls, false) AS unsafe
+    FROM pg_roles
+    WHERE rolname = current_user
+  `;
+  const unsafe = rows[0]?.unsafe === true;
+  if (!unsafe) return;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "SEGURANÇA: o app está conectado como superusuário/BYPASSRLS — o RLS não vale. Configure um role dedicado (inkvision_app).",
+    );
+  }
+  console.warn(
+    "[assertAppRoleSafe] AVISO: conectado como superusuário/BYPASSRLS — o RLS está sendo ignorado. Use um role dedicado (inkvision_app) antes de ir para produção.",
+  );
+}
+
+/**
  * Cliente com escopo de tenant (Camada 1 — extensão que injeta studioId).
  * Não ativa RLS por si só; para a defesa completa use `withStudio`.
  */

@@ -19,6 +19,12 @@ export interface PaymentGateway {
     orderId: string;
     kind: PaymentKind;
     amountCents: number;
+    /** Conta conectada do estúdio (destination charge). Ignorado pelo mock. */
+    connectedAccountId?: string | null;
+    /** Taxa da plataforma em centavos (application fee). Ignorado pelo mock. */
+    applicationFeeCents?: number;
+    /** Metadados propagados ao provedor e devolvidos no webhook. */
+    metadata?: Record<string, string>;
   }): Promise<CheckoutSession>;
   /** Sessão de checkout da assinatura do plano (Billing). */
   createSubscriptionCheckout(input: {

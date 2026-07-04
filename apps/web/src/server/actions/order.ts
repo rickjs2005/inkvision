@@ -5,12 +5,16 @@ import type { CreateOrderInput } from "@inkvision/core";
 import { getActor, requireActor } from "@/server/auth-context";
 import { run, type ActionResult } from "@/server/action-result";
 import { useCases } from "@/server/container";
+import { enforceRateLimit } from "@/server/rate-limit";
 
 export async function createOrderAction(
   input: CreateOrderInput,
 ): Promise<ActionResult<{ orderId: string }>> {
   const actor = await getActor();
   const res = await run(async () => {
+    // actor pode ser null (getActor); o caso de uso barra por auth. Só aplicamos
+    // o rate limit quando há usuário identificado.
+    if (actor) await enforceRateLimit(`order:${actor.userId}`, 10, 60_000);
     const order = await useCases.createOrder.execute(actor, input);
     return { orderId: order.id };
   });

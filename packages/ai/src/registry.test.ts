@@ -18,8 +18,16 @@ describe("AI registry", () => {
     expect(Object.keys(res.variants)).toEqual(["small", "medium", "large"]);
   });
 
-  it("provider real sem chave falha explicitamente", async () => {
+  it("provider real (fal) sem chave falha explicitamente", async () => {
     const p = getSimulationProvider("fal");
+    expect(p.name).toBe("fal");
+    await expect(
+      p.simulate({ bodyPhotoUrl: "x", designUrl: "y", placement: { x: 0, y: 0, scale: 1, rotation: 0 } }),
+    ).rejects.toThrow(/FAL_API_KEY/);
+  });
+
+  it("provider stub (replicate) sem chave falha explicitamente", async () => {
+    const p = getSimulationProvider("replicate");
     await expect(
       p.simulate({ bodyPhotoUrl: "x", designUrl: "y", placement: { x: 0, y: 0, scale: 1, rotation: 0 } }),
     ).rejects.toThrow(/não configurado/);

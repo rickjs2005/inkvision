@@ -36,17 +36,25 @@ export class StartOrderPaymentUseCase {
 
     const amountCents = amountFor(kind, order);
     if (amountCents <= 0) throw new ValidationError("Valor de pagamento inválido.");
+    const applicationFeeCents = feeFor(amountCents, this.deps.platformFeePercent);
 
     // Idempotente: reaproveita um pagamento pendente do mesmo tipo.
     const existing = await this.deps.payments.findPendingForOrder(order.studioId, orderId, kind);
-    const session = await this.deps.gateway.createOrderCheckout({ orderId, kind, amountCents });
+    const session = await this.deps.gateway.createOrderCheckout({
+      orderId,
+      kind,
+      amountCents,
+      connectedAccountId: studio.stripeAccountId,
+      applicationFeeCents,
+      metadata: { orderId, kind, studioId: order.studioId },
+    });
     if (!existing) {
       await this.deps.payments.createPending({
         studioId: order.studioId,
         orderId,
         kind,
         amountCents,
-        feeCents: feeFor(amountCents, this.deps.platformFeePercent),
+        feeCents: applicationFeeCents,
         providerRef: session.providerRef,
       });
     }
@@ -99,5 +107,52 @@ export class ConfirmOrderPaymentUseCase {
       entityId: orderId,
     });
     return updated;
+  }
+}
+
+/**
+ * Confirma o pagamento a partir de um WEBHOOK do provedor (contexto de sistema,
+ * SEM actor). É o caminho de produção: só é chamado após verificar a assinatura
+ * do webhook, e os ids vêm do metadata que NÓS setamos no checkout. Idempotente.
+ */
+export class ConfirmPaymentByReferenceUseCase {
+  constructor(private readonly deps: PaymentUseCaseDeps) {}
+
+  async execute(input: { orderId: string; studioId: string; kind: PaymentKind }): Promise<void> {
+    const { orderId, studioId, kind } = input;
+    const order = await this.deps.orders.findByIdForStudio(orderId, studioId);
+    if (!order) throw new NotFoundError("Pedido");
+
+    const rule = RULES[kind];
+    if (order.status === rule.to) return; // já confirmado — idempotente (webhook reentrante)
+    if (order.status !== rule.requires) return; // fora de sequência — ignora com segurança
+
+    const payment = await this.deps.payments.findPendingForOrder(studioId, orderId, kind);
+    if (payment) await this.deps.payments.markSucceeded(studioId, payment.id);
+
+    assertTransition(order.status, rule.to);
+    await this.deps.orders.transition(orderId, studioId, {
+      from: order.status,
+      to: rule.to,
+      actorId: "system",
+      metadata: { payment: kind, source: "webhook" },
+    });
+
+    const artist = await this.deps.artists.findById(order.artistId);
+    if (artist) {
+      await this.deps.notifications.create({
+        userId: artist.userId,
+        type: kind === "DEPOSIT" ? "payment.deposit_paid" : "payment.final_paid",
+        payload: { orderId },
+      });
+    }
+    await this.deps.audit.log({
+      studioId,
+      userId: null,
+      action: kind === "DEPOSIT" ? "payment.deposit_succeeded" : "payment.final_succeeded",
+      entity: "Order",
+      entityId: orderId,
+      metadata: { source: "stripe_webhook" },
+    });
   }
 }

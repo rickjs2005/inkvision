@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      BETTER_AUTH_SECRET: ci-secret-placeholder-min-16-chars
+      BETTER_AUTH_URL: http://localhost:3000
+      APP_URL: http://localhost:3000
+      ROOT_DOMAIN: localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @inkvision/db generate
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      - name: Test
+        run: pnpm -r test
+
+      - name: Write apps/web/.env
+        run: |
+          cat > apps/web/.env <<EOF
+          DATABASE_URL=${DATABASE_URL}
+          BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+          BETTER_AUTH_URL=${BETTER_AUTH_URL}
+          APP_URL=${APP_URL}
+          ROOT_DOMAIN=${ROOT_DOMAIN}
+          NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+          EOF
+
+      - name: Build web
+        run: pnpm --filter @inkvision/web build

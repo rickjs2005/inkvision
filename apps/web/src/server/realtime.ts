@@ -2,9 +2,29 @@ import "server-only";
 import { SignJWT } from "jose";
 import { conversationRoom } from "@inkvision/shared";
 
-const SECRET = new TextEncoder().encode(process.env.BETTER_AUTH_SECRET ?? "dev-secret-change-me");
+/**
+ * Lê um segredo obrigatório do ambiente. Em produção, falha duro se ausente
+ * (tokens de sala forjáveis / /emit spoofável). Fora de produção, cai num
+ * default de dev com um aviso.
+ */
+function requireSecret(name: string): string {
+  const value = process.env[name];
+  if (value) return value;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(`${name} é obrigatório em produção`);
+  }
+  const devDefaults: Record<string, string> = {
+    BETTER_AUTH_SECRET: "dev-secret-change-me",
+    REALTIME_EMIT_SECRET: "dev-emit-secret",
+  };
+  const fallback = devDefaults[name] ?? "dev-secret-change-me";
+  console.warn(`⚠️  ${name} ausente — usando default de dev. NÃO use em produção.`);
+  return fallback;
+}
+
+const SECRET = new TextEncoder().encode(requireSecret("BETTER_AUTH_SECRET"));
 const EMIT_URL = process.env.REALTIME_EMIT_URL ?? "http://localhost:4000";
-const EMIT_SECRET = process.env.REALTIME_EMIT_SECRET ?? "dev-emit-secret";
+const EMIT_SECRET = requireSecret("REALTIME_EMIT_SECRET");
 
 /**
  * Emite um token de sala assinado. Só é gerado após o web autorizar o acesso à

@@ -1,4 +1,5 @@
 import { DomainError } from "@inkvision/core";
+import { logError } from "@/lib/logger";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -12,7 +13,11 @@ export async function run<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
     if (e instanceof DomainError) {
       return { ok: false, error: e.message, code: e.code };
     }
-    console.error("[action] erro inesperado:", e);
+    if (process.env.SENTRY_DSN) {
+      const Sentry = await import("@sentry/nextjs");
+      Sentry.captureException(e);
+    }
+    logError(e, { scope: "action" });
     return { ok: false, error: "Algo deu errado. Tente novamente." };
   }
 }

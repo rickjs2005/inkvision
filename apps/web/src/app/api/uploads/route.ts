@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   if (!actor) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
   // Máx. 30 uploads/min por usuário.
-  const rl = rateLimit(`upload:${actor.userId}`, 30, 60_000);
+  const rl = await rateLimit(`upload:${actor.userId}`, 30, 60_000);
   if (!rl.ok) {
     return NextResponse.json(
       { error: "Muitas requisições. Aguarde um momento." },

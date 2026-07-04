@@ -1,4 +1,5 @@
 import type { TattooSimulationProvider } from "./ports";
+import { FalProvider } from "./providers/fal";
 import { MockAiProvider } from "./providers/mock";
 import { RemoteProviderStub } from "./providers/remote-stub";
 
@@ -15,7 +16,7 @@ export function getSimulationProvider(
     case "mock":
       return new MockAiProvider();
     case "fal":
-      return new RemoteProviderStub("fal", "FAL_API_KEY");
+      return new FalProvider();
     case "replicate":
       return new RemoteProviderStub("replicate", "REPLICATE_API_TOKEN");
     case "openai":

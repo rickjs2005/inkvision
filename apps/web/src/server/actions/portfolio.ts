@@ -5,6 +5,7 @@ import type { CreatePortfolioItemInput, UpdatePortfolioItemInput } from "@inkvis
 import { getActor, requireActor } from "@/server/auth-context";
 import { run, type ActionResult } from "@/server/action-result";
 import { useCases } from "@/server/container";
+import { enforceRateLimit } from "@/server/rate-limit";
 
 export async function createPortfolioItemAction(
   artistId: string,
@@ -50,7 +51,11 @@ export async function toggleLikeAction(
   itemId: string,
 ): Promise<ActionResult<{ liked: boolean; likesCount: number }>> {
   const actor = await getActor();
-  return run(() => useCases.toggleLike.execute(actor, itemId));
+  return run(async () => {
+    // actor pode ser null (getActor); o caso de uso barra por auth.
+    if (actor) await enforceRateLimit(`engage:${actor.userId}`, 60, 60_000);
+    return useCases.toggleLike.execute(actor, itemId);
+  });
 }
 
 export async function addCommentAction(
@@ -59,6 +64,8 @@ export async function addCommentAction(
 ): Promise<ActionResult<{ id: string; authorName: string; body: string }>> {
   const actor = await getActor();
   return run(async () => {
+    // actor pode ser null (getActor); o caso de uso barra por auth.
+    if (actor) await enforceRateLimit(`engage:${actor.userId}`, 60, 60_000);
     const c = await useCases.addComment.execute(actor, itemId, { body });
     return { id: c.id, authorName: c.authorName, body: c.body };
   });

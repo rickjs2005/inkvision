@@ -1,4 +1,5 @@
-import { prisma, withStudio } from "@inkvision/db";
+import { Prisma, prisma, withStudio } from "@inkvision/db";
+import { ConflictError } from "@inkvision/core";
 import type { AvailabilityRule, BusyInterval } from "@inkvision/core";
 import type {
   Appointment,
@@ -10,6 +11,22 @@ import type {
 } from "@inkvision/core";
 
 const ACTIVE_APPT = ["CONFIRMED", "RESCHEDULED"] as const;
+
+/**
+ * Detecta a violação da constraint `appointment_no_overlap` (EXCLUDE USING gist)
+ * — o backstop atômico contra overbooking no banco. Numa violação de exclusão o
+ * Postgres retorna SQLSTATE 23P01; via Prisma client isso chega como um
+ * PrismaClientKnownRequestError (P2010/P2034) cuja mensagem carrega o nome da
+ * constraint / a palavra "exclusion". Checamos ambos para robustez.
+ */
+function isOverlapViolation(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (msg.includes("appointment_no_overlap") || msg.includes("exclusion")) return true;
+  if (e instanceof Prisma.PrismaClientKnownRequestError) {
+    return e.code === "P2010" || e.code === "P2034";
+  }
+  return false;
+}
 
 function apptToDomain(a: {
   id: string;
@@ -106,20 +123,27 @@ export class PrismaScheduleRepository implements ScheduleRepository {
   }
 
   async createAppointment(data: CreateAppointmentData): Promise<Appointment> {
-    const a = await withStudio(data.studioId, (tx) =>
-      tx.appointment.create({
-        data: {
-          studioId: data.studioId,
-          orderId: data.orderId,
-          artistId: data.artistId,
-          clientId: data.clientId,
-          startsAt: data.startsAt,
-          endsAt: data.endsAt,
-          status: "CONFIRMED",
-        },
-      }),
-    );
-    return apptToDomain(a);
+    try {
+      const a = await withStudio(data.studioId, (tx) =>
+        tx.appointment.create({
+          data: {
+            studioId: data.studioId,
+            orderId: data.orderId,
+            artistId: data.artistId,
+            clientId: data.clientId,
+            startsAt: data.startsAt,
+            endsAt: data.endsAt,
+            status: "CONFIRMED",
+          },
+        }),
+      );
+      return apptToDomain(a);
+    } catch (e) {
+      if (isOverlapViolation(e)) {
+        throw new ConflictError("Este horário acabou de ser ocupado. Escolha outro.");
+      }
+      throw e;
+    }
   }
 
   async getAppointmentForOrder(studioId: string, orderId: string): Promise<Appointment | null> {
@@ -128,12 +152,19 @@ export class PrismaScheduleRepository implements ScheduleRepository {
   }
 
   async reschedule(studioId: string, appointmentId: string, startsAt: Date, endsAt: Date): Promise<Appointment> {
-    const a = await withStudio(studioId, (tx) =>
-      tx.appointment.update({
-        where: { id: appointmentId },
-        data: { startsAt, endsAt, status: "RESCHEDULED" },
-      }),
-    );
-    return apptToDomain(a);
+    try {
+      const a = await withStudio(studioId, (tx) =>
+        tx.appointment.update({
+          where: { id: appointmentId },
+          data: { startsAt, endsAt, status: "RESCHEDULED" },
+        }),
+      );
+      return apptToDomain(a);
+    } catch (e) {
+      if (isOverlapViolation(e)) {
+        throw new ConflictError("Este horário acabou de ser ocupado. Escolha outro.");
+      }
+      throw e;
+    }
   }
 }

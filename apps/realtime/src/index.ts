@@ -1,7 +1,29 @@
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { jwtVerify } from "jose";
+import { createAdapter } from "@socket.io/redis-adapter";
+import { Redis } from "ioredis";
 import { RT, conversationRoom, userRoom } from "@inkvision/shared";
+
+/**
+ * Lê um segredo obrigatório do ambiente. Em produção, falha duro se ausente
+ * (tokens forjáveis / /emit spoofável seriam a alternativa). Fora de produção,
+ * cai num default de dev com um aviso.
+ */
+function requireSecret(name: string): string {
+  const value = process.env[name];
+  if (value) return value;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(`${name} é obrigatório em produção`);
+  }
+  const devDefaults: Record<string, string> = {
+    BETTER_AUTH_SECRET: "dev-secret-change-me",
+    REALTIME_EMIT_SECRET: "dev-emit-secret",
+  };
+  const fallback = devDefaults[name] ?? "dev-secret-change-me";
+  console.warn(`⚠️  ${name} ausente — usando default de dev. NÃO use em produção.`);
+  return fallback;
+}
 
 /**
  * Serviço de realtime (dev). Relay fino de Socket.IO:
@@ -17,8 +39,8 @@ import { RT, conversationRoom, userRoom } from "@inkvision/shared";
  */
 
 const PORT = Number(process.env.REALTIME_PORT ?? 4000);
-const SECRET = new TextEncoder().encode(process.env.BETTER_AUTH_SECRET ?? "dev-secret-change-me");
-const EMIT_SECRET = process.env.REALTIME_EMIT_SECRET ?? "dev-emit-secret";
+const SECRET = new TextEncoder().encode(requireSecret("BETTER_AUTH_SECRET"));
+const EMIT_SECRET = requireSecret("REALTIME_EMIT_SECRET");
 const CORS_ORIGIN = process.env.APP_URL ?? "http://localhost:3000";
 
 interface RoomClaims {
@@ -58,6 +80,17 @@ const httpServer = createServer(async (req, res) => {
 const io = new Server(httpServer, {
   cors: { origin: CORS_ORIGIN, credentials: true },
 });
+
+// Escala horizontal: com REDIS_URL, o adapter Redis propaga eventos entre
+// instâncias. Sem ele, o relay roda single-instance (em memória).
+if (process.env.REDIS_URL) {
+  const pub = new Redis(process.env.REDIS_URL);
+  const sub = pub.duplicate();
+  io.adapter(createAdapter(pub, sub));
+  console.log("⚡ realtime usando adapter Redis (multi-instance)");
+} else {
+  console.log("⚡ realtime em modo single-instance (sem REDIS_URL)");
+}
 
 io.use(async (socket, next) => {
   const token = socket.handshake.auth?.token as string | undefined;

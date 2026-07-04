@@ -14,7 +14,10 @@
   "dependencies": {
     "@inkvision/core": "workspace:*",
     "@inkvision/db": "workspace:*",
-    "@inkvision/shared": "workspace:*"
+    "@inkvision/shared": "workspace:*",
+    "bullmq": "^5.79.2",
+    "ioredis": "^5.11.1",
+    "stripe": "^22.3.0"
   },
   "devDependencies": {
     "@inkvision/config": "workspace:*",

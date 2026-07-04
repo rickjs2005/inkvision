@@ -42,6 +42,7 @@ import {
   ConnectStudioPaymentsUseCase,
   StartOrderPaymentUseCase,
   ConfirmOrderPaymentUseCase,
+  ConfirmPaymentByReferenceUseCase,
   SubscribeStudioUseCase,
   ConfirmSubscriptionUseCase,
   // simulation
@@ -71,9 +72,11 @@ import {
 } from "@inkvision/core";
 import { getSimulationProvider } from "@inkvision/ai";
 import {
+  BullMqSimulationQueue,
   HttpRealtimePublisher,
   MockPaymentGateway,
   MockStorageService,
+  StripePaymentGateway,
   PrismaAiUsageRepository,
   PrismaArtistRepository,
   PrismaAuditLogger,
@@ -111,7 +114,10 @@ const notifications = new PrismaNotificationRepository();
 const chat = new PrismaChatRepository();
 const payments = new PrismaPaymentRepository();
 const subscriptions = new PrismaSubscriptionRepository();
-const gateway = new MockPaymentGateway();
+// Stripe real quando a chave está presente; mock no dev.
+const gateway = process.env.STRIPE_SECRET_KEY
+  ? new StripePaymentGateway()
+  : new MockPaymentGateway();
 const platformFeePercent = Number(process.env.STRIPE_PLATFORM_FEE_PERCENT ?? 10);
 const designs = new PrismaDesignRepository();
 const simulations = new PrismaSimulationRepository();
@@ -147,12 +153,15 @@ const inProcessQueue: SimulationQueue = {
     }, 0);
   },
 };
+// Com REDIS_URL, publica na fila BullMQ (o apps/worker processa, durável e
+// escalável). Sem Redis, usa o fallback in-process (setTimeout) do dev.
+const simulationQueue = process.env.REDIS_URL ? new BullMqSimulationQueue() : inProcessQueue;
 const simulationDeps = {
   orders,
   designs,
   simulations,
   aiUsage,
-  queue: inProcessQueue,
+  queue: simulationQueue,
   provider: aiProvider,
   realtime: realtimePublisher,
   artists,
@@ -207,6 +216,7 @@ export const useCases = {
   connectStudioPayments: new ConnectStudioPaymentsUseCase(paymentDeps),
   startOrderPayment: new StartOrderPaymentUseCase(paymentDeps),
   confirmOrderPayment: new ConfirmOrderPaymentUseCase(paymentDeps),
+  confirmPaymentByReference: new ConfirmPaymentByReferenceUseCase(paymentDeps),
   subscribeStudio: new SubscribeStudioUseCase(paymentDeps),
   confirmSubscription: new ConfirmSubscriptionUseCase(paymentDeps),
   // simulation
