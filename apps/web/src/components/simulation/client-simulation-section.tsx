@@ -10,6 +10,7 @@ import {
   requestSimulationAction,
   reviewDesignAction,
 } from "@/server/actions/simulation";
+import { Check, ImageUp, Loader2, Sparkles } from "lucide-react";
 import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,11 +127,21 @@ export function ClientSimulationSection({
   // ── Aprovação da arte ──
   if (status === "DESIGN_REVIEW" && design) {
     return (
-      <div className="flex flex-col gap-4">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={design.imageUrl} alt="Arte proposta" className="mx-auto max-w-sm rounded-xl border border-border" />
-        <div className="flex gap-3">
-          <Button onClick={() => reviewDesign(true)} disabled={pending}>Aprovar arte</Button>
+      <div className="flex flex-col gap-5">
+        <div>
+          <span className="eyebrow">A arte proposta</span>
+          <h3 className="mt-1 font-display text-2xl font-light leading-tight tracking-[-0.02em]">
+            Aprove o traço
+          </h3>
+        </div>
+        <div className="mx-auto w-full max-w-sm overflow-hidden rounded-lg border border-border bg-card p-1.5 shadow-[var(--shadow-ink)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={design.imageUrl} alt="Arte proposta" className="w-full rounded-md" />
+        </div>
+        <div className="flex flex-wrap gap-3 border-t border-border pt-5">
+          <Button onClick={() => reviewDesign(true)} disabled={pending}>
+            <Check /> Aprovar arte
+          </Button>
           <Button variant="outline" onClick={() => reviewDesign(false)} disabled={pending}>
             Solicitar ajustes
           </Button>
@@ -144,26 +155,53 @@ export function ClientSimulationSection({
   if (status === "DESIGN_APPROVED" || status === "AWAITING_BODY_PHOTO" || redo) {
     if (!bodyPhotoUrl) {
       return (
-        <div className="flex flex-col gap-4">
-          <p className="text-sm text-muted-foreground">
-            Envie uma foto da parte do corpo para posicionar a tatuagem e ver o resultado com IA.
-          </p>
-          <Input type="file" accept="image/*" onChange={uploadPhoto} disabled={busy} />
-          {busy && <p className="text-sm text-muted-foreground">Enviando foto…</p>}
+        <div className="flex flex-col gap-5">
+          <div>
+            <span className="eyebrow">Enviar foto</span>
+            <h3 className="mt-1 font-display text-2xl font-light leading-tight tracking-[-0.02em]">
+              A tela do corpo
+            </h3>
+          </div>
+          <label className="group flex cursor-pointer flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-10 text-center transition-colors hover:border-primary/50 hover:bg-muted/50">
+            <ImageUp className="size-7 text-muted-foreground transition-colors group-hover:text-primary" />
+            <span className="text-sm text-muted-foreground">
+              Envie uma foto da parte do corpo para posicionar a tatuagem e ver o resultado com IA.
+            </span>
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={uploadPhoto}
+              disabled={busy}
+              className="sr-only"
+            />
+            <span className="eyebrow text-primary">Escolher imagem</span>
+          </label>
+          {busy && (
+            <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" /> Enviando foto…
+            </p>
+          )}
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
       );
     }
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5">
+        <div>
+          <span className="eyebrow">O ateliê · posicionar</span>
+          <h3 className="mt-1 font-display text-2xl font-light leading-tight tracking-[-0.02em]">
+            Componha a tatuagem
+          </h3>
+        </div>
         <SimulationEditor
           bodyPhotoUrl={bodyPhotoUrl}
           designUrl={designUrl}
           value={placement}
           onChange={setPlacement}
         />
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3 border-t border-border pt-5">
           <Button onClick={generate} disabled={busy || pending}>
+            {busy ? <Loader2 className="animate-spin" /> : <Sparkles />}
             {busy ? "Gerando…" : "Gerar simulação"}
           </Button>
           <Button variant="outline" onClick={() => setBodyPhotoUrl(null)} disabled={busy}>
@@ -178,9 +216,25 @@ export function ClientSimulationSection({
   // ── Processando ──
   if (status === "SIMULATING") {
     return (
-      <div className="flex items-center gap-3 text-muted-foreground">
-        <span className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        Gerando a simulação com IA…
+      <div className="flex flex-col gap-5">
+        <div>
+          <span className="eyebrow">Processando</span>
+          <h3 className="mt-1 font-display text-2xl font-light leading-tight tracking-[-0.02em]">
+            A tinta assenta
+          </h3>
+        </div>
+        <div className="mx-auto w-full max-w-md overflow-hidden rounded-lg border border-border bg-card p-1.5 shadow-[var(--shadow-ink)]">
+          <div className="relative aspect-[3/4] overflow-hidden rounded-md bg-muted">
+            <div className="absolute inset-0 animate-pulse bg-gradient-to-b from-muted to-muted/40" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="size-6 animate-spin text-primary" />
+            </div>
+          </div>
+        </div>
+        <p className="inline-flex items-center gap-2 border-t border-border pt-5 text-sm text-muted-foreground">
+          <Sparkles className="size-4 text-primary" />
+          Gerando a simulação com IA…
+        </p>
       </div>
     );
   }
@@ -188,22 +242,33 @@ export function ClientSimulationSection({
   // ── Revisão / aprovação ──
   if ((status === "SIMULATION_REVIEW" || status === "SIMULATION_APPROVED") && simulation) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5">
+        <div>
+          <span className="eyebrow">A prévia</span>
+          <h3 className="mt-1 font-display text-2xl font-light leading-tight tracking-[-0.02em]">
+            {status === "SIMULATION_APPROVED" ? "Simulação aprovada" : "Revise o resultado"}
+          </h3>
+        </div>
         <SimulationView
           bodyPhotoUrl={simulation.bodyPhotoUrl}
           designUrl={simulation.designUrl}
           placement={simulation.placement}
         />
         {status === "SIMULATION_REVIEW" && (
-          <div className="flex gap-3">
-            <Button onClick={approveSim} disabled={pending}>Aprovar simulação</Button>
+          <div className="flex flex-wrap gap-3 border-t border-border pt-5">
+            <Button onClick={approveSim} disabled={pending}>
+              <Check /> Aprovar simulação
+            </Button>
             <Button variant="outline" onClick={startAdjust} disabled={pending}>
               Ajustar posição
             </Button>
           </div>
         )}
         {status === "SIMULATION_APPROVED" && (
-          <p className="text-sm text-emerald-500">Simulação aprovada — próximo passo: agendar a sessão.</p>
+          <p className="inline-flex items-center gap-2 border-t border-border pt-5 text-sm text-emerald-600 dark:text-emerald-400">
+            <Check className="size-4" />
+            Simulação aprovada — próximo passo: agendar a sessão.
+          </p>
         )}
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>

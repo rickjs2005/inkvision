@@ -2,12 +2,14 @@
 
 import Image from "next/image";
 import { useState, useTransition } from "react";
+import { Heart, Trash2 } from "lucide-react";
 import type { PortfolioItem, Style } from "@inkvision/core";
 import { createPortfolioItemAction, deletePortfolioItemAction } from "@/server/actions/portfolio";
 import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 type Kind = "IMAGE" | "BEFORE_AFTER";
 
@@ -82,35 +84,52 @@ export function PortfolioManager({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <form onSubmit={onSubmit} className="grid gap-4 rounded-lg border border-border p-4">
-        <div className="flex gap-2">
-          {(["IMAGE", "BEFORE_AFTER"] as const).map((k) => (
-            <Button
-              key={k}
-              type="button"
-              size="sm"
-              variant={kind === k ? "default" : "outline"}
-              onClick={() => setKind(k)}
-            >
-              {k === "IMAGE" ? "Imagem" : "Antes & Depois"}
-            </Button>
-          ))}
+    <div className="flex flex-col gap-8">
+      <form
+        onSubmit={onSubmit}
+        className="flex flex-col gap-5 rounded-lg border border-border bg-card p-5 shadow-[var(--shadow-ink)]"
+      >
+        <div className="flex flex-col gap-2">
+          <span className="eyebrow">Tipo de peça</span>
+          <div className="inline-flex gap-2">
+            {(["IMAGE", "BEFORE_AFTER"] as const).map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setKind(k)}
+                aria-pressed={kind === k}
+                className={cn(
+                  "rounded-sm border px-3.5 py-1.5 text-[13px] transition-colors",
+                  kind === k
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {k === "IMAGE" ? "Imagem" : "Antes & Depois"}
+              </button>
+            ))}
+          </div>
         </div>
 
         {kind === "IMAGE" ? (
           <div className="flex flex-col gap-2">
-            <Label htmlFor="media">Imagem</Label>
+            <Label htmlFor="media" className="eyebrow">
+              Imagem
+            </Label>
             <Input id="media" name="media" type="file" accept="image/*" required />
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="before">Antes</Label>
+              <Label htmlFor="before" className="eyebrow">
+                Antes
+              </Label>
               <Input id="before" name="before" type="file" accept="image/*" required />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="after">Depois</Label>
+              <Label htmlFor="after" className="eyebrow">
+                Depois
+              </Label>
               <Input id="after" name="after" type="file" accept="image/*" required />
             </div>
           </div>
@@ -118,11 +137,13 @@ export function PortfolioManager({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="styleId">Estilo</Label>
+            <Label htmlFor="styleId" className="eyebrow">
+              Estilo
+            </Label>
             <select
               id="styleId"
               name="styleId"
-              className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
+              className="h-11 rounded-md border border-input bg-background/40 px-3 text-sm transition-colors focus-visible:border-primary/60 focus-visible:outline-none"
             >
               <option value="">—</option>
               {styles.map((s) => (
@@ -133,16 +154,20 @@ export function PortfolioManager({
             </select>
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="tags">Tags (vírgula)</Label>
+            <Label htmlFor="tags" className="eyebrow">
+              Tags (vírgula)
+            </Label>
             <Input id="tags" name="tags" placeholder="minimalista, braço" />
           </div>
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="description">Descrição</Label>
+          <Label htmlFor="description" className="eyebrow">
+            Descrição
+          </Label>
           <Input id="description" name="description" />
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <Button type="submit" disabled={busy}>
             {busy ? "Publicando…" : "Publicar no portfólio"}
           </Button>
@@ -150,33 +175,58 @@ export function PortfolioManager({
         </div>
       </form>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {items.map((it) => (
-          <div key={it.id} className="group relative overflow-hidden rounded-lg border border-border">
-            <Image
-              src={it.type === "BEFORE_AFTER" ? it.afterUrl! : it.mediaUrl}
-              alt={it.description ?? "Trabalho"}
-              width={400}
-              height={400}
-              className="aspect-square w-full object-cover"
-            />
-            <button
-              type="button"
-              onClick={() => remove(it.id)}
-              disabled={pending}
-              className="absolute right-2 top-2 rounded-md bg-black/60 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100"
-            >
-              Remover
-            </button>
-            {it.type === "BEFORE_AFTER" && (
-              <span className="absolute left-2 top-2 rounded bg-black/60 px-2 py-0.5 text-xs text-white">
-                Antes/Depois
-              </span>
-            )}
+      <div>
+        <div className="flex items-baseline justify-between border-b border-border pb-3">
+          <span className="eyebrow">Publicados</span>
+          <span className="font-mono text-xs text-muted-foreground">
+            {String(items.length).padStart(2, "0")}{" "}
+            {items.length === 1 ? "peça" : "peças"}
+          </span>
+        </div>
+
+        {items.length === 0 ? (
+          <p className="mt-6 text-sm text-muted-foreground">Nenhum trabalho publicado ainda.</p>
+        ) : (
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {items.map((it) => (
+              <div
+                key={it.id}
+                className="group relative overflow-hidden rounded-md border border-border"
+              >
+                <Image
+                  src={it.type === "BEFORE_AFTER" ? it.afterUrl! : it.mediaUrl}
+                  alt={it.description ?? "Trabalho"}
+                  width={400}
+                  height={400}
+                  className="aspect-square w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.03]"
+                />
+                {/* Véu de tinta no hover */}
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+                {it.type === "BEFORE_AFTER" && (
+                  <span className="absolute left-2 top-2 rounded-[4px] bg-black/70 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-white">
+                    Antes / Depois
+                  </span>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => remove(it.id)}
+                  disabled={pending}
+                  aria-label="Remover do portfólio"
+                  className="absolute right-2 top-2 inline-flex items-center gap-1.5 rounded-sm bg-primary px-2 py-1 text-xs text-primary-foreground opacity-0 shadow-[var(--shadow-ink)] transition-opacity group-hover:opacity-100 disabled:opacity-40"
+                >
+                  <Trash2 className="size-3.5" />
+                  Remover
+                </button>
+
+                <span className="absolute bottom-2 left-2 inline-flex items-center gap-1.5 font-mono text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  <Heart className="size-3.5 fill-primary text-primary" />
+                  {String(it.likesCount).padStart(2, "0")}
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
-        {items.length === 0 && (
-          <p className="col-span-full text-sm text-muted-foreground">Nenhum trabalho publicado ainda.</p>
         )}
       </div>
     </div>

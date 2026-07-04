@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { UploadCloud } from "lucide-react";
 import { sendDesignAction } from "@/server/actions/simulation";
 import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export function SendDesignPanel({
   studioId,
@@ -19,6 +21,17 @@ export function SendDesignPanel({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+
+  function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    setPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return file ? URL.createObjectURL(file) : null;
+    });
+    setFileName(file?.name ?? null);
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -43,9 +56,54 @@ export function SendDesignPanel({
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
-      <Input name="design" type="file" accept="image/*" required />
-      <Input name="notes" placeholder="Observações (opcional)" />
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="design" className="eyebrow">
+          Arquivo da arte
+        </Label>
+        <label
+          htmlFor="design"
+          className="group flex cursor-pointer items-center gap-4 rounded-md border border-dashed border-border bg-muted/30 px-4 py-3 transition-colors hover:border-primary/50 hover:bg-muted/60"
+        >
+          {preview ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={preview}
+              alt="Prévia da arte"
+              className="size-14 rounded-md border border-border object-cover"
+            />
+          ) : (
+            <span className="flex size-14 items-center justify-center rounded-md border border-border bg-background text-muted-foreground">
+              <UploadCloud className="size-5" />
+            </span>
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm text-foreground">
+              {fileName ?? "Selecionar imagem"}
+            </span>
+            <span className="mt-0.5 block font-mono text-xs uppercase tracking-widest text-muted-foreground">
+              {fileName ? "Trocar arquivo" : "PNG · JPG"}
+            </span>
+          </span>
+        </label>
+        <Input
+          id="design"
+          name="design"
+          type="file"
+          accept="image/*"
+          required
+          onChange={onPick}
+          className="sr-only"
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="notes" className="eyebrow">
+          Observações
+        </Label>
+        <Input id="notes" name="notes" placeholder="Notas para o cliente (opcional)" />
+      </div>
+
       <div>
         <Button type="submit" disabled={busy}>
           {busy ? "Enviando…" : "Enviar arte para aprovação"}

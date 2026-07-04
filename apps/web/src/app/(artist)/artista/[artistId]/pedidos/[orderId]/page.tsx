@@ -4,7 +4,6 @@ import { requireActor } from "@/server/auth-context";
 import { repositories, useCases } from "@/server/container";
 import { signRoomToken } from "@/server/realtime";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/order/status-badge";
 import { OrderTimeline } from "@/components/order/order-timeline";
 import { StudioChat } from "@/components/chat/studio-chat";
@@ -43,40 +42,48 @@ export default async function ArtistOrderDetailPage({
   const latestDesign = canDesign ? await repositories.designs.getLatest(order.id) : null;
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">Pedido de {order.clientName}</p>
-          <h1 className="text-2xl font-bold">{order.bodyPart}</h1>
-        </div>
+    <div className="mx-auto max-w-4xl px-6 py-12">
+      {/* Cabeçalho editorial — cliente / peça / status */}
+      <div className="flex items-center gap-3">
+        <span className="h-px w-8 bg-primary" />
+        <span className="eyebrow">Pedido · {order.clientName}</span>
+      </div>
+      <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+        <h1 className="font-display text-4xl font-light leading-[0.95] tracking-[-0.025em] sm:text-5xl">
+          {order.bodyPart}
+        </h1>
         <StatusBadge status={order.status} />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Briefing</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3 text-sm">
-              <p className="whitespace-pre-wrap">{order.briefing}</p>
-              {order.references.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {order.references.map((r) => (
-                    <a key={r.id} href={r.fileUrl} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline">
-                      referência
-                    </a>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      <div className="mt-10 grid gap-x-12 gap-y-12 md:grid-cols-[1.7fr_1fr]">
+        <div className="flex flex-col">
+          <section>
+            <span className="eyebrow">Briefing</span>
+            <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+              {order.briefing}
+            </p>
+            {order.references.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+                {order.references.map((r, i) => (
+                  <a
+                    key={r.id}
+                    href={r.fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ink-link font-mono text-xs uppercase tracking-widest text-muted-foreground hover:text-primary"
+                  >
+                    ref {String(i + 1).padStart(2, "0")}
+                  </a>
+                ))}
+              </div>
+            )}
+          </section>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{order.quoteAmountCents != null ? "Revisar orçamento" : "Enviar orçamento"}</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <section className="mt-10 border-t border-border pt-8">
+            <span className="eyebrow">
+              {order.quoteAmountCents != null ? "Revisar orçamento" : "Enviar orçamento"}
+            </span>
+            <div className="mt-4">
               {canQuote ? (
                 <QuoteForm
                   studioId={artist.studioId}
@@ -90,19 +97,19 @@ export default async function ArtistOrderDetailPage({
                   O orçamento não pode ser alterado neste estágio do pedido.
                 </p>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {canDesign && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Arte</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
+            <section className="mt-10 border-t border-border pt-8">
+              <span className="eyebrow">Arte</span>
+              <div className="mt-4 flex flex-col gap-4">
                 {latestDesign && (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-muted-foreground">Última versão (v{latestDesign.version}):</span>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                        v{String(latestDesign.version).padStart(2, "0")}
+                      </span>
                       <Badge variant={latestDesign.status === "CHANGES_REQUESTED" ? "warning" : "neutral"}>
                         {latestDesign.status === "APPROVED"
                           ? "Aprovada"
@@ -112,9 +119,15 @@ export default async function ArtistOrderDetailPage({
                       </Badge>
                     </div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={latestDesign.imageUrl} alt="Arte" className="max-w-xs rounded-lg border border-border" />
+                    <img
+                      src={latestDesign.imageUrl}
+                      alt="Arte"
+                      className="max-w-xs rounded-md border border-border shadow-[var(--shadow-ink)]"
+                    />
                     {latestDesign.feedback && (
-                      <p className="text-sm text-muted-foreground">Feedback: “{latestDesign.feedback}”</p>
+                      <p className="border-l-2 border-primary/40 pl-3 text-sm italic text-muted-foreground">
+                        “{latestDesign.feedback}”
+                      </p>
                     )}
                   </div>
                 )}
@@ -124,15 +137,13 @@ export default async function ArtistOrderDetailPage({
                 {order.status === "DESIGN_REVIEW" && (
                   <p className="text-sm text-muted-foreground">Aguardando o cliente aprovar a arte.</p>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </section>
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Conversa com {order.clientName}</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <section className="mt-10 border-t border-border pt-8">
+            <span className="eyebrow">Conversa com {order.clientName}</span>
+            <div className="mt-4">
               <StudioChat
                 orderId={order.id}
                 studioId={artist.studioId}
@@ -140,18 +151,16 @@ export default async function ArtistOrderDetailPage({
                 roomToken={roomToken}
                 initialMessages={messages}
               />
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         </div>
 
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle>Histórico</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <aside className="h-fit md:border-l md:border-border md:pl-10">
+          <span className="eyebrow">Histórico</span>
+          <div className="mt-4">
             <OrderTimeline events={order.events} />
-          </CardContent>
-        </Card>
+          </div>
+        </aside>
       </div>
     </div>
   );

@@ -2,7 +2,6 @@ import { notFound, redirect } from "next/navigation";
 import { requireActor } from "@/server/auth-context";
 import { studioRoleAtLeast } from "@inkvision/shared";
 import { prisma } from "@inkvision/db";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { OnboardingForm } from "./onboarding-form";
 
 export default async function OnboardingPage({
@@ -25,18 +24,25 @@ export default async function OnboardingPage({
   if (studio.status === "ACTIVE") redirect("/painel");
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-12">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Complete o cadastro do estúdio</CardTitle>
-          <CardDescription>
-            Preencha os dados para publicar o estúdio e começar a receber clientes.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <OnboardingForm studioId={studioId} defaultName={studio.name} />
-        </CardContent>
-      </Card>
+    <div className="mx-auto max-w-2xl px-6 py-16">
+      {/* Cabeçalho editorial */}
+      <div className="flex items-center gap-3">
+        <span className="h-px w-8 bg-primary" />
+        <span className="eyebrow">Onboarding · {studio.name}</span>
+      </div>
+      <h1 className="mt-5 font-display text-5xl font-light leading-[0.95] tracking-[-0.025em] sm:text-6xl">
+        Complete o cadastro
+        <br />
+        do estúdio
+      </h1>
+      <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
+        Preencha os dados abaixo para publicar o ateliê e começar a receber
+        clientes.
+      </p>
+
+      <div className="mt-10 border-t border-border pt-10">
+        <OnboardingForm studioId={studioId} defaultName={studio.name} />
+      </div>
     </div>
   );
 }

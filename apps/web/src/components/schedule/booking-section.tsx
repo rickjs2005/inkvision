@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { CalendarCheck } from "lucide-react";
 import { rescheduleSessionAction, scheduleSessionAction } from "@/server/actions/schedule";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -52,18 +53,23 @@ export function BookingSection({
   if (status === "SCHEDULED" && appointmentStartsAt && !rescheduling) {
     const d = new Date(appointmentStartsAt);
     return (
-      <div className="flex flex-col gap-3">
-        <p className="text-sm">
-          Sessão agendada para{" "}
-          <span className="font-medium">
-            {dayFmt.format(d)} às {timeFmt.format(d)}
+      <div className="flex flex-col gap-5">
+        <span className="eyebrow">Sessão confirmada</span>
+        <div className="flex items-start gap-4 rounded-lg border border-border bg-card p-5 shadow-[var(--shadow-ink)]">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <CalendarCheck className="size-5" />
           </span>
-          .
-        </p>
+          <div className="min-w-0">
+            <p className="font-display text-2xl font-light capitalize leading-tight tracking-[-0.02em]">
+              {dayFmt.format(d)}
+            </p>
+            <p className="mt-1 font-mono text-sm text-muted-foreground">às {timeFmt.format(d)}</p>
+          </div>
+        </div>
         <p className="text-sm text-muted-foreground">
           Falta o pagamento final para concluir — o botão aparece acima.
         </p>
-        <div>
+        <div className="border-t border-border pt-4">
           <Button size="sm" variant="outline" onClick={() => setRescheduling(true)}>
             Reagendar
           </Button>
@@ -73,19 +79,24 @@ export function BookingSection({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">
-        {rescheduling ? "Escolha um novo horário:" : "Escolha um horário para a sessão:"}
-      </p>
+    <div className="flex flex-col gap-5">
+      <div>
+        <span className="eyebrow">{rescheduling ? "Reagendar" : "Agendar sessão"}</span>
+        <h3 className="mt-1 font-display text-2xl font-light leading-tight tracking-[-0.02em]">
+          {rescheduling ? "Escolha um novo horário" : "Escolha um horário"}
+        </h3>
+      </div>
       {byDay.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="rounded-lg border border-dashed border-border bg-muted/30 px-5 py-6 text-sm text-muted-foreground">
           O tatuador ainda não publicou horários disponíveis. Combine pelo chat.
         </p>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col divide-y divide-border border-t border-border">
           {byDay.map(([day, isos]) => (
-            <div key={day}>
-              <p className="mb-2 text-sm font-medium capitalize">{day}</p>
+            <div key={day} className="grid grid-cols-1 gap-3 py-4 sm:grid-cols-[8rem_1fr] sm:gap-4">
+              <p className="pt-1.5 font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                {day}
+              </p>
               <div className="flex flex-wrap gap-2">
                 {isos.map((iso) => (
                   <button
@@ -94,7 +105,9 @@ export function BookingSection({
                     disabled={pending}
                     onClick={() => pick(iso)}
                     className={cn(
-                      "rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:border-primary hover:text-primary disabled:opacity-50",
+                      "rounded-md border border-border bg-card px-3.5 py-1.5 font-mono text-sm tabular-nums transition-all",
+                      "hover:-translate-y-0.5 hover:border-primary hover:text-primary hover:shadow-[var(--shadow-ink)]",
+                      "disabled:pointer-events-none disabled:opacity-50",
                     )}
                   >
                     {timeFmt.format(new Date(iso))}
@@ -106,9 +119,11 @@ export function BookingSection({
         </div>
       )}
       {rescheduling && (
-        <Button size="sm" variant="ghost" onClick={() => setRescheduling(false)}>
-          Cancelar
-        </Button>
+        <div>
+          <Button size="sm" variant="ghost" onClick={() => setRescheduling(false)}>
+            Cancelar
+          </Button>
+        </div>
       )}
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>

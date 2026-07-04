@@ -38,16 +38,48 @@ export function QuoteForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={onSubmit} className="grid gap-5 sm:grid-cols-2">
       <div className="flex flex-col gap-2">
-        <Label htmlFor="quoteAmount">Valor total (R$)</Label>
-        <Input id="quoteAmount" name="quoteAmount" type="number" min={1} step="0.01" required defaultValue={defaultQuote} />
+        <Label htmlFor="quoteAmount" className="eyebrow">
+          Valor total
+        </Label>
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-sm text-muted-foreground">
+            R$
+          </span>
+          <Input
+            id="quoteAmount"
+            name="quoteAmount"
+            type="number"
+            min={1}
+            step="0.01"
+            required
+            defaultValue={defaultQuote}
+            className="pl-10 font-mono tabular-nums"
+          />
+        </div>
       </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="depositAmount">Sinal (R$)</Label>
-        <Input id="depositAmount" name="depositAmount" type="number" min={1} step="0.01" required defaultValue={defaultDeposit} />
+        <Label htmlFor="depositAmount" className="eyebrow">
+          Sinal
+        </Label>
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-sm text-muted-foreground">
+            R$
+          </span>
+          <Input
+            id="depositAmount"
+            name="depositAmount"
+            type="number"
+            min={1}
+            step="0.01"
+            required
+            defaultValue={defaultDeposit}
+            className="pl-10 font-mono tabular-nums"
+          />
+        </div>
       </div>
-      <div className="sm:col-span-2 flex items-center gap-3">
+      <div className="flex items-center gap-4 sm:col-span-2">
         <Button type="submit" disabled={pending}>
           {pending ? "Enviando…" : "Enviar orçamento"}
         </Button>

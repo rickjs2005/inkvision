@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { io, type Socket } from "socket.io-client";
-import { Paperclip, Send } from "lucide-react";
+import { Check, CheckCheck, Paperclip, Send } from "lucide-react";
 import type { ChatMessage, SendMessageInput } from "@inkvision/core";
 import { RT } from "@inkvision/shared";
 import { uploadFile } from "@/lib/upload";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import type { ActionResult } from "@/server/action-result";
 
 const REALTIME_URL = process.env.NEXT_PUBLIC_REALTIME_URL ?? "http://localhost:4000";
@@ -18,6 +19,16 @@ function kindFromMime(mime: string): SendMessageInput["kind"] {
   if (mime.startsWith("audio/")) return "AUDIO";
   if (mime.startsWith("video/")) return "VIDEO";
   return "PDF";
+}
+
+/** Horário curto para o carimbo em monoespaçado. */
+function formatTime(value: Date): string {
+  return new Date(value).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+/** Inicial do remetente para o avatar do outro lado. */
+function initial(name: string): string {
+  return name.trim().slice(0, 1).toUpperCase() || "?";
 }
 
 export function ChatPanel({
@@ -111,62 +122,139 @@ export function ChatPanel({
   }
 
   return (
-    <div className="flex h-[520px] flex-col rounded-xl border border-border">
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+    <div className="flex h-[min(60vh,32rem)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-ink)]">
+      {/* Cabeçalho — carimbo de tempo real */}
+      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5">
+        <span className="inline-flex items-center gap-2 eyebrow">
+          <span className="size-1.5 animate-pulse rounded-full bg-primary" aria-hidden />
+          Conversa em tempo real
+        </span>
+        {peerTyping && (
+          <span className="font-mono text-[11px] text-primary" role="status">
+            digitando…
+          </span>
+        )}
+      </div>
+
+      {/* Fluxo de mensagens */}
+      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5" aria-live="polite">
         {messages.map((m) => {
           const mine = m.senderId === currentUserId;
           return (
-            <div key={m.id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
-              <div
-                className={cn(
-                  "max-w-[75%] rounded-2xl px-4 py-2 text-sm",
-                  mine ? "bg-primary text-primary-foreground" : "bg-muted",
-                )}
-              >
-                {!mine && <p className="mb-0.5 text-xs opacity-70">{m.senderName}</p>}
-                {m.kind === "TEXT" && <p className="whitespace-pre-wrap">{m.body}</p>}
-                {m.kind === "IMAGE" && m.attachmentUrl && (
-                  <Image src={m.attachmentUrl} alt="anexo" width={220} height={220} className="rounded-lg" />
-                )}
-                {m.kind === "AUDIO" && m.attachmentUrl && (
-                  <audio controls src={m.attachmentUrl} className="max-w-[220px]" />
-                )}
-                {m.kind === "VIDEO" && m.attachmentUrl && (
-                  <video controls src={m.attachmentUrl} className="max-w-[240px] rounded-lg" />
-                )}
-                {m.kind === "PDF" && m.attachmentUrl && (
-                  <a href={m.attachmentUrl} target="_blank" rel="noreferrer" className="underline">
-                    Abrir PDF
-                  </a>
-                )}
-                {mine && (
-                  <span className="mt-0.5 block text-right text-[10px] opacity-70">
-                    {m.readAt ? "✓✓ lido" : "✓ enviado"}
-                  </span>
-                )}
+            <div key={m.id} className={cn("flex gap-2.5", mine ? "justify-end" : "justify-start")}>
+              {!mine && (
+                <span
+                  aria-hidden
+                  className="mt-auto flex size-8 shrink-0 select-none items-center justify-center rounded-full bg-secondary font-mono text-[11px] font-medium text-secondary-foreground"
+                >
+                  {initial(m.senderName)}
+                </span>
+              )}
+
+              <div className={cn("flex max-w-[78%] flex-col gap-1", mine ? "items-end" : "items-start")}>
+                {!mine && <span className="eyebrow text-[10px] leading-none">{m.senderName}</span>}
+
+                <div
+                  className={cn(
+                    "px-4 py-2.5 text-sm leading-relaxed shadow-[var(--shadow-ink)]",
+                    mine
+                      ? "rounded-2xl rounded-br-sm bg-primary text-primary-foreground"
+                      : "rounded-2xl rounded-bl-sm bg-muted text-foreground",
+                  )}
+                >
+                  {m.kind === "TEXT" && <p className="whitespace-pre-wrap">{m.body}</p>}
+                  {m.kind === "IMAGE" && m.attachmentUrl && (
+                    <Image
+                      src={m.attachmentUrl}
+                      alt="anexo"
+                      width={220}
+                      height={220}
+                      className="rounded-lg"
+                    />
+                  )}
+                  {m.kind === "AUDIO" && m.attachmentUrl && (
+                    <audio controls src={m.attachmentUrl} className="max-w-[220px]" />
+                  )}
+                  {m.kind === "VIDEO" && m.attachmentUrl && (
+                    <video controls src={m.attachmentUrl} className="max-w-[240px] rounded-lg" />
+                  )}
+                  {m.kind === "PDF" && m.attachmentUrl && (
+                    <a
+                      href={m.attachmentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={cn("ink-link", mine ? "text-primary-foreground" : "text-foreground")}
+                    >
+                      Abrir PDF
+                    </a>
+                  )}
+                </div>
+
+                {/* Meta — horário e recibo de leitura */}
+                <div
+                  className={cn(
+                    "flex items-center gap-1.5 px-1 font-mono text-[11px] text-muted-foreground",
+                    mine ? "flex-row-reverse" : "flex-row",
+                  )}
+                >
+                  <span>{formatTime(m.createdAt)}</span>
+                  {mine &&
+                    (m.readAt ? (
+                      <CheckCheck className="size-3.5 text-primary" aria-label="Lido" />
+                    ) : (
+                      <Check className="size-3.5" aria-label="Enviado" />
+                    ))}
+                </div>
               </div>
             </div>
           );
         })}
-        {peerTyping && <p className="text-xs text-muted-foreground">digitando…</p>}
+
+        {peerTyping && (
+          <div className="flex justify-start gap-2.5">
+            <span className="mt-auto size-8 shrink-0 rounded-full bg-secondary" aria-hidden />
+            <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm bg-muted px-4 py-3">
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className="size-1.5 animate-bounce rounded-full bg-muted-foreground/70"
+                  style={{ animationDelay: `${i * 120}ms` }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={sendText} className="flex items-center gap-2 border-t border-border p-3">
-        <label className="cursor-pointer text-muted-foreground hover:text-foreground">
+      {/* Barra de composição */}
+      <form
+        onSubmit={sendText}
+        className="flex items-center gap-2 border-t border-border bg-background/40 px-3 py-3"
+      >
+        <label
+          className="inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+          aria-label="Anexar arquivo"
+        >
           <Paperclip className="size-5" />
-          <input type="file" className="hidden" accept="image/*,audio/*,video/mp4,application/pdf" onChange={sendFile} />
+          <input
+            type="file"
+            className="hidden"
+            accept="image/*,audio/*,video/mp4,application/pdf"
+            onChange={sendFile}
+          />
         </label>
-        <input
+        <Input
           value={text}
           onChange={(e) => {
             setText(e.target.value);
             typing();
           }}
           placeholder="Escreva uma mensagem…"
-          className="h-10 flex-1 rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Mensagem"
+          className="flex-1"
         />
-        <Button type="submit" size="icon" disabled={busy}>
+        <Button type="submit" size="icon" disabled={busy} aria-label="Enviar mensagem">
           <Send className="size-4" />
         </Button>
       </form>

@@ -11,16 +11,22 @@ export function AddArtistForm({ studioId }: { studioId: string }) {
   const [state, formAction, pending] = useActionState(action, null);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-      <div className="flex flex-1 flex-col gap-2">
-        <Label htmlFor="email">E-mail do tatuador (conta existente)</Label>
-        <Input id="email" name="email" type="email" required placeholder="tatuador@email.com" />
+    <form action={formAction} className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex flex-1 flex-col gap-2">
+          <Label htmlFor="email">E-mail do tatuador (conta existente)</Label>
+          <Input id="email" name="email" type="email" required placeholder="tatuador@email.com" />
+        </div>
+        <Button type="submit" disabled={pending}>
+          {pending ? "Adicionando…" : "Adicionar"}
+        </Button>
       </div>
-      <Button type="submit" disabled={pending}>
-        {pending ? "Adicionando…" : "Adicionar"}
-      </Button>
-      {state && !state.ok && <span className="text-sm text-destructive">{state.error}</span>}
-      {state?.ok && <span className="text-sm text-emerald-500">Tatuador adicionado.</span>}
+      {state && !state.ok && <p className="text-sm text-destructive">{state.error}</p>}
+      {state?.ok && (
+        <p className="font-mono text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+          Tatuador adicionado.
+        </p>
+      )}
     </form>
   );
 }

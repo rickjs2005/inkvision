@@ -59,38 +59,67 @@ export function AvailabilityEditor({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      {days.map((d, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <label className="flex w-32 items-center gap-2 text-sm">
-            <input type="checkbox" checked={d.enabled} onChange={(e) => update(i, { enabled: e.target.checked })} className="size-4" />
-            {WEEKDAYS[i]}
-          </label>
-          <input
-            type="time"
-            value={d.start}
-            disabled={!d.enabled}
-            onChange={(e) => update(i, { start: e.target.value })}
-            className="h-9 rounded-md border border-input bg-transparent px-2 text-sm disabled:opacity-40"
-          />
-          <span className="text-muted-foreground">até</span>
-          <input
-            type="time"
-            value={d.end}
-            disabled={!d.enabled}
-            onChange={(e) => update(i, { end: e.target.value })}
-            className="h-9 rounded-md border border-input bg-transparent px-2 text-sm disabled:opacity-40"
-          />
-        </div>
-      ))}
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-[auto_1fr] gap-x-3 border-b border-border pb-2 sm:grid-cols-[12rem_1fr]">
+        <span className="eyebrow">Dia</span>
+        <span className="eyebrow">Janela de atendimento</span>
+      </div>
+
+      <div className="flex flex-col">
+        {days.map((d, i) => (
+          <div
+            key={i}
+            className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 border-b border-border py-3 sm:grid-cols-[12rem_1fr]"
+          >
+            <label className="flex cursor-pointer items-center gap-3 select-none">
+              <input
+                type="checkbox"
+                checked={d.enabled}
+                onChange={(e) => update(i, { enabled: e.target.checked })}
+                className="size-4 accent-primary"
+              />
+              <span
+                className={
+                  d.enabled
+                    ? "text-sm font-medium text-foreground"
+                    : "text-sm text-muted-foreground"
+                }
+              >
+                {WEEKDAYS[i]}
+              </span>
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="time"
+                value={d.start}
+                disabled={!d.enabled}
+                onChange={(e) => update(i, { start: e.target.value })}
+                className="h-9 rounded-md border border-input bg-background/40 px-2.5 font-mono text-sm tabular-nums transition-colors focus-visible:border-primary/60 focus-visible:outline-none disabled:opacity-40"
+              />
+              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                até
+              </span>
+              <input
+                type="time"
+                value={d.end}
+                disabled={!d.enabled}
+                onChange={(e) => update(i, { end: e.target.value })}
+                className="h-9 rounded-md border border-input bg-background/40 px-2.5 font-mono text-sm tabular-nums transition-colors focus-visible:border-primary/60 focus-visible:outline-none disabled:opacity-40"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-4">
         <Button size="sm" onClick={save} disabled={pending}>
           {pending ? "Salvando…" : "Salvar disponibilidade"}
         </Button>
         {msg && <span className="text-sm text-muted-foreground">{msg}</span>}
       </div>
-      <p className="text-xs text-muted-foreground">
-        Sessões de 2h são ofertadas dentro das janelas. Horários já ocupados não aparecem para o cliente.
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        Sessões de 2h são ofertadas dentro das janelas. Horários já ocupados não aparecem para o
+        cliente.
       </p>
     </div>
   );

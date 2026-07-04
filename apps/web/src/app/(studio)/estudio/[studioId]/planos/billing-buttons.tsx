@@ -41,6 +41,7 @@ export function SubscribeButton({
   const [busy, setBusy] = useState(false);
   return (
     <Button
+      className="w-full"
       variant={current ? "outline" : "default"}
       disabled={busy || current}
       onClick={async () => {

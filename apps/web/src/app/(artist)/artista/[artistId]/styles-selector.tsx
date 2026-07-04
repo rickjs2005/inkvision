@@ -36,7 +36,13 @@ export function StylesSelector({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
+      <div className="flex items-baseline justify-between border-b border-border pb-3">
+        <span className="eyebrow">Especialidades</span>
+        <span className="font-mono text-xs text-muted-foreground">
+          {String(selected.size).padStart(2, "0")} / {String(allStyles.length).padStart(2, "0")}
+        </span>
+      </div>
       <div className="flex flex-wrap gap-2">
         {allStyles.map((s) => {
           const active = selected.has(s.id);
@@ -45,11 +51,12 @@ export function StylesSelector({
               key={s.id}
               type="button"
               onClick={() => toggle(s.id)}
+              aria-pressed={active}
               className={cn(
-                "rounded-full border px-4 py-2 text-sm transition-colors",
+                "rounded-sm border px-3.5 py-1.5 text-[13px] transition-colors",
                 active
-                  ? "border-primary bg-primary/15 text-primary"
-                  : "border-border text-muted-foreground hover:text-foreground",
+                  ? "border-primary bg-primary text-primary-foreground shadow-[var(--shadow-ink)]"
+                  : "border-border text-muted-foreground hover:border-foreground/35 hover:text-foreground",
               )}
             >
               {s.name}
@@ -57,7 +64,7 @@ export function StylesSelector({
           );
         })}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <Button size="sm" onClick={save} disabled={pending}>
           {pending ? "Salvando…" : "Salvar estilos"}
         </Button>
