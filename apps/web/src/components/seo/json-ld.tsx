@@ -43,6 +43,70 @@ export function FaqJsonLd({ items }: { items: { q: string; a: string }[] }) {
   );
 }
 
+export function PersonJsonLd({
+  name,
+  description,
+  sameAs,
+}: {
+  name: string;
+  description?: string;
+  sameAs?: string[];
+}) {
+  return (
+    <JsonLd
+      data={{
+        "@context": "https://schema.org",
+        "@type": "Person",
+        name,
+        jobTitle: "Tatuador(a)",
+        url: APP_URL,
+        worksFor: { "@type": "Organization", name: "InkVision", url: APP_URL },
+        ...(description ? { description } : {}),
+        ...(sameAs && sameAs.length > 0 ? { sameAs } : {}),
+      }}
+    />
+  );
+}
+
+export function LocalBusinessJsonLd({
+  name,
+  description,
+  city,
+  state,
+  phone,
+  slug,
+}: {
+  name: string;
+  description?: string;
+  city?: string;
+  state?: string;
+  phone?: string;
+  slug: string;
+}) {
+  return (
+    <JsonLd
+      data={{
+        "@context": "https://schema.org",
+        "@type": "TattooParlor",
+        name,
+        url: `${APP_URL}/s/${slug}`,
+        ...(description ? { description } : {}),
+        ...(phone ? { telephone: phone } : {}),
+        ...(city || state
+          ? {
+              address: {
+                "@type": "PostalAddress",
+                ...(city ? { addressLocality: city } : {}),
+                ...(state ? { addressRegion: state } : {}),
+                addressCountry: "BR",
+              },
+            }
+          : {}),
+      }}
+    />
+  );
+}
+
 export function WebSiteJsonLd() {
   return (
     <JsonLd

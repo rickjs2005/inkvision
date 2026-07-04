@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Actor } from "@inkvision/core";
@@ -6,14 +7,14 @@ import type { PlatformRole, StudioRole } from "@inkvision/shared";
 import { prisma } from "@inkvision/db";
 import { auth } from "@/lib/auth";
 
-/** Sessão atual (ou null). */
-export async function getCurrentUser() {
+/** Sessão atual (ou null). Memoizado por request. */
+export const getCurrentUser = cache(async () => {
   const session = await auth.api.getSession({ headers: await headers() });
   return session?.user ?? null;
-}
+});
 
-/** Monta o Actor do caso de uso a partir da sessão + memberships no banco. */
-export async function getActor(): Promise<Actor | null> {
+/** Monta o Actor do caso de uso a partir da sessão + memberships no banco. Memoizado por request. */
+export const getActor = cache(async (): Promise<Actor | null> => {
   const user = await getCurrentUser();
   if (!user) return null;
 
@@ -27,7 +28,7 @@ export async function getActor(): Promise<Actor | null> {
     platformRole: ((user as { platformRole?: PlatformRole }).platformRole ?? "USER") as PlatformRole,
     memberships: memberships.map((m) => ({ studioId: m.studioId, role: m.role as StudioRole })),
   };
-}
+});
 
 /** Exige sessão; redireciona para /login caso contrário. */
 export async function requireActor(): Promise<Actor> {

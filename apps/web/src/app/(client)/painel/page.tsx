@@ -145,7 +145,7 @@ export default async function PainelPage() {
       {studios.length === 0 && actor.platformRole !== "ADMIN" && (
         <p className="mt-6 text-muted-foreground">
           Explore <Link href="/tatuadores" className="text-primary hover:underline">tatuadores</Link>{" "}
-          para começar um projeto. (Pedidos chegam na Sprint 4.)
+          para começar um projeto.
         </p>
       )}
     </div>

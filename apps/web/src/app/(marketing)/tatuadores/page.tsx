@@ -5,9 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
   title: "Tatuadores",
   description: "Encontre tatuadores por estilo e comece seu projeto na InkVision.",
+  alternates: { canonical: `${APP_URL}/tatuadores` },
 };
 
 export default async function ArtistsDiscoveryPage({

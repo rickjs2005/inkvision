@@ -5,19 +5,18 @@ import { useRouter } from "next/navigation";
 import { deleteMyAccountAction, exportMyDataAction } from "@/server/actions/account";
 import { signOut } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toaster";
 
 export function LgpdPanel() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [msg, setMsg] = useState<string | null>(null);
 
   async function exportData() {
     setBusy(true);
-    setMsg(null);
     const res = await exportMyDataAction();
     setBusy(false);
-    if (!res.ok) return setMsg(res.error);
+    if (!res.ok) return toast.error(res.error);
     const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -25,13 +24,14 @@ export function LgpdPanel() {
     a.download = "meus-dados-inkvision.json";
     a.click();
     URL.revokeObjectURL(url);
+    toast.success("Seus dados foram baixados.");
   }
 
   function deleteAccount() {
     if (!confirm("Excluir sua conta? Seus dados pessoais serão anonimizados e você não poderá mais entrar. Isso é irreversível.")) return;
     startTransition(async () => {
       const res = await deleteMyAccountAction();
-      if (!res.ok) return setMsg(res.error);
+      if (!res.ok) return toast.error(res.error);
       await signOut();
       router.push("/");
       router.refresh();
@@ -64,8 +64,6 @@ export function LgpdPanel() {
           </Button>
         </div>
       </div>
-
-      {msg && <p className="text-sm text-destructive">{msg}</p>}
     </div>
   );
 }

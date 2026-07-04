@@ -6,7 +6,10 @@ import { getActor } from "@/server/auth-context";
 import { useCases } from "@/server/container";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PersonJsonLd } from "@/components/seo/json-ld";
 import { PortfolioGallery } from "./portfolio-gallery";
+
+const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
 
 async function load(artistId: string, actor: Awaited<ReturnType<typeof getActor>>) {
   try {
@@ -36,6 +39,7 @@ export async function generateMetadata({
   return {
     title: data.artist.name,
     description: data.artist.bio ?? `${data.artist.name} — ${styles || "tatuador"} na InkVision.`,
+    alternates: { canonical: `${APP_URL}/t/${artistId}` },
     openGraph: { title: data.artist.name, type: "profile" },
   };
 }
@@ -53,6 +57,11 @@ export default async function ArtistPublicPage({
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">
+      <PersonJsonLd
+        name={artist.name}
+        description={artist.bio ?? undefined}
+        sameAs={artist.instagram ? [`https://instagram.com/${artist.instagram}`] : undefined}
+      />
       <header className="mb-8">
         <h1 className="text-4xl font-bold tracking-tight">{artist.name}</h1>
         <div className="mt-3 flex flex-wrap items-center gap-2">

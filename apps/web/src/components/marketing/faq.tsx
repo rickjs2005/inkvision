@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, LazyMotion, domAnimation, m } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { FAQ_ITEMS } from "./faq-data";
 
 export function FAQ() {
   const [open, setOpen] = useState<number | null>(0);
   return (
+    <LazyMotion features={domAnimation}>
     <section className="mx-auto max-w-3xl px-6 py-20">
       <h2 className="text-center text-3xl font-bold tracking-tight">Perguntas frequentes</h2>
       <div className="mt-10 flex flex-col gap-3">
@@ -28,7 +29,7 @@ export function FAQ() {
               </button>
               <AnimatePresence initial={false}>
                 {isOpen && (
-                  <motion.div
+                  <m.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
@@ -36,7 +37,7 @@ export function FAQ() {
                     className="overflow-hidden"
                   >
                     <p className="px-5 pb-5 text-muted-foreground">{item.a}</p>
-                  </motion.div>
+                  </m.div>
                 )}
               </AnimatePresence>
             </div>
@@ -44,5 +45,6 @@ export function FAQ() {
         })}
       </div>
     </section>
+    </LazyMotion>
   );
 }

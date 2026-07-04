@@ -4,6 +4,9 @@ import { DomainError } from "@inkvision/core";
 import { getActor } from "@/server/auth-context";
 import { useCases } from "@/server/container";
 import { Badge } from "@/components/ui/badge";
+import { LocalBusinessJsonLd } from "@/components/seo/json-ld";
+
+const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
 
 async function loadStudio(slug: string) {
   try {
@@ -26,6 +29,7 @@ export async function generateMetadata({
   return {
     title: studio.name,
     description: studio.description ?? `Conheça o estúdio ${studio.name} na InkVision.`,
+    alternates: { canonical: `${APP_URL}/s/${slug}` },
     openGraph: { title: studio.name, description: studio.description ?? undefined, type: "profile" },
   };
 }
@@ -41,6 +45,14 @@ export default async function StudioPublicPage({
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-16">
+      <LocalBusinessJsonLd
+        name={studio.name}
+        description={studio.description ?? undefined}
+        city={studio.address.city ?? undefined}
+        state={studio.address.state ?? undefined}
+        phone={studio.phone ?? undefined}
+        slug={slug}
+      />
       {studio.status !== "ACTIVE" && (
         <Badge variant="warning" className="mb-4">
           Prévia — estúdio ainda não publicado
@@ -67,7 +79,7 @@ export default async function StudioPublicPage({
         )}
       </dl>
       <p className="mt-10 text-sm text-muted-foreground">
-        Tatuadores e portfólio chegam na Sprint 2.
+        Portfólio dos tatuadores em breve.
       </p>
     </div>
   );

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { acceptQuoteAction, cancelOrderAction } from "@/server/actions/order";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toaster";
 
 export function OrderClientActions({
   orderId,
@@ -16,23 +17,20 @@ export function OrderClientActions({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
 
   function accept() {
-    setError(null);
     startTransition(async () => {
       const res = await acceptQuoteAction(orderId);
       if (res.ok) router.refresh();
-      else setError(res.error);
+      else toast.error(res.error);
     });
   }
   function cancel() {
     if (!confirm("Cancelar este pedido?")) return;
-    setError(null);
     startTransition(async () => {
       const res = await cancelOrderAction(orderId);
       if (res.ok) router.refresh();
-      else setError(res.error);
+      else toast.error(res.error);
     });
   }
 
@@ -49,7 +47,6 @@ export function OrderClientActions({
           Cancelar pedido
         </Button>
       )}
-      {error && <span className="text-sm text-destructive">{error}</span>}
     </div>
   );
 }

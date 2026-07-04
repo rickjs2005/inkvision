@@ -1,28 +1,28 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import type { StudioStatus } from "@inkvision/core";
 import { removeStudioAction, setStudioStatusAction } from "@/server/actions/studio";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toaster";
 
 export function StudioActions({ studioId, status }: { studioId: string; status: StudioStatus }) {
   const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
 
   function change(next: StudioStatus) {
-    setError(null);
     startTransition(async () => {
       const res = await setStudioStatusAction(studioId, next);
-      if (!res.ok) setError(res.error);
+      if (!res.ok) toast.error(res.error);
+      else toast.success("Estúdio atualizado.");
     });
   }
 
   function remove() {
     if (!confirm("Remover este estúdio e todos os seus dados? Ação irreversível.")) return;
-    setError(null);
     startTransition(async () => {
       const res = await removeStudioAction(studioId);
-      if (!res.ok) setError(res.error);
+      if (!res.ok) toast.error(res.error);
+      else toast.success("Estúdio removido.");
     });
   }
 
@@ -40,7 +40,6 @@ export function StudioActions({ studioId, status }: { studioId: string; status: 
       <Button size="sm" variant="destructive" disabled={pending} onClick={remove}>
         Remover
       </Button>
-      {error && <span className="text-xs text-destructive">{error}</span>}
     </div>
   );
 }
