@@ -53,8 +53,9 @@ apps/web  (presentation + composition root)
 - **Sprint 9 — Agendamento ✅** disponibilidade semanal do tatuador + folgas, geração de horários (`generateSlots`, pura), agendamento pelo cliente (`SIMULATION_APPROVED → SCHEDULED`) com bloqueio de conflitos, reagendamento — **destrava o pagamento final** (`SCHEDULED → COMPLETED`).
 - **Sprint 10 — Avaliações ✅** cliente avalia após concluir (`COMPLETED → REVIEWED`), recálculo da nota do tatuador, avaliações no perfil público. **Loop cadastro→avaliação fechado.**
 - **Sprint 11 — Admin + LGPD ✅** dashboard com métricas (MRR, receita, estúdios, uso de IA, gráficos) via bypass de RLS por admin (`withAdmin`), logs de auditoria, e autoatendimento LGPD em `/conta` (exportar dados em JSON + excluir conta com anonimização).
-- **Fluxo completo verificado ponta-a-ponta contra Postgres real**: `verify-flow.ts` (orçamento→avaliação) e `verify-admin.ts` (métricas cross-tenant + authz). 56 testes.
-- Falta para lançar: Sprint 12 (hardening: rate limit/CSP/headers/sanitização + PWA + deploy Coolify).
+- **Sprint 12 — Hardening ✅** headers de segurança (CSP, HSTS, X-Frame-Options, etc.) verificados no servidor real, rate limiting (janela deslizante) na rota de upload, checagem de origem (CSRF), sanitização de texto livre, e **PWA** (manifest + service worker offline). Checklist em [docs/SECURITY.md](docs/SECURITY.md).
+- **Fluxo completo verificado ponta-a-ponta contra Postgres real**: `verify-flow.ts` (orçamento→avaliação) e `verify-admin.ts` (métricas cross-tenant + authz). 59 testes.
+- **Produto pronto.** Falta só o **deploy** (Dockerfiles + Coolify na VPS) — combinado de fazer depois.
 
 `AI_SIMULATION_PROVIDER=mock` (padrão) roda sem chaves. `pnpm dev` sobe web + realtime + worker.
 

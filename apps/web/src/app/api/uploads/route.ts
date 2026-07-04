@@ -2,13 +2,37 @@ import { NextResponse } from "next/server";
 import { UPLOAD_LIMITS, type UploadPurpose } from "@inkvision/core";
 import { getActor } from "@/server/auth-context";
 import { storage } from "@/server/container";
+import { rateLimit } from "@/server/rate-limit";
 
 const PURPOSES = Object.keys(UPLOAD_LIMITS) as UploadPurpose[];
+const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
 
-/** Gera um ticket de upload (presigned). Valida auth, tipo e tamanho na borda. */
+/** Rejeita requisições de outra origem (defesa CSRF em rota que muta estado). */
+function sameOrigin(req: Request): boolean {
+  const origin = req.headers.get("origin");
+  if (!origin) return true; // navegadores enviam origin em POST cross-site; ausência = same-site/curl
+  try {
+    return new URL(origin).host === new URL(APP_URL).host;
+  } catch {
+    return false;
+  }
+}
+
+/** Gera um ticket de upload (presigned). Valida auth, origem, tipo e tamanho na borda. */
 export async function POST(req: Request) {
+  if (!sameOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
+
   const actor = await getActor();
   if (!actor) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+
+  // Máx. 30 uploads/min por usuário.
+  const rl = rateLimit(`upload:${actor.userId}`, 30, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Muitas requisições. Aguarde um momento." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } },
+    );
+  }
 
   let payload: {
     purpose?: string;

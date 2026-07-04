@@ -1,9 +1,10 @@
 import { z } from "zod";
+import { sanitizeText } from "../../domain/sanitize";
 
 export const sendMessageSchema = z
   .object({
     kind: z.enum(["TEXT", "AUDIO", "IMAGE", "PDF", "VIDEO"]).default("TEXT"),
-    body: z.string().max(4000).optional(),
+    body: z.string().max(4000).transform(sanitizeText).optional(),
     attachmentUrl: z.string().url().optional(),
     attachmentMeta: z.record(z.string(), z.unknown()).optional(),
   })
