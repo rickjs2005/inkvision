@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowUpRight, Instagram, Star } from "lucide-react";
 import { getActor } from "@/server/auth-context";
 import { useCases } from "@/server/container";
 import { getPublicArtist, getPublicArtistReviews } from "@/server/public-cache";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PersonJsonLd } from "@/components/seo/json-ld";
 import { PortfolioGallery } from "./portfolio-gallery";
@@ -47,52 +47,142 @@ export default async function ArtistPublicPage({
   ]);
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-12">
+    <div className="mx-auto max-w-5xl px-6 py-16">
       <PersonJsonLd
         name={artist.name}
         description={artist.bio ?? undefined}
         sameAs={artist.instagram ? [`https://instagram.com/${artist.instagram}`] : undefined}
       />
-      <header className="mb-8">
-        <h1 className="text-4xl font-bold tracking-tight">{artist.name}</h1>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {artist.styles.map((s) => (
-            <Badge key={s.id}>{s.name}</Badge>
-          ))}
+
+      {/* Cabeçalho editorial do artista */}
+      <header>
+        <div className="flex items-center gap-3">
+          <span className="h-px w-8 bg-primary" />
+          <span className="eyebrow">O ateliê · Artista</span>
         </div>
-        <div className="mt-4 flex flex-wrap gap-6 text-sm text-muted-foreground">
-          {artist.experienceYears != null && <span>{artist.experienceYears} anos de experiência</span>}
-          {artist.avgPriceCents != null && (
-            <span>Preço médio ⌀ R$ {(artist.avgPriceCents / 100).toFixed(0)}</span>
-          )}
+
+        <h1 className="mt-6 font-display text-5xl font-light leading-[0.95] tracking-[-0.025em] sm:text-6xl">
+          {artist.name}
+        </h1>
+
+        {artist.styles.length > 0 && (
+          <div className="mt-5 flex flex-wrap gap-x-4 gap-y-1.5">
+            {artist.styles.map((s) => (
+              <span
+                key={s.id}
+                className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground"
+              >
+                {s.name}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Meta em régua mono */}
+        <dl className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-3 border-y border-border py-4">
           {artist.ratingCount > 0 && (
-            <span>★ {artist.ratingAvg?.toFixed(1)} ({artist.ratingCount})</span>
+            <div className="flex items-center gap-2">
+              <Star className="size-4 fill-primary text-primary" />
+              <span className="font-mono text-sm">
+                {artist.ratingAvg?.toFixed(1)}
+                <span className="text-muted-foreground"> · {artist.ratingCount}</span>
+              </span>
+            </div>
           )}
-          {artist.instagram && <span>@{artist.instagram}</span>}
-        </div>
-        {artist.bio && <p className="mt-6 max-w-2xl text-lg">{artist.bio}</p>}
-        <div className="mt-6">
+          {artist.avgPriceCents != null && (
+            <div>
+              <dt className="sr-only">Preço médio</dt>
+              <dd className="font-mono text-sm text-muted-foreground">
+                A partir de{" "}
+                <span className="text-foreground">
+                  R$ {(artist.avgPriceCents / 100).toFixed(0)}
+                </span>
+              </dd>
+            </div>
+          )}
+          {artist.experienceYears != null && (
+            <div>
+              <dt className="sr-only">Experiência</dt>
+              <dd className="font-mono text-sm text-muted-foreground">
+                <span className="text-foreground">{artist.experienceYears}</span> anos de agulha
+              </dd>
+            </div>
+          )}
+          {artist.instagram && (
+            <a
+              href={`https://instagram.com/${artist.instagram}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex items-center gap-1.5 font-mono text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Instagram className="size-4" />
+              @{artist.instagram}
+            </a>
+          )}
+        </dl>
+
+        {artist.bio && (
+          <p className="mt-8 max-w-2xl text-lg leading-relaxed text-muted-foreground">
+            {artist.bio}
+          </p>
+        )}
+
+        <div className="mt-8">
           <Button size="lg" asChild>
-            <Link href={`/pedidos/novo/${artist.id}`}>Solicitar orçamento</Link>
+            <Link href={`/pedidos/novo/${artist.id}`}>
+              Iniciar um projeto
+              <ArrowUpRight className="transition-transform group-hover/btn:-translate-y-0.5 group-hover/btn:translate-x-0.5" />
+            </Link>
           </Button>
         </div>
       </header>
 
-      <h2 className="mb-4 text-lg font-semibold">Portfólio</h2>
-      <PortfolioGallery items={items} isAuthed={actor !== null} />
+      {/* Portfólio */}
+      <section className="mt-20">
+        <div className="mb-8 flex items-end justify-between border-b border-border pb-4">
+          <h2 className="font-display text-3xl font-light tracking-[-0.02em]">Portfólio</h2>
+          <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            {String(items.length).padStart(2, "0")}{" "}
+            {items.length === 1 ? "peça" : "peças"}
+          </span>
+        </div>
+        <PortfolioGallery items={items} isAuthed={actor !== null} />
+      </section>
 
       {reviews.length > 0 && (
-        <section className="mt-12">
-          <h2 className="mb-4 text-lg font-semibold">Avaliações</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+        <section className="mt-20">
+          <div className="mb-8 flex items-end justify-between border-b border-border pb-4">
+            <h2 className="font-display text-3xl font-light tracking-[-0.02em]">Avaliações</h2>
+            <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+              {String(reviews.length).padStart(2, "0")}
+            </span>
+          </div>
+          <div className="grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2">
             {reviews.map((r) => (
-              <div key={r.id} className="rounded-xl border border-border p-4">
+              <figure key={r.id} className="flex flex-col justify-between gap-4 bg-card p-6">
                 <div className="flex items-center justify-between">
-                  <span className="text-amber-400">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
-                  <span className="text-xs text-muted-foreground">{reviewFmt.format(new Date(r.createdAt))}</span>
+                  <div className="flex items-center gap-0.5" aria-label={`${r.rating} de 5`}>
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <Star
+                        key={i}
+                        className={
+                          i < r.rating
+                            ? "size-3.5 fill-primary text-primary"
+                            : "size-3.5 text-border"
+                        }
+                      />
+                    ))}
+                  </div>
+                  <time className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                    {reviewFmt.format(new Date(r.createdAt))}
+                  </time>
                 </div>
-                {r.comment && <p className="mt-2 text-sm">{r.comment}</p>}
-              </div>
+                {r.comment && (
+                  <blockquote className="text-sm leading-relaxed text-muted-foreground">
+                    {r.comment}
+                  </blockquote>
+                )}
+              </figure>
             ))}
           </div>
         </section>

@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { requirePlatformAdmin } from "@/server/auth-context";
 import { useCases } from "@/server/container";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const brl = (cents: number) => `R$ ${(cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0 })}`;
 const monthLabel = (ym: string) => {
@@ -9,15 +11,53 @@ const monthLabel = (ym: string) => {
   return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "short" });
 };
 
+// Métrica de destaque — numeral display grande, para a hierarquia primária.
+function HeroMetric({
+  eyebrow,
+  value,
+  hint,
+  primary,
+  className,
+}: {
+  eyebrow: string;
+  value: string;
+  hint?: string;
+  primary?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={cn("bg-card p-6", className)}>
+      <p className="eyebrow">{eyebrow}</p>
+      <p
+        className={cn(
+          "mt-3 font-display font-light tracking-tight tabular-nums",
+          primary ? "text-5xl sm:text-6xl" : "text-4xl",
+        )}
+      >
+        {value}
+      </p>
+      {hint && <p className="mt-2 text-sm text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+// Métrica secundária — numeral mono compacto.
 function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <Card>
-      <CardContent className="p-5">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="mt-1 text-3xl font-bold tracking-tight">{value}</p>
-        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-      </CardContent>
-    </Card>
+    <div className="bg-card p-5">
+      <p className="eyebrow">{label}</p>
+      <p className="mt-2 font-mono text-2xl font-medium tabular-nums">{value}</p>
+      {hint && <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+function PanelHead({ eyebrow, title }: { eyebrow: string; title: string }) {
+  return (
+    <div className="border-b border-border p-6">
+      <p className="eyebrow">{eyebrow}</p>
+      <h2 className="mt-1.5 font-display text-lg leading-tight">{title}</h2>
+    </div>
   );
 }
 
@@ -25,14 +65,14 @@ function BarList({ data }: { data: { key: string; count: number }[] }) {
   const max = Math.max(1, ...data.map((d) => d.count));
   if (data.length === 0) return <p className="text-sm text-muted-foreground">Sem dados ainda.</p>;
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       {data.map((d) => (
-        <div key={d.key} className="flex items-center gap-3 text-sm">
-          <span className="w-28 shrink-0 truncate capitalize text-muted-foreground">{d.key}</span>
-          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
+        <div key={d.key} className="flex items-center gap-4 text-sm">
+          <span className="w-24 shrink-0 truncate capitalize text-muted-foreground">{d.key}</span>
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
             <div className="h-full rounded-full bg-primary" style={{ width: `${(d.count / max) * 100}%` }} />
           </div>
-          <span className="w-8 text-right font-medium">{d.count}</span>
+          <span className="w-10 text-right font-mono tabular-nums">{d.count}</span>
         </div>
       ))}
     </div>
@@ -46,68 +86,93 @@ export default async function AdminDashboardPage() {
   const maxRev = Math.max(1, ...m.monthlyRevenueCents.map((x) => x.cents));
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <Link href="/admin/logs" className="text-sm text-primary hover:underline">
-          Ver logs →
+    <div className="flex flex-col gap-10">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="h-px w-8 bg-primary" />
+            <span className="eyebrow">Administração · Visão geral</span>
+          </div>
+          <h1 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">Dashboard</h1>
+        </div>
+        <Link
+          href="/admin/logs"
+          className="ink-link inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        >
+          Ver logs <ArrowUpRight className="size-4" />
         </Link>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="MRR" value={brl(m.mrrCents)} hint={`${m.subscriptions.active} assinaturas ativas`} />
-        <Kpi label="Receita processada" value={brl(m.revenueCents)} hint={`taxa da plataforma ${brl(m.platformFeeCents)}`} />
-        <Kpi label="Estúdios" value={String(m.studios.total)} hint={`${m.studios.active} ativos · ${m.studios.pending} onboarding`} />
+      {/* Métricas primárias — receita, com o numeral principal maior. */}
+      <div className="grid gap-px overflow-hidden rounded-lg border border-border bg-border shadow-[var(--shadow-ink)] lg:grid-cols-5">
+        <HeroMetric
+          primary
+          className="lg:col-span-3"
+          eyebrow="MRR · Receita recorrente"
+          value={brl(m.mrrCents)}
+          hint={`${m.subscriptions.active} assinaturas ativas`}
+        />
+        <HeroMetric
+          className="lg:col-span-2"
+          eyebrow="Receita processada"
+          value={brl(m.revenueCents)}
+          hint={`Taxa da plataforma ${brl(m.platformFeeCents)}`}
+        />
+      </div>
+
+      {/* Métricas secundárias — hairlines em vez de cards isolados. */}
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3">
+        <Kpi
+          label="Estúdios"
+          value={String(m.studios.total)}
+          hint={`${m.studios.active} ativos · ${m.studios.pending} onboarding`}
+        />
         <Kpi label="Clientes" value={String(m.users)} hint={`${m.artists} tatuadores`} />
         <Kpi label="Pedidos" value={String(m.orders.total)} hint={`${m.orders.completed} concluídos`} />
-        <Kpi label="Imagens de IA geradas" value={String(m.aiImages)} />
+        <Kpi label="Imagens de IA" value={String(m.aiImages)} hint="geradas na plataforma" />
         <Kpi label="Estúdios suspensos" value={String(m.studios.suspended)} />
         <Kpi label="Assinaturas ativas" value={String(m.subscriptions.active)} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Receita (últimos 6 meses)</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card className="overflow-hidden p-0">
+          <PanelHead eyebrow="Financeiro" title="Receita — últimos 6 meses" />
+          <div className="p-6">
             {m.monthlyRevenueCents.length === 0 ? (
               <p className="text-sm text-muted-foreground">Sem pagamentos ainda.</p>
             ) : (
-              <div className="flex h-40 items-end gap-3">
+              <div className="flex h-44 items-end gap-3">
                 {m.monthlyRevenueCents.map((x) => (
                   <div key={x.month} className="flex flex-1 flex-col items-center gap-2">
                     <div className="flex w-full flex-1 items-end">
                       <div
-                        className="w-full rounded-t bg-primary"
+                        className="w-full rounded-t-sm bg-primary transition-all"
                         style={{ height: `${Math.max(4, (x.cents / maxRev) * 100)}%` }}
                         title={brl(x.cents)}
                       />
                     </div>
-                    <span className="text-xs text-muted-foreground">{monthLabel(x.month)}</span>
+                    <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {monthLabel(x.month)}
+                    </span>
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
+          </div>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Uso de IA por provider</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card className="overflow-hidden p-0">
+          <PanelHead eyebrow="Inteligência artificial" title="Uso de IA por provider" />
+          <div className="p-6">
             <BarList data={m.aiByProvider} />
-          </CardContent>
+          </div>
         </Card>
 
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Assinaturas por plano</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card className="overflow-hidden p-0 lg:col-span-2">
+          <PanelHead eyebrow="Assinaturas" title="Distribuição por plano" />
+          <div className="p-6">
             <BarList data={m.subscriptions.byPlan} />
-          </CardContent>
+          </div>
         </Card>
       </div>
     </div>

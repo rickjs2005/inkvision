@@ -1,10 +1,10 @@
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { requireActor } from "@/server/auth-context";
 import { prisma } from "@inkvision/db";
 import { repositories } from "@/server/container";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { MarkReadButton } from "./mark-read-button";
 
 const ROLE_LABEL: Record<string, string> = { OWNER: "Dono", MANAGER: "Gerente", ARTIST: "Tatuador" };
@@ -27,6 +27,8 @@ const NOTIF_TEXT: Record<string, string> = {
   "order.reviewed": "Você recebeu uma avaliação.",
 };
 
+const dtFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
+
 export default async function PainelPage() {
   const actor = await requireActor();
 
@@ -42,9 +44,18 @@ export default async function PainelPage() {
   const hasUnread = notifications.some((n) => n.readAt === null);
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-12">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Seu painel</h1>
+    <div className="mx-auto max-w-4xl px-6 py-16">
+      {/* Cabeçalho editorial */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="h-px w-8 bg-primary" />
+            <span className="eyebrow">Seu painel</span>
+          </div>
+          <h1 className="mt-5 font-display text-5xl font-light leading-[0.95] tracking-[-0.025em]">
+            Bem-vindo de volta
+          </h1>
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" asChild>
             <Link href="/pedidos">Meus pedidos</Link>
@@ -55,67 +66,94 @@ export default async function PainelPage() {
         </div>
       </div>
 
-      <Card className="mt-6">
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Notificações</CardTitle>
+      {/* Notificações — lista com hairlines */}
+      <section className="mt-14">
+        <div className="flex items-center justify-between border-b border-border pb-3">
+          <span className="eyebrow">Notificações</span>
           {hasUnread && <MarkReadButton />}
-        </CardHeader>
-        <CardContent>
-          {notifications.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nada por aqui ainda.</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {notifications.map((n) => {
-                const orderId = (n.payload as { orderId?: string }).orderId;
-                const text = NOTIF_TEXT[n.type] ?? n.type;
-                // Só a notificação do cliente (orçamento) leva à rota do cliente;
-                // as do lado do estúdio são navegadas pelo painel do tatuador.
-                const href = n.type === "order.quoted" && orderId ? `/pedidos/${orderId}` : null;
-                return (
-                  <li key={n.id} className="flex items-center gap-2 text-sm">
-                    {n.readAt === null && <span className="size-2 shrink-0 rounded-full bg-primary" />}
-                    {href ? (
-                      <Link href={href} className="hover:underline">
-                        {text}
-                      </Link>
+        </div>
+        {notifications.length === 0 ? (
+          <p className="py-6 text-sm text-muted-foreground">Nada por aqui ainda.</p>
+        ) : (
+          <ul>
+            {notifications.map((n) => {
+              const orderId = (n.payload as { orderId?: string }).orderId;
+              const text = NOTIF_TEXT[n.type] ?? n.type;
+              const unread = n.readAt === null;
+              // Só a notificação do cliente (orçamento) leva à rota do cliente;
+              // as do lado do estúdio são navegadas pelo painel do tatuador.
+              const href = n.type === "order.quoted" && orderId ? `/pedidos/${orderId}` : null;
+              const body = (
+                <>
+                  <span className="flex w-4 shrink-0 justify-center pt-1.5">
+                    {unread ? (
+                      <span className="size-2 rounded-full bg-primary" />
                     ) : (
-                      <span>{text}</span>
+                      <span className="size-1.5 rounded-full bg-border" />
                     )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className={unread ? "text-sm text-foreground" : "text-sm text-muted-foreground"}>
+                      {text}
+                    </span>
+                    <span className="mt-0.5 block font-mono text-[11px] text-muted-foreground">
+                      {dtFmt.format(new Date(n.createdAt))}
+                    </span>
+                  </span>
+                  {href && (
+                    <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
+                  )}
+                </>
+              );
+              return (
+                <li key={n.id} className="border-b border-border">
+                  {href ? (
+                    <Link href={href} className="group flex gap-3 py-3.5 transition-colors hover:bg-muted/40">
+                      {body}
+                    </Link>
+                  ) : (
+                    <div className="flex gap-3 py-3.5">{body}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       {actor.platformRole === "ADMIN" && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Administração da plataforma</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
+        <section className="mt-14">
+          <div className="border-b border-border pb-3">
+            <span className="eyebrow">Administração da plataforma</span>
+          </div>
+          <div className="flex items-center justify-between py-5">
+            <p className="font-display text-lg leading-tight">Dashboard da plataforma</p>
+            <Button size="sm" asChild>
               <Link href="/admin">Abrir dashboard</Link>
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       )}
 
       {studios.length > 0 && (
-        <div className="mt-6 grid gap-4">
-          <h2 className="text-sm font-medium text-muted-foreground">Seus estúdios</h2>
-          {studios.map((s) => {
-            const role = actor.memberships.find((m) => m.studioId === s.id)?.role ?? "";
-            return (
-              <Card key={s.id}>
-                <CardContent className="flex items-center justify-between p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="font-medium">{s.name}</span>
+        <section className="mt-14">
+          <div className="border-b border-border pb-3">
+            <span className="eyebrow">Seus estúdios</span>
+          </div>
+          <ul>
+            {studios.map((s) => {
+              const role = actor.memberships.find((m) => m.studioId === s.id)?.role ?? "";
+              return (
+                <li
+                  key={s.id}
+                  className="flex flex-wrap items-center justify-between gap-4 border-b border-border py-5"
+                >
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="font-display text-xl leading-tight">{s.name}</span>
                     <Badge variant="neutral">{ROLE_LABEL[role] ?? role}</Badge>
                     {s.status === "PENDING" && <Badge variant="warning">Onboarding pendente</Badge>}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {role === "OWNER" && s.status === "PENDING" && (
                       <Button size="sm" asChild>
                         <Link href={`/estudio/${s.id}/onboarding`}>Completar cadastro</Link>
@@ -131,20 +169,23 @@ export default async function PainelPage() {
                         <Link href={`/estudio/${s.id}/planos`}>Pagamentos</Link>
                       </Button>
                     )}
-                    <Button size="sm" variant="outline" asChild>
+                    <Button size="sm" variant="ghost" asChild>
                       <Link href={`/s/${s.slug}`}>Ver página</Link>
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
 
       {studios.length === 0 && actor.platformRole !== "ADMIN" && (
-        <p className="mt-6 text-muted-foreground">
-          Explore <Link href="/tatuadores" className="text-primary hover:underline">tatuadores</Link>{" "}
+        <p className="mt-14 text-muted-foreground">
+          Explore{" "}
+          <Link href="/tatuadores" className="ink-link text-foreground">
+            tatuadores
+          </Link>{" "}
           para começar um projeto.
         </p>
       )}

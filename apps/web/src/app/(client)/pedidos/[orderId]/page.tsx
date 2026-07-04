@@ -4,7 +4,6 @@ import { canTransition, DomainError } from "@inkvision/core";
 import { requireActor } from "@/server/auth-context";
 import { useCases } from "@/server/container";
 import { signRoomToken } from "@/server/realtime";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/order/status-badge";
 import { OrderTimeline } from "@/components/order/order-timeline";
 import { ClientChat } from "@/components/chat/client-chat";
@@ -55,42 +54,46 @@ export default async function ClientOrderDetailPage({
   const canReview = order.status === "COMPLETED" || order.status === "REVIEWED";
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">Pedido</p>
-          <h1 className="text-2xl font-bold">
-            <Link href={`/t/${order.artistId}`} className="hover:underline">
-              {order.artistName}
-            </Link>
-          </h1>
-        </div>
+    <div className="mx-auto max-w-3xl px-6 py-16">
+      {/* Cabeçalho editorial */}
+      <div className="flex items-center gap-3">
+        <span className="h-px w-8 bg-primary" />
+        <span className="eyebrow">Pedido</span>
+      </div>
+      <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+        <h1 className="font-display text-4xl font-light leading-[0.95] tracking-[-0.025em] sm:text-5xl">
+          <Link href={`/t/${order.artistId}`} className="ink-link">
+            {order.artistName}
+          </Link>
+        </h1>
         <StatusBadge status={order.status} />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Briefing</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3 text-sm">
-              <p><span className="text-muted-foreground">Parte do corpo:</span> {order.bodyPart}</p>
+      <div className="mt-12 grid gap-x-10 gap-y-12 md:grid-cols-[2fr_1fr]">
+        <div className="flex flex-col gap-12">
+          <section className="border-t border-border pt-6">
+            <p className="eyebrow mb-4">Briefing</p>
+            <div className="flex flex-col gap-3 text-sm">
+              <p>
+                <span className="text-muted-foreground">Parte do corpo:</span> {order.bodyPart}
+              </p>
               {order.approxSizeCm && (
-                <p><span className="text-muted-foreground">Tamanho:</span> ~{order.approxSizeCm} cm</p>
+                <p>
+                  <span className="text-muted-foreground">Tamanho:</span> ~{order.approxSizeCm} cm
+                </p>
               )}
-              <p className="whitespace-pre-wrap">{order.briefing}</p>
+              <p className="whitespace-pre-wrap leading-relaxed">{order.briefing}</p>
               {order.references.length > 0 && (
                 <div>
                   <p className="mb-2 text-muted-foreground">Referências:</p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-3">
                     {order.references.map((r) => (
                       <a
                         key={r.id}
                         href={r.fileUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-sm text-primary hover:underline"
+                        className="ink-link text-sm text-foreground"
                       >
                         anexo
                       </a>
@@ -98,23 +101,24 @@ export default async function ClientOrderDetailPage({
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {order.quoteAmountCents != null && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Orçamento</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-2 text-sm">
-                <p className="text-2xl font-bold">R$ {(order.quoteAmountCents / 100).toFixed(2)}</p>
-                {order.depositCents != null && (
-                  <p className="text-muted-foreground">
-                    Sinal para iniciar: R$ {(order.depositCents / 100).toFixed(2)}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+            <section className="border-t border-border pt-6">
+              <p className="eyebrow mb-4">Orçamento</p>
+              <p className="font-mono text-4xl font-light tracking-tight text-foreground">
+                R$ {(order.quoteAmountCents / 100).toFixed(2)}
+              </p>
+              {order.depositCents != null && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Sinal para iniciar:{" "}
+                  <span className="font-mono text-foreground">
+                    R$ {(order.depositCents / 100).toFixed(2)}
+                  </span>
+                </p>
+              )}
+            </section>
           )}
 
           <OrderClientActions
@@ -131,86 +135,66 @@ export default async function ClientOrderDetailPage({
           )}
 
           {canBook && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Agendamento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BookingSection
-                  orderId={order.id}
-                  status={order.status as "SIMULATION_APPROVED" | "SCHEDULED"}
-                  slots={slots}
-                  appointmentStartsAt={appointment ? appointment.startsAt.toISOString() : null}
-                />
-              </CardContent>
-            </Card>
+            <section className="border-t border-border pt-6">
+              <p className="eyebrow mb-4">Agendamento</p>
+              <BookingSection
+                orderId={order.id}
+                status={order.status as "SIMULATION_APPROVED" | "SCHEDULED"}
+                slots={slots}
+                appointmentStartsAt={appointment ? appointment.startsAt.toISOString() : null}
+              />
+            </section>
           )}
 
           {canReview && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Avaliação</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ReviewSection
-                  orderId={order.id}
-                  existing={review ? { rating: review.rating, comment: review.comment } : null}
-                />
-              </CardContent>
-            </Card>
+            <section className="border-t border-border pt-6">
+              <p className="eyebrow mb-4">Avaliação</p>
+              <ReviewSection
+                orderId={order.id}
+                existing={review ? { rating: review.rating, comment: review.comment } : null}
+              />
+            </section>
           )}
 
           {inFlow && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Arte & simulação</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ClientSimulationSection
-                  orderId={order.id}
-                  studioId={order.studioId}
-                  status={order.status}
-                  roomToken={roomToken}
-                  design={latestDesign ? { imageUrl: latestDesign.imageUrl, feedback: latestDesign.feedback } : null}
-                  simulation={
-                    latestSim
-                      ? {
-                          bodyPhotoUrl: latestSim.bodyPhotoUrl,
-                          designUrl: latestSim.designUrl,
-                          placement: latestSim.placement,
-                          status: latestSim.status,
-                        }
-                      : null
-                  }
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Conversa com {order.artistName}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ClientChat
+            <section className="border-t border-border pt-6">
+              <p className="eyebrow mb-4">Arte & simulação</p>
+              <ClientSimulationSection
                 orderId={order.id}
                 studioId={order.studioId}
-                currentUserId={actor.userId}
+                status={order.status}
                 roomToken={roomToken}
-                initialMessages={messages}
+                design={latestDesign ? { imageUrl: latestDesign.imageUrl, feedback: latestDesign.feedback } : null}
+                simulation={
+                  latestSim
+                    ? {
+                        bodyPhotoUrl: latestSim.bodyPhotoUrl,
+                        designUrl: latestSim.designUrl,
+                        placement: latestSim.placement,
+                        status: latestSim.status,
+                      }
+                    : null
+                }
               />
-            </CardContent>
-          </Card>
+            </section>
+          )}
+
+          <section className="border-t border-border pt-6">
+            <p className="eyebrow mb-4">Conversa com {order.artistName}</p>
+            <ClientChat
+              orderId={order.id}
+              studioId={order.studioId}
+              currentUserId={actor.userId}
+              roomToken={roomToken}
+              initialMessages={messages}
+            />
+          </section>
         </div>
 
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle>Histórico</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <OrderTimeline events={order.events} />
-          </CardContent>
-        </Card>
+        <aside className="h-fit border-t border-border pt-6">
+          <p className="eyebrow mb-4">Histórico</p>
+          <OrderTimeline events={order.events} />
+        </aside>
       </div>
     </div>
   );

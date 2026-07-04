@@ -2,18 +2,23 @@
 
 import Image from "next/image";
 import { useState, useTransition } from "react";
-import { Heart, MessageCircle } from "lucide-react";
+import { Heart, MessageCircle, Send } from "lucide-react";
 import type { PortfolioItem } from "@inkvision/core";
 import {
   addCommentAction,
   getCommentsAction,
   toggleLikeAction,
 } from "@/server/actions/portfolio";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type Comment = { id: string; authorName: string; body: string };
 
-function Item({ item, isAuthed }: { item: PortfolioItem; isAuthed: boolean }) {
+// Ritmo assimétrico do mosaico — alturas variam por posição para evitar a
+// grade uniforme. object-cover garante enquadramento consistente.
+const RATIOS = ["aspect-[4/5]", "aspect-square", "aspect-[3/4]", "aspect-square", "aspect-[4/5]", "aspect-[3/4]"];
+
+function Item({ item, index, isAuthed }: { item: PortfolioItem; index: number; isAuthed: boolean }) {
   const [liked, setLiked] = useState(!!item.likedByViewer);
   const [count, setCount] = useState(item.likesCount);
   const [open, setOpen] = useState(false);
@@ -48,73 +53,98 @@ function Item({ item, isAuthed }: { item: PortfolioItem; isAuthed: boolean }) {
   }
 
   const src = item.type === "BEFORE_AFTER" ? item.afterUrl! : item.mediaUrl;
+  const ratio = RATIOS[index % RATIOS.length];
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border">
-      <Image
-        src={src}
-        alt={item.description ?? "Trabalho"}
-        width={500}
-        height={500}
-        className="aspect-square w-full object-cover"
-      />
-      <div className="flex flex-col gap-2 p-3">
-        {item.description && <p className="text-sm">{item.description}</p>}
-        {item.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {item.tags.map((t) => (
-              <span key={t} className="text-xs text-muted-foreground">
-                #{t}
-              </span>
-            ))}
-          </div>
+    <div className="mb-4 break-inside-avoid overflow-hidden rounded-lg border border-border bg-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)]">
+      <div className={cn("group relative overflow-hidden", ratio)}>
+        <Image
+          src={src}
+          alt={item.description ?? "Trabalho de tatuagem"}
+          fill
+          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          className="object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+        {item.type === "BEFORE_AFTER" && (
+          <span className="absolute left-3 top-3 rounded-[4px] border border-primary/25 bg-primary/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-primary backdrop-blur-sm">
+            Antes · Depois
+          </span>
         )}
-        <div className="flex items-center gap-4 text-sm">
-          <button
-            type="button"
-            onClick={like}
-            disabled={!isAuthed || pending}
-            className={cn("flex items-center gap-1", liked ? "text-primary" : "text-muted-foreground")}
-            title={isAuthed ? "Curtir" : "Entre para curtir"}
-          >
-            <Heart className={cn("size-4", liked && "fill-current")} />
-            {count}
-          </button>
-          <button
-            type="button"
-            onClick={openComments}
-            className="flex items-center gap-1 text-muted-foreground"
-          >
-            <MessageCircle className="size-4" />
-            Comentários
-          </button>
-        </div>
-
-        {open && (
-          <div className="flex flex-col gap-2 border-t border-border pt-2">
-            {comments?.map((c) => (
-              <p key={c.id} className="text-sm">
-                <span className="font-medium">{c.authorName}:</span> {c.body}
-              </p>
-            ))}
-            {comments?.length === 0 && (
-              <p className="text-xs text-muted-foreground">Seja o primeiro a comentar.</p>
+        {(item.description || item.tags.length > 0) && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-2 bg-gradient-to-t from-background/90 via-background/40 to-transparent p-4 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+            {item.description && (
+              <p className="text-sm leading-snug text-foreground">{item.description}</p>
             )}
-            {isAuthed && (
-              <form onSubmit={submitComment} className="flex gap-2">
-                <input
-                  name="body"
-                  placeholder="Escreva um comentário…"
-                  className="h-9 flex-1 rounded-md border border-input bg-transparent px-3 text-sm"
-                />
-                <button type="submit" className="text-sm text-primary">
-                  Enviar
-                </button>
-              </form>
+            {item.tags.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5">
+                {item.tags.map((t) => (
+                  <span
+                    key={t}
+                    className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
+                  >
+                    #{t}
+                  </span>
+                ))}
+              </div>
             )}
           </div>
         )}
       </div>
+
+      {/* Régua de ações */}
+      <div className="flex items-center gap-1 border-t border-border px-2 py-1.5">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={like}
+          disabled={!isAuthed || pending}
+          aria-pressed={liked}
+          title={isAuthed ? "Curtir" : "Entre para curtir"}
+          className={cn("gap-1.5", liked ? "text-primary" : "text-muted-foreground")}
+        >
+          <Heart className={cn("size-4", liked && "fill-current")} />
+          <span className="font-mono text-xs tabular-nums">{count}</span>
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={openComments}
+          aria-expanded={open}
+          className="gap-1.5 text-muted-foreground"
+        >
+          <MessageCircle className="size-4" />
+          <span className="font-mono text-xs">Comentar</span>
+        </Button>
+      </div>
+
+      {open && (
+        <div className="flex flex-col gap-2.5 border-t border-border px-4 py-3">
+          {comments?.map((c) => (
+            <p key={c.id} className="text-sm leading-snug">
+              <span className="font-medium">{c.authorName}</span>{" "}
+              <span className="text-muted-foreground">{c.body}</span>
+            </p>
+          ))}
+          {comments?.length === 0 && (
+            <p className="font-mono text-xs text-muted-foreground">Seja o primeiro a comentar.</p>
+          )}
+          {isAuthed && (
+            <form onSubmit={submitComment} className="mt-1 flex items-center gap-2">
+              <input
+                name="body"
+                placeholder="Escreva um comentário…"
+                aria-label="Comentário"
+                className="h-9 flex-1 rounded-md border border-input bg-transparent px-3 text-sm outline-none transition-colors focus:border-primary"
+              />
+              <Button type="submit" size="icon" variant="ghost" aria-label="Enviar comentário">
+                <Send className="size-4 text-primary" />
+              </Button>
+            </form>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -127,12 +157,16 @@ export function PortfolioGallery({
   isAuthed: boolean;
 }) {
   if (items.length === 0) {
-    return <p className="text-muted-foreground">Este tatuador ainda não publicou trabalhos.</p>;
+    return (
+      <p className="font-display text-2xl text-muted-foreground">
+        Este tatuador ainda não publicou trabalhos.
+      </p>
+    );
   }
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((it) => (
-        <Item key={it.id} item={it} isAuthed={isAuthed} />
+    <div className="columns-1 gap-4 sm:columns-2 lg:columns-3">
+      {items.map((it, i) => (
+        <Item key={it.id} item={it} index={i} isAuthed={isAuthed} />
       ))}
     </div>
   );

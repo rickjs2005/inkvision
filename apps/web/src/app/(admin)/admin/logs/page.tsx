@@ -1,6 +1,6 @@
 import { requirePlatformAdmin } from "@/server/auth-context";
 import { useCases } from "@/server/container";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 const fmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "medium" });
@@ -18,52 +18,60 @@ export default async function AdminLogsPage({
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold">Logs de auditoria</h1>
-        <p className="text-sm text-muted-foreground">{total} evento(s)</p>
+    <div className="flex flex-col gap-10">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="h-px w-8 bg-primary" />
+            <span className="eyebrow">Administração · Auditoria</span>
+          </div>
+          <h1 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">Logs</h1>
+        </div>
+        <p className="font-mono text-sm text-muted-foreground">
+          {String(total).padStart(2, "0")} evento(s)
+        </p>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b border-border text-left text-muted-foreground">
+      <Card className="overflow-hidden p-0">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[42rem] text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="eyebrow px-5 py-3 text-left">Quando</th>
+                <th className="eyebrow px-5 py-3 text-left">Ação</th>
+                <th className="eyebrow px-5 py-3 text-left">Entidade</th>
+                <th className="eyebrow px-5 py-3 text-left">Estúdio</th>
+              </tr>
+            </thead>
+            <tbody className="font-mono">
+              {items.length === 0 && (
                 <tr>
-                  <th className="px-5 py-3 font-medium">Quando</th>
-                  <th className="px-5 py-3 font-medium">Ação</th>
-                  <th className="px-5 py-3 font-medium">Entidade</th>
-                  <th className="px-5 py-3 font-medium">Estúdio</th>
+                  <td colSpan={4} className="px-5 py-16 text-center font-sans text-muted-foreground">
+                    Nenhum evento registrado.
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {items.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-5 py-10 text-center text-muted-foreground">
-                      Nenhum evento registrado.
-                    </td>
-                  </tr>
-                )}
-                {items.map((l) => (
-                  <tr key={l.id} className="border-b border-border last:border-0">
-                    <td className="px-5 py-3 text-muted-foreground">{fmt.format(new Date(l.createdAt))}</td>
-                    <td className="px-5 py-3">
-                      <Badge variant="neutral">{l.action}</Badge>
-                    </td>
-                    <td className="px-5 py-3 text-muted-foreground">
-                      {l.entity} · {l.entityId.slice(0, 8)}
-                    </td>
-                    <td className="px-5 py-3 text-muted-foreground">{l.studioId?.slice(0, 8) ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
+              )}
+              {items.map((l) => (
+                <tr key={l.id} className="border-b border-border last:border-0 hover:bg-muted/40">
+                  <td className="whitespace-nowrap px-5 py-3 tabular-nums text-muted-foreground">
+                    {fmt.format(new Date(l.createdAt))}
+                  </td>
+                  <td className="px-5 py-3">
+                    <Badge variant="neutral">{l.action}</Badge>
+                  </td>
+                  <td className="px-5 py-3 text-muted-foreground">
+                    {l.entity} · {l.entityId.slice(0, 8)}
+                  </td>
+                  <td className="px-5 py-3 text-muted-foreground">{l.studioId?.slice(0, 8) ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
-      <p className="text-sm text-muted-foreground">
-        Página {page} · {perPage} por página
+      <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+        Página {String(page).padStart(2, "0")} · {perPage} por página
       </p>
     </div>
   );

@@ -1,7 +1,7 @@
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { requireActor } from "@/server/auth-context";
 import { useCases } from "@/server/container";
-import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/order/status-badge";
 
 export default async function ClientOrdersPage() {
@@ -9,36 +9,59 @@ export default async function ClientOrdersPage() {
   const orders = await useCases.listClientOrders.execute(actor);
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
-      <h1 className="text-2xl font-bold">Meus pedidos</h1>
+    <div className="mx-auto max-w-3xl px-6 py-16">
+      {/* Cabeçalho editorial */}
+      <div className="flex items-center gap-3">
+        <span className="h-px w-8 bg-primary" />
+        <span className="eyebrow">Seus projetos</span>
+      </div>
+      <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+        <h1 className="font-display text-5xl font-light leading-[0.95] tracking-[-0.025em]">
+          Meus pedidos
+        </h1>
+        <p className="font-mono text-sm text-muted-foreground">
+          {String(orders.length).padStart(2, "0")} {orders.length === 1 ? "pedido" : "pedidos"}
+        </p>
+      </div>
 
       {orders.length === 0 ? (
-        <p className="mt-6 text-muted-foreground">
+        <p className="mt-16 font-display text-2xl text-muted-foreground">
           Você ainda não tem pedidos.{" "}
-          <Link href="/tatuadores" className="text-primary hover:underline">
+          <Link href="/tatuadores" className="ink-link text-foreground">
             Encontre um tatuador
           </Link>{" "}
           para começar.
         </p>
       ) : (
-        <div className="mt-6 grid gap-3">
-          {orders.map((o) => (
-            <Link key={o.id} href={`/pedidos/${o.id}`}>
-              <Card className="transition-colors hover:border-primary">
-                <CardContent className="flex items-center justify-between p-5">
-                  <div>
-                    <p className="font-medium">{o.artistName}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {o.bodyPart}
-                      {o.quoteAmountCents != null && ` · R$ ${(o.quoteAmountCents / 100).toFixed(0)}`}
-                    </p>
-                  </div>
+        <ul className="mt-8 border-t border-border">
+          {orders.map((o, i) => (
+            <li key={o.id}>
+              <Link
+                href={`/pedidos/${o.id}`}
+                className="group grid grid-cols-[2rem_1fr_auto] items-center gap-4 border-b border-border py-5 transition-colors hover:bg-muted/40 sm:gap-6 sm:px-2"
+              >
+                <span className="font-mono text-xs text-muted-foreground">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className="min-w-0">
+                  <span className="font-display text-2xl leading-tight transition-colors group-hover:text-primary">
+                    {o.artistName}
+                  </span>
+                  <span className="mt-1 flex flex-wrap items-center gap-x-3 font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                    <span>{o.bodyPart}</span>
+                    {o.quoteAmountCents != null && (
+                      <span>R$ {(o.quoteAmountCents / 100).toFixed(0)}</span>
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 justify-self-end">
                   <StatusBadge status={o.status} />
-                </CardContent>
-              </Card>
-            </Link>
+                  <ArrowUpRight className="size-5 text-muted-foreground transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
+                </div>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );
