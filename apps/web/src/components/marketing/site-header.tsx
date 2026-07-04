@@ -1,6 +1,10 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Wordmark } from "@/components/brand/wordmark";
+import { cn } from "@/lib/utils";
 import { AuthNav } from "./auth-nav";
 
 const NAV = [
@@ -9,11 +13,32 @@ const NAV = [
   { href: "/#estilos", label: "Estilos" },
 ];
 
-/** Header estático — o estado de auth hidrata via <AuthNav/> (client). */
+/** Header com estado de scroll — a moldura se firma ao rolar. */
 export function SiteHeader() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/72 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-3.5">
+    <header
+      className={cn(
+        "sticky top-0 z-40 transition-all duration-300",
+        scrolled
+          ? "border-b border-border bg-background/80 shadow-[var(--shadow-ink)] backdrop-blur-xl"
+          : "border-b border-transparent bg-background/40 backdrop-blur-md",
+      )}
+    >
+      <div
+        className={cn(
+          "mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 transition-all duration-300",
+          scrolled ? "py-2.5" : "py-4",
+        )}
+      >
         <Link href="/" aria-label="InkVision — início" className="shrink-0">
           <Wordmark />
         </Link>

@@ -4,9 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
-import { ArrowRight, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroSimulation } from "./hero-simulation";
+
+const FEATURES = ["Simulação IA", "Chat com o artista", "Aprovação da arte", "Agendamento"];
 
 const MODES = [
   { key: "tatuador", label: "Tatuador", placeholder: "Nome do tatuador ou estilo" },
@@ -63,8 +65,18 @@ export function Hero() {
 
             <m.p variants={rise} className="mt-7 max-w-md text-[15px] leading-relaxed text-muted-foreground">
               Envie uma foto do seu corpo e a IA aplica o desenho na sua pele — perspectiva, luz e
-              sombra. Aprove a arte no chat, agende e pague num só lugar.
+              sombra. Encontre o artista, aprove a arte no chat, agende e pague num só lugar.
             </m.p>
+
+            {/* Diferenciais do marketplace */}
+            <m.ul variants={rise} className="mt-6 flex flex-wrap gap-x-5 gap-y-2">
+              {FEATURES.map((f) => (
+                <li key={f} className="inline-flex items-center gap-1.5 text-sm text-foreground/80">
+                  <Check className="size-3.5 text-primary" strokeWidth={2.5} />
+                  {f}
+                </li>
+              ))}
+            </m.ul>
 
             {/* CTA dominante */}
             <m.div variants={rise} className="mt-9 flex flex-wrap items-center gap-3">
@@ -136,17 +148,21 @@ export function Hero() {
             initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            className="relative mx-auto hidden w-full max-w-sm lg:block"
+            className="relative mx-auto hidden w-full max-w-md lg:block"
           >
             {/* cartão-sombra atrás, para profundidade */}
-            <div className="absolute -right-5 top-8 -z-10 h-full w-full -rotate-3 rounded-xl border border-border bg-card/60 shadow-[var(--shadow-ink)]" />
+            <div className="absolute -right-6 top-8 -z-10 h-full w-full -rotate-3 rounded-2xl border border-border bg-card/60 shadow-[var(--shadow-ink)]" />
             <HeroSimulation />
-            {/* chip que "sai" da moldura — quebra o container */}
-            <div className="absolute -bottom-4 -left-6 flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 shadow-[var(--shadow-lift)]">
-              <span className="font-display text-2xl leading-none text-primary">↔</span>
+            {/* chip de artista — elemento humano/marketplace saindo da moldura */}
+            <div className="absolute -bottom-5 -left-7 flex items-center gap-3 rounded-md border border-border bg-background px-3.5 py-2.5 shadow-[var(--shadow-lift)]">
+              <span className="flex size-9 items-center justify-center rounded-full bg-foreground font-display text-sm text-background">
+                RC
+              </span>
               <div className="leading-tight">
-                <p className="eyebrow">Antes / Depois</p>
-                <p className="font-mono text-[11px] text-muted-foreground">resultado realista</p>
+                <p className="text-sm font-medium">Rafa Costa</p>
+                <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Fine line · ★ 4.9
+                </p>
               </div>
             </div>
           </m.div>
