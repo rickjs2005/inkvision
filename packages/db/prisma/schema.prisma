@@ -1,0 +1,565 @@
+// InkVision — schema completo (multi-tenant por studioId + RLS).
+// Ref.: docs/ARCHITECTURE.md §3.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────────────────── Enums ────────────────────────────
+enum PlatformRole {
+  ADMIN
+  USER
+}
+
+enum StudioRole {
+  OWNER
+  MANAGER
+  ARTIST
+}
+
+enum StudioStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum MediaKind {
+  IMAGE
+  VIDEO
+  BEFORE_AFTER
+}
+
+enum OrderStatus {
+  SUBMITTED
+  QUOTED
+  DEPOSIT_PENDING
+  DEPOSIT_PAID
+  IN_DESIGN
+  DESIGN_REVIEW
+  CHANGES_REQUESTED
+  DESIGN_APPROVED
+  AWAITING_BODY_PHOTO
+  SIMULATING
+  SIMULATION_REVIEW
+  SIMULATION_APPROVED
+  SCHEDULED
+  COMPLETED
+  REVIEWED
+  CANCELLED
+  REFUNDED
+}
+
+enum DesignStatus {
+  PENDING
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  DONE
+  FAILED
+}
+
+enum MessageKind {
+  TEXT
+  AUDIO
+  IMAGE
+  PDF
+  VIDEO
+  SYSTEM
+}
+
+enum AppointmentStatus {
+  CONFIRMED
+  RESCHEDULED
+  DONE
+  NO_SHOW
+  CANCELLED
+}
+
+enum PaymentKind {
+  DEPOSIT
+  FINAL
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum FavKind {
+  ARTIST
+  STUDIO
+  PORTFOLIO_ITEM
+}
+
+// ──────────────────────────── Identidade ────────────────────────────
+// User/Session/Account/Verification seguem o schema do Better Auth.
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  emailVerified Boolean        @default(false)
+  image         String?
+  phone         String?
+  platformRole  PlatformRole   @default(USER)
+  memberships   StudioMember[]
+  artistProfile ArtistProfile?
+  sessions      Session[]
+  accounts      Account[]
+  ordersAsClient Order[]       @relation("ClientOrders")
+  notifications Notification[]
+  favorites     Favorite[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+// ──────────────────────────── Tenant ────────────────────────────
+model Studio {
+  id              String         @id @default(cuid())
+  slug            String         @unique
+  name            String
+  logoUrl         String?
+  description     String?
+  addressStreet   String?
+  addressCity     String?
+  addressState    String?
+  addressZip      String?
+  phone           String?
+  socials         Json?
+  openingHours    Json?
+  stripeAccountId String?
+  status          StudioStatus   @default(PENDING)
+  members         StudioMember[]
+  artists         ArtistProfile[]
+  portfolio       PortfolioItem[]
+  orders          Order[]
+  conversations   Conversation[]
+  appointments    Appointment[]
+  payments        Payment[]
+  reviews         Review[]
+  subscription    Subscription?
+  aiUsage         AiUsageLog[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model StudioMember {
+  id        String     @id @default(cuid())
+  studioId  String
+  userId    String
+  role      StudioRole
+  studio    Studio     @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+
+  @@unique([studioId, userId])
+  @@index([userId])
+}
+
+// ──────────────────────────── Artista ────────────────────────────
+model ArtistProfile {
+  id              String          @id @default(cuid())
+  studioId        String
+  userId          String          @unique
+  bio             String?
+  experienceYears Int?
+  instagram       String?
+  avgPriceCents   Int?
+  avgResponseMin  Int?
+  ratingAvg       Decimal?        @db.Decimal(3, 2)
+  ratingCount     Int             @default(0)
+  isActive        Boolean         @default(true)
+  studio          Studio          @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  styles          ArtistStyle[]
+  portfolio       PortfolioItem[]
+  orders          Order[]         @relation("ArtistOrders")
+  availability    AvailabilityRule[]
+  timeOff         TimeOff[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([studioId])
+}
+
+model Style {
+  id      String        @id @default(cuid())
+  slug    String        @unique
+  name    String
+  artists ArtistStyle[]
+  orders  Order[]
+}
+
+model ArtistStyle {
+  artistId String
+  styleId  String
+  artist   ArtistProfile @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  style    Style         @relation(fields: [styleId], references: [id], onDelete: Cascade)
+
+  @@id([artistId, styleId])
+}
+
+// ──────────────────────────── Portfólio ────────────────────────────
+model PortfolioItem {
+  id          String             @id @default(cuid())
+  studioId    String
+  artistId    String
+  type        MediaKind
+  mediaUrl    String
+  beforeUrl   String?
+  afterUrl    String?
+  description String?
+  tags        String[]
+  styleId     String?
+  likesCount  Int                @default(0)
+  studio      Studio             @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  artist      ArtistProfile      @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  likes       PortfolioLike[]
+  comments    PortfolioComment[]
+  createdAt   DateTime           @default(now())
+
+  @@index([studioId])
+  @@index([artistId])
+}
+
+model PortfolioLike {
+  userId String
+  itemId String
+  item   PortfolioItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@id([userId, itemId])
+}
+
+model PortfolioComment {
+  id        String        @id @default(cuid())
+  itemId    String
+  userId    String
+  body      String
+  item      PortfolioItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@index([itemId])
+}
+
+// ──────────────────────────── Pedido (agregado central) ────────────────────────────
+model Order {
+  id               String           @id @default(cuid())
+  studioId         String
+  clientId         String
+  artistId         String
+  styleId          String?
+  bodyPart         String
+  approxSizeCm     Int?
+  briefing         String
+  status           OrderStatus      @default(SUBMITTED)
+  quoteAmountCents Int?
+  depositCents     Int?
+  currency         String           @default("BRL")
+  studio           Studio           @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  client           User             @relation("ClientOrders", fields: [clientId], references: [id])
+  artist           ArtistProfile    @relation("ArtistOrders", fields: [artistId], references: [id])
+  style            Style?           @relation(fields: [styleId], references: [id])
+  references       OrderReference[]
+  designs          DesignVersion[]
+  simulations      Simulation[]
+  payments         Payment[]
+  events           OrderEvent[]
+  conversation     Conversation?
+  appointment      Appointment?
+  review           Review?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([studioId, status])
+  @@index([clientId])
+  @@index([artistId])
+}
+
+model OrderReference {
+  id      String @id @default(cuid())
+  orderId String
+  fileUrl String
+  note    String?
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model OrderEvent {
+  id        String       @id @default(cuid())
+  orderId   String
+  actorId   String?
+  from      OrderStatus?
+  to        OrderStatus
+  metadata  Json?
+  order     Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+
+  @@index([orderId])
+}
+
+model DesignVersion {
+  id        String       @id @default(cuid())
+  orderId   String
+  version   Int
+  imageUrl  String
+  notes     String?
+  status    DesignStatus @default(PENDING)
+  feedback  String?
+  order     Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  simulations Simulation[]
+  createdAt DateTime     @default(now())
+
+  @@unique([orderId, version])
+}
+
+// ──────────────────────────── Simulação IA ────────────────────────────
+model Simulation {
+  id              String        @id @default(cuid())
+  orderId         String
+  studioId        String
+  designVersionId String
+  designUrl       String
+  bodyPhotoUrl    String
+  placement       Json
+  variants        Json?
+  provider        String
+  status          JobStatus     @default(QUEUED)
+  errorMessage    String?
+  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  designVersion   DesignVersion @relation(fields: [designVersionId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+
+  @@index([orderId])
+  @@index([studioId])
+}
+
+// ──────────────────────────── Chat ────────────────────────────
+model Conversation {
+  id        String    @id @default(cuid())
+  studioId  String
+  orderId   String?   @unique
+  clientId  String
+  artistId  String
+  studio    Studio    @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  order     Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  messages  Message[]
+  createdAt DateTime  @default(now())
+
+  @@index([studioId, clientId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId       String
+  kind           MessageKind
+  body           String?
+  attachmentUrl  String?
+  attachmentMeta Json?
+  deliveredAt    DateTime?
+  readAt         DateTime?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// ──────────────────────────── Agenda ────────────────────────────
+model AvailabilityRule {
+  id       String        @id @default(cuid())
+  artistId String
+  weekday  Int // 0=domingo … 6=sábado
+  startMin Int // minutos desde 00:00
+  endMin   Int
+  artist   ArtistProfile @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@index([artistId])
+}
+
+model TimeOff {
+  id       String        @id @default(cuid())
+  artistId String
+  startsAt DateTime
+  endsAt   DateTime
+  reason   String?
+  artist   ArtistProfile @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@index([artistId])
+}
+
+model Appointment {
+  id        String            @id @default(cuid())
+  studioId  String
+  orderId   String            @unique
+  artistId  String
+  clientId  String
+  startsAt  DateTime
+  endsAt    DateTime
+  status    AppointmentStatus @default(CONFIRMED)
+  studio    Studio            @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  order     Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt DateTime          @default(now())
+
+  @@index([artistId, startsAt])
+}
+
+// ──────────────────────────── Financeiro ────────────────────────────
+model Payment {
+  id                    String        @id @default(cuid())
+  studioId              String
+  orderId               String
+  kind                  PaymentKind
+  amountCents           Int
+  feeCents              Int
+  stripePaymentIntentId String        @unique
+  status                PaymentStatus @default(PENDING)
+  studio                Studio        @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  order                 Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt             DateTime      @default(now())
+
+  @@index([studioId])
+  @@index([orderId])
+}
+
+model Plan {
+  id               String         @id @default(cuid())
+  slug             String         @unique
+  name             String
+  priceCents       Int
+  maxArtists       Int
+  aiCreditsMonthly Int
+  features         Json
+  subscriptions    Subscription[]
+}
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  studioId             String   @unique
+  planId               String
+  stripeSubscriptionId String   @unique
+  status               String
+  currentPeriodEnd     DateTime
+  studio               Studio   @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  plan                 Plan     @relation(fields: [planId], references: [id])
+}
+
+// ──────────────────────────── Social / transversal ────────────────────────────
+model Review {
+  id        String        @id @default(cuid())
+  orderId   String        @unique
+  studioId  String
+  artistId  String
+  clientId  String
+  rating    Int
+  comment   String?
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  studio    Studio        @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@index([artistId])
+}
+
+model Favorite {
+  userId     String
+  targetType FavKind
+  targetId   String
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@id([userId, targetType, targetId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  payload   Json
+  readAt    DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}
+
+model AiUsageLog {
+  id        String   @id @default(cuid())
+  studioId  String
+  provider  String
+  operation String
+  costCents Int?
+  studio    Studio   @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([studioId, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  studioId  String?
+  userId    String?
+  action    String
+  entity    String
+  entityId  String
+  metadata  Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([studioId])
+  @@index([entity, entityId])
+}

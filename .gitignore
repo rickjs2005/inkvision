@@ -1,0 +1,23 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# build
+.next/
+out/
+dist/
+build/
+.turbo/
+
+# env
+.env
+.env.*
+!.env.example
+
+# prisma
+packages/db/prisma/*.db
+
+# misc
+*.log
+.DS_Store
+coverage/
