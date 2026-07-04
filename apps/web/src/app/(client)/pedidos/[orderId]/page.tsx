@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { canTransition, DomainError } from "@inkvision/core";
 import { requireActor } from "@/server/auth-context";
-import { repositories, useCases } from "@/server/container";
+import { useCases } from "@/server/container";
 import { signRoomToken } from "@/server/realtime";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/order/status-badge";
@@ -31,36 +31,28 @@ export default async function ClientOrderDetailPage({
   const { orderId } = await params;
   const actor = await requireActor();
 
-  let conv;
+  let detail;
   try {
-    conv = await useCases.openClientConversation.execute(actor, orderId);
+    detail = await useCases.getClientOrderDetail.execute(actor, orderId);
   } catch (e) {
     if (e instanceof DomainError && e.code === "NOT_FOUND") notFound();
     throw e;
   }
-  const { order, conversation, messages } = conv;
+  const {
+    order,
+    conversation,
+    messages,
+    latestDesign,
+    latestSimulation: latestSim,
+    appointment,
+    review,
+  } = detail;
   const roomToken = await signRoomToken(actor.userId, conversation.id);
 
   const inFlow = (FLOW_STATUSES as readonly string[]).includes(order.status);
-  const [latestDesign, latestSim] = inFlow
-    ? await Promise.all([
-        repositories.designs.getLatest(order.id),
-        repositories.simulations.getLatestForOrder(order.id),
-      ])
-    : [null, null];
-
   const canBook = order.status === "SIMULATION_APPROVED" || order.status === "SCHEDULED";
-  const slots = canBook
-    ? (await useCases.getOrderSlots.execute(actor, order.id)).map((s) => s.startsAt.toISOString())
-    : [];
-  const appointment =
-    order.status === "SCHEDULED"
-      ? await repositories.schedule.getAppointmentForOrder(order.studioId, order.id)
-      : null;
+  const slots = detail.slots.map((s) => s.toISOString());
   const canReview = order.status === "COMPLETED" || order.status === "REVIEWED";
-  const review = canReview
-    ? await repositories.reviews.getForOrder(order.studioId, order.id)
-    : null;
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">

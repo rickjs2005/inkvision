@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireActor } from "@/server/auth-context";
 import { run, type ActionResult } from "@/server/action-result";
 import { useCases } from "@/server/container";
@@ -18,6 +18,14 @@ export async function reviewOrderAction(
       comment: input.comment ?? null,
     });
   });
-  if (res.ok) revalidatePath(`/pedidos/${orderId}`);
+  if (res.ok) {
+    revalidatePath(`/pedidos/${orderId}`);
+    // A avaliação muda a lista de reviews e o ratingAvg do perfil cacheado.
+    const artistId = res.data.artistId;
+    revalidateTag(`artist-reviews:${artistId}`);
+    revalidateTag(`artist:${artistId}`);
+    // A nota também aparece na vitrine de descoberta.
+    revalidateTag("artists-discovery");
+  }
   return res.ok ? { ok: true, data: undefined } : res;
 }

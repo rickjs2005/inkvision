@@ -31,6 +31,7 @@ import {
   ListClientOrdersUseCase,
   ListArtistOrdersUseCase,
   GetOrderForStudioUseCase,
+  GetClientOrderDetailUseCase,
   // chat
   OpenClientConversationUseCase,
   OpenStudioConversationUseCase,
@@ -171,6 +172,16 @@ processSimulationRef = new ProcessSimulationUseCase(simulationDeps);
 
 const scheduleDeps = { schedule, orders, artists, notifications, now: () => new Date() };
 const reviewDeps = { reviews, orders, artists, notifications };
+// Agregador da página de detalhe do pedido (cliente): reúne chat + design +
+// simulação + agenda + avaliação num único caso de uso.
+const clientOrderDetailDeps = {
+  ...chatDeps,
+  designs,
+  simulations,
+  schedule,
+  reviews,
+  now: () => new Date(),
+};
 
 export const useCases = {
   // studio
@@ -205,6 +216,7 @@ export const useCases = {
   listClientOrders: new ListClientOrdersUseCase(orderDeps),
   listArtistOrders: new ListArtistOrdersUseCase(orderDeps),
   getOrderForStudio: new GetOrderForStudioUseCase(orderDeps),
+  getClientOrderDetail: new GetClientOrderDetailUseCase(clientOrderDetailDeps),
   // chat
   openClientConversation: new OpenClientConversationUseCase(chatDeps),
   openStudioConversation: new OpenStudioConversationUseCase(chatDeps),

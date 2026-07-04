@@ -1,11 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { repositories, useCases } from "@/server/container";
+import { repositories } from "@/server/container";
+import { getDiscoveryArtists } from "@/server/public-cache";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
+const PAGE_SIZE = 12;
 
 export const metadata: Metadata = {
   title: "Tatuadores",
@@ -13,16 +15,33 @@ export const metadata: Metadata = {
   alternates: { canonical: `${APP_URL}/tatuadores` },
 };
 
+/** Monta a querystring preservando estilo/q e trocando a página. */
+function pageHref(sp: { estilo?: string; q?: string }, page: number): string {
+  const qs = new URLSearchParams();
+  if (sp.estilo) qs.set("estilo", sp.estilo);
+  if (sp.q) qs.set("q", sp.q);
+  if (page > 1) qs.set("page", String(page));
+  const s = qs.toString();
+  return s ? `/tatuadores?${s}` : "/tatuadores";
+}
+
 export default async function ArtistsDiscoveryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ estilo?: string; q?: string }>;
+  searchParams: Promise<{ estilo?: string; q?: string; page?: string }>;
 }) {
   const sp = await searchParams;
+  const page = Math.max(1, Number(sp.page) || 1);
   const [styles, { items, total }] = await Promise.all([
     repositories.styles.listAll(),
-    useCases.listPublicArtists.execute({ styleSlug: sp.estilo, query: sp.q, take: 24 }),
+    getDiscoveryArtists({
+      styleSlug: sp.estilo,
+      query: sp.q,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
   ]);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
@@ -85,6 +104,38 @@ export default async function ArtistsDiscoveryPage({
               </Card>
             </Link>
           ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="mt-10 flex items-center justify-between">
+          {page > 1 ? (
+            <Link
+              href={pageHref(sp, page - 1)}
+              className="rounded-full border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              ← Anterior
+            </Link>
+          ) : (
+            <span className="rounded-full border border-border/40 px-4 py-2 text-sm text-muted-foreground/40">
+              ← Anterior
+            </span>
+          )}
+          <span className="text-sm text-muted-foreground">
+            Página {page} de {totalPages}
+          </span>
+          {page < totalPages ? (
+            <Link
+              href={pageHref(sp, page + 1)}
+              className="rounded-full border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              Próxima →
+            </Link>
+          ) : (
+            <span className="rounded-full border border-border/40 px-4 py-2 text-sm text-muted-foreground/40">
+              Próxima →
+            </span>
+          )}
         </div>
       )}
     </div>

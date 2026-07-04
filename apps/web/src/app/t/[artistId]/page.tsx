@@ -1,29 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { DomainError } from "@inkvision/core";
 import Link from "next/link";
 import { getActor } from "@/server/auth-context";
 import { useCases } from "@/server/container";
+import { getPublicArtist, getPublicArtistReviews } from "@/server/public-cache";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PersonJsonLd } from "@/components/seo/json-ld";
 import { PortfolioGallery } from "./portfolio-gallery";
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
-
-async function load(artistId: string, actor: Awaited<ReturnType<typeof getActor>>) {
-  try {
-    const artist = await useCases.getArtist.execute(artistId, actor);
-    const [items, reviews] = await Promise.all([
-      useCases.listPortfolio.execute(artistId, actor?.userId),
-      useCases.listArtistReviews.execute(artistId, 12),
-    ]);
-    return { artist, items, reviews };
-  } catch (e) {
-    if (e instanceof DomainError && e.code === "NOT_FOUND") return null;
-    throw e;
-  }
-}
 
 const reviewFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
 
@@ -33,14 +19,14 @@ export async function generateMetadata({
   params: Promise<{ artistId: string }>;
 }): Promise<Metadata> {
   const { artistId } = await params;
-  const data = await load(artistId, null);
-  if (!data) return { title: "Tatuador não encontrado" };
-  const styles = data.artist.styles.map((s) => s.name).join(", ");
+  const artist = await getPublicArtist(artistId);
+  if (!artist) return { title: "Tatuador não encontrado" };
+  const styles = artist.styles.map((s) => s.name).join(", ");
   return {
-    title: data.artist.name,
-    description: data.artist.bio ?? `${data.artist.name} — ${styles || "tatuador"} na InkVision.`,
+    title: artist.name,
+    description: artist.bio ?? `${artist.name} — ${styles || "tatuador"} na InkVision.`,
     alternates: { canonical: `${APP_URL}/t/${artistId}` },
-    openGraph: { title: data.artist.name, type: "profile" },
+    openGraph: { title: artist.name, type: "profile" },
   };
 }
 
@@ -51,9 +37,14 @@ export default async function ArtistPublicPage({
 }) {
   const { artistId } = await params;
   const actor = await getActor();
-  const data = await load(artistId, actor);
-  if (!data) notFound();
-  const { artist, items, reviews } = data;
+  // Perfil e avaliações são cacheados (independem do viewer).
+  const artist = await getPublicArtist(artistId);
+  if (!artist) notFound();
+  // Portfólio depende do viewer (estado de like) → NÃO cacheado.
+  const [items, reviews] = await Promise.all([
+    useCases.listPortfolio.execute(artistId, actor?.userId),
+    getPublicArtistReviews(artistId),
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireActor } from "@/server/auth-context";
 import { run, type ActionResult } from "@/server/action-result";
 import { useCases } from "@/server/container";
@@ -42,6 +42,8 @@ export async function updateArtistAction(
   );
   if (res.ok) {
     revalidatePath(`/artista/${artistId}`);
+    revalidateTag(`artist:${artistId}`);
+    revalidateTag("artists-discovery");
   }
   return res.ok ? { ok: true, data: undefined } : res;
 }
@@ -52,6 +54,10 @@ export async function setArtistStylesAction(
 ): Promise<ActionResult> {
   const actor = await requireActor();
   const res = await run(() => useCases.setArtistStyles.execute(actor, artistId, { styleIds }));
-  if (res.ok) revalidatePath(`/artista/${artistId}`);
+  if (res.ok) {
+    revalidatePath(`/artista/${artistId}`);
+    revalidateTag(`artist:${artistId}`);
+    revalidateTag("artists-discovery");
+  }
   return res.ok ? { ok: true, data: undefined } : res;
 }

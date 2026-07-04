@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import type { StudioStatus } from "@inkvision/core";
 import { getActor, requireActor, requirePlatformAdmin } from "@/server/auth-context";
 import { run, type ActionResult } from "@/server/action-result";
@@ -29,7 +29,12 @@ export async function setStudioStatusAction(
 ): Promise<ActionResult> {
   const actor = await requirePlatformAdmin();
   const res = await run(() => useCases.setStudioStatus.execute(actor, studioId, status));
-  if (res.ok) revalidatePath("/admin/estudios");
+  if (res.ok) {
+    revalidatePath("/admin/estudios");
+    revalidateTag(`studio:${res.data.slug}`);
+    // Mudar o status (ex.: SUSPENDED) pode esconder/mostrar artistas na vitrine.
+    revalidateTag("artists-discovery");
+  }
   return res.ok ? { ok: true, data: undefined } : res;
 }
 
@@ -59,7 +64,10 @@ export async function completeOnboardingAction(
       },
     }),
   );
-  if (res.ok) revalidatePath("/estudio");
+  if (res.ok) {
+    revalidatePath("/estudio");
+    revalidateTag(`studio:${res.data.slug}`);
+  }
   return res.ok ? { ok: true, data: undefined } : res;
 }
 

@@ -3,14 +3,20 @@ import { notFound } from "next/navigation";
 import { DomainError } from "@inkvision/core";
 import { getActor } from "@/server/auth-context";
 import { useCases } from "@/server/container";
+import { getPublicStudio } from "@/server/public-cache";
 import { Badge } from "@/components/ui/badge";
 import { LocalBusinessJsonLd } from "@/components/seo/json-ld";
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
 
 async function loadStudio(slug: string) {
+  // Caminho público (ACTIVE) cacheado, independente do viewer.
+  const cached = await getPublicStudio(slug);
+  if (cached) return cached;
+  // Fallback NÃO cacheado: prévia de dono/admin para estúdio não-ACTIVE.
   try {
     const actor = await getActor();
+    if (!actor) return null;
     return await useCases.getStudioBySlug.execute(slug, actor);
   } catch (e) {
     if (e instanceof DomainError && e.code === "NOT_FOUND") return null;

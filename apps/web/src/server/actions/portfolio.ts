@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import type { CreatePortfolioItemInput, UpdatePortfolioItemInput } from "@inkvision/core";
 import { getActor, requireActor } from "@/server/auth-context";
 import { run, type ActionResult } from "@/server/action-result";
@@ -19,6 +19,8 @@ export async function createPortfolioItemAction(
   if (res.ok) {
     revalidatePath(`/artista/${artistId}`);
     revalidatePath(`/t/${artistId}`);
+    revalidateTag(`artist:${artistId}`);
+    revalidateTag("artists-discovery");
   }
   return res;
 }
@@ -30,7 +32,10 @@ export async function updatePortfolioItemAction(
 ): Promise<ActionResult> {
   const actor = await requireActor();
   const res = await run(() => useCases.updatePortfolioItem.execute(actor, itemId, input));
-  if (res.ok) revalidatePath(`/artista/${artistId}`);
+  if (res.ok) {
+    revalidatePath(`/artista/${artistId}`);
+    revalidateTag(`artist:${artistId}`);
+  }
   return res.ok ? { ok: true, data: undefined } : res;
 }
 
@@ -43,6 +48,8 @@ export async function deletePortfolioItemAction(
   if (res.ok) {
     revalidatePath(`/artista/${artistId}`);
     revalidatePath(`/t/${artistId}`);
+    revalidateTag(`artist:${artistId}`);
+    revalidateTag("artists-discovery");
   }
   return res;
 }
