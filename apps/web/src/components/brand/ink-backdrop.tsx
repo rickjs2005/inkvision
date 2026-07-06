@@ -153,6 +153,98 @@ export function InkBackdrop() {
         <circle cx="72" cy="70" r="1" fill="currentColor" stroke="none" />
       </svg>
 
+      {/* ── Relógio de bolso — lateral esquerda, meia altura, com corrente ── */}
+      <svg
+        viewBox="0 0 120 170"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="absolute -left-4 top-[27vh] h-[27vh] w-auto rotate-6 opacity-[0.05]"
+      >
+        {/* coroa + argola */}
+        <path d="M54 22 H66 M56 22 V16 H64 V22" />
+        <circle cx="60" cy="11" r="4" />
+        {/* corrente */}
+        <path d="M60 7 C44 -2 24 2 14 16" strokeDasharray="2 6" />
+        {/* caixa e mostrador */}
+        <circle cx="60" cy="86" r="52" />
+        <circle cx="60" cy="86" r="45" strokeWidth="1" />
+        {/* marcações de hora */}
+        <path d="M60 45 V52 M60 120 V127 M19 86 H26 M94 86 H101
+                 M31 57 L36 62 M89 110 L84 105 M31 115 L36 110 M89 62 L84 67" strokeWidth="1" />
+        {/* ponteiros — 10h10, o clássico de mostruário */}
+        <path d="M60 86 L38 68 M60 86 L78 64" strokeWidth="1.5" />
+        <circle cx="60" cy="86" r="2" fill="currentColor" stroke="none" />
+      </svg>
+
+      {/* ── Leão — juba em chamas de traço, centro-direita alto ── */}
+      <svg
+        viewBox="0 0 140 140"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="absolute right-[10vw] top-[30vh] h-[24vh] w-auto -rotate-3 opacity-[0.05]"
+      >
+        {/* juba — labaredas radiais */}
+        <path d="M70 18 C64 8 74 4 76 12 C78 6 88 8 84 18" />
+        <path d="M100 26 C108 18 118 24 110 34 M40 26 C32 18 22 24 30 34" />
+        <path d="M116 52 C128 50 130 62 118 66 M24 52 C12 50 10 62 22 66" />
+        <path d="M120 86 C132 90 126 102 114 98 M20 86 C8 90 14 102 26 98" />
+        <path d="M104 116 C112 126 100 134 94 124 M36 116 C28 126 40 134 46 124" />
+        <path d="M70 128 C66 138 78 140 74 130" />
+        {/* rosto */}
+        <circle cx="70" cy="74" r="34" />
+        {/* orelhas */}
+        <path d="M46 48 C42 40 50 34 56 40 M94 48 C98 40 90 34 84 40" />
+        {/* olhos */}
+        <path d="M56 68 C59 65 63 65 66 68 M74 68 C77 65 81 65 84 68" />
+        {/* focinho */}
+        <path d="M64 84 H76 L70 92 Z" />
+        <path d="M70 92 V98 M70 98 C64 104 58 104 54 100 M70 98 C76 104 82 104 86 100" />
+        {/* bigodes */}
+        <circle cx="58" cy="88" r="0.8" fill="currentColor" stroke="none" />
+        <circle cx="52" cy="90" r="0.8" fill="currentColor" stroke="none" />
+        <circle cx="82" cy="88" r="0.8" fill="currentColor" stroke="none" />
+        <circle cx="88" cy="90" r="0.8" fill="currentColor" stroke="none" />
+      </svg>
+
+      {/* ── 刺青 (irezumi, "tatuagem") — kanji vertical, centro-baixo ── */}
+      <svg
+        viewBox="0 0 80 200"
+        className="absolute bottom-[3vh] left-[47vw] h-[24vh] w-auto rotate-2 opacity-[0.055]"
+      >
+        <text
+          x="40"
+          y="72"
+          textAnchor="middle"
+          fontSize="64"
+          fontFamily='"Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", "Noto Serif CJK JP", serif'
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1"
+        >
+          刺
+        </text>
+        <text
+          x="40"
+          y="150"
+          textAnchor="middle"
+          fontSize="64"
+          fontFamily='"Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", "Noto Serif CJK JP", serif'
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1"
+        >
+          青
+        </text>
+        {/* selo vermelho, como assinatura de gravura */}
+        <rect x="30" y="168" width="20" height="20" rx="2" fill="none" stroke="currentColor" strokeWidth="1" className="text-primary" opacity="0.9" />
+      </svg>
+
       {/* ── Pontilhismo esparso — textura de sombreamento entre os desenhos ── */}
       <svg
         viewBox="0 0 400 400"
