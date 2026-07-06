@@ -216,7 +216,10 @@ export default async function PainelPage() {
                       </Button>
                     )}
                     <Button size="sm" variant="ghost" asChild>
-                      <Link href={`/s/${s.slug}`}>Ver página</Link>
+                      {/* Estúdio não publicado só aparece na prévia (a página pública é estática, só ACTIVE). */}
+                      <Link href={s.status === "ACTIVE" ? `/s/${s.slug}` : `/s/${s.slug}/previa`}>
+                        Ver página
+                      </Link>
                     </Button>
                   </div>
                 </li>

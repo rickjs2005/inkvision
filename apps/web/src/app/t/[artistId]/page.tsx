@@ -2,14 +2,20 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Instagram, Sparkles, Star } from "lucide-react";
-import { getActor } from "@/server/auth-context";
-import { useCases } from "@/server/container";
-import { getPublicArtist, getPublicArtistReviews } from "@/server/public-cache";
+import {
+  getPublicArtist,
+  getPublicArtistPortfolio,
+  getPublicArtistReviews,
+} from "@/server/public-cache";
 import { Button } from "@/components/ui/button";
 import { PersonJsonLd } from "@/components/seo/json-ld";
 import { PortfolioGallery } from "./portfolio-gallery";
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
+
+// ISR de verdade: nada aqui depende do viewer (likes/sessão hidratam no
+// cliente) — a página é gerada estática e revalidada a cada 5 min.
+export const revalidate = 300;
 
 const reviewFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
 
@@ -36,13 +42,12 @@ export default async function ArtistPublicPage({
   params: Promise<{ artistId: string }>;
 }) {
   const { artistId } = await params;
-  const actor = await getActor();
-  // Perfil e avaliações são cacheados (independem do viewer).
+  // Tudo público e cacheado — o que depende do viewer (like/sessão) é
+  // hidratado no cliente pela própria galeria.
   const artist = await getPublicArtist(artistId);
   if (!artist) notFound();
-  // Portfólio depende do viewer (estado de like) → NÃO cacheado.
   const [items, reviews] = await Promise.all([
-    useCases.listPortfolio.execute(artistId, actor?.userId),
+    getPublicArtistPortfolio(artistId),
     getPublicArtistReviews(artistId),
   ]);
   const firstName = artist.name.split(" ")[0] ?? artist.name;
@@ -191,7 +196,7 @@ export default async function ArtistPublicPage({
             {items.length === 1 ? "peça" : "peças"}
           </span>
         </div>
-        <PortfolioGallery items={items} isAuthed={actor !== null} />
+        <PortfolioGallery items={items} artistId={artistId} />
       </section>
 
       {reviews.length > 0 && (

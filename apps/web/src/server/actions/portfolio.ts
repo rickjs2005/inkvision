@@ -82,3 +82,20 @@ export async function getCommentsAction(itemId: string) {
   const comments = await useCases.listComments.execute(itemId);
   return comments.map((c) => ({ id: c.id, authorName: c.authorName, body: c.body }));
 }
+
+/**
+ * Estado do VIEWER sobre o portfólio de um artista (sessão + likes). A página
+ * pública /t/{id} é estática (ISR); o que depende de quem olha é hidratado no
+ * cliente por esta action.
+ */
+export async function getViewerPortfolioStateAction(
+  artistId: string,
+): Promise<{ isAuthed: boolean; likedIds: string[] }> {
+  const actor = await getActor();
+  if (!actor) return { isAuthed: false, likedIds: [] };
+  const items = await useCases.listPortfolio.execute(artistId, actor.userId);
+  return {
+    isAuthed: true,
+    likedIds: items.filter((i) => i.likedByViewer).map((i) => i.id),
+  };
+}

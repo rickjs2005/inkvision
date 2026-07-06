@@ -38,6 +38,22 @@ export function getPublicArtist(artistId: string) {
   )();
 }
 
+/** Portfólio público do tatuador (sem viewer → likedByViewer sempre false). */
+export function getPublicArtistPortfolio(artistId: string) {
+  return unstable_cache(
+    async () => {
+      try {
+        return await useCases.listPortfolio.execute(artistId, undefined);
+      } catch (e) {
+        if (isNotFound(e)) return [];
+        throw e;
+      }
+    },
+    ["public-artist-portfolio", artistId],
+    { tags: [`artist:${artistId}`], revalidate: ARTIST_TTL },
+  )();
+}
+
 /** Avaliações públicas do tatuador (máx. 12, igual à página). */
 export function getPublicArtistReviews(artistId: string) {
   return unstable_cache(

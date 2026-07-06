@@ -1,12 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Heart, MessageCircle, Send } from "lucide-react";
 import type { PortfolioItem } from "@inkvision/core";
 import {
   addCommentAction,
   getCommentsAction,
+  getViewerPortfolioStateAction,
   toggleLikeAction,
 } from "@/server/actions/portfolio";
 import { Button } from "@/components/ui/button";
@@ -18,9 +19,21 @@ type Comment = { id: string; authorName: string; body: string };
 // grade uniforme. object-cover garante enquadramento consistente.
 const RATIOS = ["aspect-[4/5]", "aspect-square", "aspect-[3/4]", "aspect-square", "aspect-[4/5]", "aspect-[3/4]"];
 
-function Item({ item, index, isAuthed }: { item: PortfolioItem; index: number; isAuthed: boolean }) {
-  const [liked, setLiked] = useState(!!item.likedByViewer);
+function Item({
+  item,
+  index,
+  isAuthed,
+  initiallyLiked,
+}: {
+  item: PortfolioItem;
+  index: number;
+  isAuthed: boolean;
+  initiallyLiked: boolean;
+}) {
+  const [liked, setLiked] = useState(initiallyLiked);
   const [count, setCount] = useState(item.likesCount);
+  // A página é estática — o estado do viewer chega depois, via hidratação.
+  useEffect(() => setLiked(initiallyLiked), [initiallyLiked]);
   const [open, setOpen] = useState(false);
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [pending, startTransition] = useTransition();
@@ -151,11 +164,30 @@ function Item({ item, index, isAuthed }: { item: PortfolioItem; index: number; i
 
 export function PortfolioGallery({
   items,
-  isAuthed,
+  artistId,
 }: {
   items: PortfolioItem[];
-  isAuthed: boolean;
+  artistId: string;
 }) {
+  // A página /t é estática (ISR) — sessão e likes do viewer são carregados
+  // aqui no cliente, depois da hidratação.
+  const [isAuthed, setIsAuthed] = useState(false);
+  const [likedIds, setLikedIds] = useState<ReadonlySet<string>>(new Set());
+
+  useEffect(() => {
+    let alive = true;
+    getViewerPortfolioStateAction(artistId)
+      .then((state) => {
+        if (!alive) return;
+        setIsAuthed(state.isAuthed);
+        setLikedIds(new Set(state.likedIds));
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [artistId]);
+
   if (items.length === 0) {
     return (
       <p className="font-display text-2xl text-muted-foreground">
@@ -166,7 +198,7 @@ export function PortfolioGallery({
   return (
     <div className="columns-1 gap-4 sm:columns-2 lg:columns-3">
       {items.map((it, i) => (
-        <Item key={it.id} item={it} index={i} isAuthed={isAuthed} />
+        <Item key={it.id} item={it} index={i} isAuthed={isAuthed} initiallyLiked={likedIds.has(it.id)} />
       ))}
     </div>
   );
