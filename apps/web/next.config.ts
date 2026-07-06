@@ -39,9 +39,13 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // Imagem Docker enxuta. O Next infere a raiz do monorepo pelo lockfile (no
-  // container, /app) para o tracing do standalone.
-  output: "standalone",
+  // "standalone" é para a imagem Docker do self-host (VPS) — o Next infere a
+  // raiz do monorepo pelo lockfile (no container, /app) para o tracing. Na
+  // Vercel (env VERCEL=1) isso é desnecessário e atrapalha: a Vercel tem seu
+  // próprio empacotamento/tracing de serverless functions, e o modo
+  // standalone nesse caso já foi visto quebrando o rastreio do binário nativo
+  // do Prisma (query engine não copiado para o bundle da function).
+  output: process.env.VERCEL ? undefined : "standalone",
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
