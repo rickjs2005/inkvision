@@ -77,7 +77,7 @@ _Repo: https://github.com/rickjs2005/inkvision (branch `main`)._
 5. **Stripe Connect onboarding completo** (account link + retorno) — hoje `connectStudio` cria a conta mas falta o fluxo de onboarding.
 6. **R2 real + verificação de magic-bytes** no upload (hoje storage mockado; presign valida só o MIME declarado).
 7. **E-mails transacionais** (orçamento, agendamento) + **lembretes de sessão**.
-8. **Rodar o E2E no CI.** Suíte Playwright existe (`apps/web/e2e/`); falta subir DB semeado no workflow.
+8. ~~**Rodar o E2E no CI.**~~ ✅ Job `e2e` no GitHub Actions rodando o **caminho de produção**: Postgres 16 real → `prisma migrate deploy` + `prod-init.ts` (role `inkvision_app` + RLS) → seed → build de produção → Playwright (chromium + mobile) com o app **conectado com o role RLS** — o cenário que pegaria a migration inválida e o bug do `getActor`. Suíte atualizada pro redesign (estava quebrada) + `E2E_BASE_URL` para rodar contra qualquer ambiente no ar (validado: 16/16 contra a Vercel). De brinde, 2 fixes que destravavam TODO o CI: conflito de versão do pnpm (action vs `packageManager`) e `REALTIME_EMIT_SECRET` no build de produção. **Verificado verde no Actions** (run `28814951873`: ci 1m56s ✓ · e2e 2m48s ✓).
 9. **ISR estático real** nas páginas públicas `/t` e `/s` (hoje leitura cacheada, mas dinâmicas por causa do `getActor`/like-state — exige mover a parte autenticada p/ client).
 
 ### Baixa prioridade / polimento
