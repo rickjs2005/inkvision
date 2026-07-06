@@ -18,6 +18,9 @@ const STEPS = [
 ];
 
 export default function SimularPage() {
+  // Com FAL_API_KEY, a página pública também gera a versão realista por IA.
+  const aiEnabled = Boolean(process.env.FAL_API_KEY);
+
   return (
     <div className="mx-auto max-w-6xl px-6 py-16">
       {/* Cabeçalho editorial */}
@@ -30,8 +33,18 @@ export default function SimularPage() {
           Simule sua tatuagem <span className="italic text-primary">agora</span>.
         </h1>
         <p className="max-w-md text-[15px] leading-relaxed text-muted-foreground">
-          Uma prévia interativa da ideia na sua pele. É só brincar — nada é enviado a lugar nenhum.
-          Quando gostar, faça de verdade com um artista, com a IA aplicando perspectiva e luz.
+          {aiEnabled ? (
+            <>
+              Uma prévia interativa da ideia na sua pele — e, quando quiser, a IA aplica o desenho
+              com perspectiva, luz e sombra reais. Gostou? Faça de verdade com um artista.
+            </>
+          ) : (
+            <>
+              Uma prévia interativa da ideia na sua pele. É só brincar — nada é enviado a lugar
+              nenhum. Quando gostar, faça de verdade com um artista, com a IA aplicando perspectiva
+              e luz.
+            </>
+          )}
         </p>
       </div>
 
@@ -48,7 +61,7 @@ export default function SimularPage() {
 
       {/* Estúdio */}
       <div className="mt-12">
-        <SimulatorStudio />
+        <SimulatorStudio aiEnabled={aiEnabled} />
       </div>
     </div>
   );

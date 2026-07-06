@@ -20,7 +20,7 @@ const SKINS: Skin[] = [
 const DEFAULT_T = { x: 0.5, y: 0.46, scale: 1, rotation: 0 };
 const BASE_WIDTH = 30; // % da largura do palco
 
-export function SimulatorStudio() {
+export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const svgWrapRef = useRef<HTMLDivElement | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
@@ -29,13 +29,19 @@ export function SimulatorStudio() {
   const [t, setT] = useState(DEFAULT_T);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Resultado da IA (data URI). Qualquer mudança na composição invalida.
+  const [aiImage, setAiImage] = useState<string | null>(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [showAi, setShowAi] = useState(true);
 
   const design = DESIGNS.find((d) => d.id === designId)!;
   const activeSkin = SKINS[skin]!;
+  const aiVisible = aiImage !== null && showAi;
 
   function moveTo(clientX: number, clientY: number) {
     const rect = stageRef.current?.getBoundingClientRect();
     if (!rect) return;
+    setAiImage(null);
     setT((prev) => ({
       ...prev,
       x: Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)),
@@ -43,59 +49,82 @@ export function SimulatorStudio() {
     }));
   }
 
+  /** Muda a composição (pele/arte/ajustes) e descarta o resultado da IA. */
+  function recompose(fn: () => void) {
+    setAiImage(null);
+    fn();
+  }
+
   function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) return toast.error("Envie uma imagem (JPG ou PNG).");
-    setPhoto(URL.createObjectURL(file));
+    recompose(() => setPhoto(URL.createObjectURL(file)));
   }
 
   function reset() {
-    setPhoto(null);
-    setT(DEFAULT_T);
+    recompose(() => {
+      setPhoto(null);
+      setT(DEFAULT_T);
+    });
     toast.success("Recomeçado.");
   }
 
-  async function download() {
+  /** Composição atual (foto/pele + arte posicionada) num canvas de 900px. */
+  async function composeCanvas(): Promise<HTMLCanvasElement> {
     const stage = stageRef.current;
     const svgEl = svgWrapRef.current?.querySelector("svg");
-    if (!stage || !svgEl) return;
+    if (!stage || !svgEl) throw new Error("palco indisponível");
+
+    const W = 900;
+    const H = Math.round((W * stage.offsetHeight) / stage.offsetWidth);
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d")!;
+
+    // fundo: foto ou pele sintética
+    if (photo) {
+      const img = await loadImage(photo);
+      drawCover(ctx, img, W, H);
+    } else {
+      const g = ctx.createLinearGradient(0, 0, W, H);
+      g.addColorStop(0, activeSkin.stops[0]);
+      g.addColorStop(0.55, activeSkin.stops[1]);
+      g.addColorStop(1, activeSkin.stops[2]);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // arte (blend multiply)
+    const clone = svgEl.cloneNode(true) as SVGSVGElement;
+    clone.setAttribute("color", INK);
+    const dataUrl = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(new XMLSerializer().serializeToString(clone))));
+    const art = await loadImage(dataUrl);
+    const dW = (BASE_WIDTH / 100) * W * t.scale;
+    const dH = (dW * art.height) / art.width;
+    ctx.globalCompositeOperation = "multiply";
+    ctx.save();
+    ctx.translate(t.x * W, t.y * H);
+    ctx.rotate((t.rotation * Math.PI) / 180);
+    ctx.drawImage(art, -dW / 2, -dH / 2, dW, dH);
+    ctx.restore();
+    return canvas;
+  }
+
+  async function download() {
+    // Com o resultado da IA em exibição, baixa ele; senão, a composição local.
+    if (aiVisible && aiImage) {
+      const a = document.createElement("a");
+      a.href = aiImage;
+      a.download = "simulacao-ia-inkvision.png";
+      a.click();
+      toast.success("Simulação com IA baixada.");
+      return;
+    }
     setBusy(true);
     try {
-      const W = 900;
-      const H = Math.round((W * stage.offsetHeight) / stage.offsetWidth);
-      const canvas = document.createElement("canvas");
-      canvas.width = W;
-      canvas.height = H;
-      const ctx = canvas.getContext("2d")!;
-
-      // fundo: foto ou pele sintética
-      if (photo) {
-        const img = await loadImage(photo);
-        drawCover(ctx, img, W, H);
-      } else {
-        const g = ctx.createLinearGradient(0, 0, W, H);
-        g.addColorStop(0, activeSkin.stops[0]);
-        g.addColorStop(0.55, activeSkin.stops[1]);
-        g.addColorStop(1, activeSkin.stops[2]);
-        ctx.fillStyle = g;
-        ctx.fillRect(0, 0, W, H);
-      }
-
-      // arte (blend multiply)
-      const clone = svgEl.cloneNode(true) as SVGSVGElement;
-      clone.setAttribute("color", INK);
-      const dataUrl = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(new XMLSerializer().serializeToString(clone))));
-      const art = await loadImage(dataUrl);
-      const dW = (BASE_WIDTH / 100) * W * t.scale;
-      const dH = (dW * art.height) / art.width;
-      ctx.globalCompositeOperation = "multiply";
-      ctx.save();
-      ctx.translate(t.x * W, t.y * H);
-      ctx.rotate((t.rotation * Math.PI) / 180);
-      ctx.drawImage(art, -dW / 2, -dH / 2, dW, dH);
-      ctx.restore();
-
+      const canvas = await composeCanvas();
       const a = document.createElement("a");
       a.href = canvas.toDataURL("image/png");
       a.download = "simulacao-inkvision.png";
@@ -105,6 +134,31 @@ export function SimulatorStudio() {
       toast.error("Não foi possível baixar. Tente outra foto.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  /** Manda a composição atual para a IA refinar (rota pública rate-limitada). */
+  async function generateAi() {
+    setAiBusy(true);
+    try {
+      const canvas = await composeCanvas();
+      const image = canvas.toDataURL("image/jpeg", 0.85);
+      const res = await fetch("/api/simular", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image }),
+      });
+      const data = (await res.json().catch(() => null)) as { image?: string; error?: string } | null;
+      if (!res.ok || !data?.image) {
+        throw new Error(data?.error ?? "A IA não conseguiu gerar agora. Tente de novo.");
+      }
+      setAiImage(data.image);
+      setShowAi(true);
+      toast.success("Pronto — sua tatuagem aplicada pela IA.");
+    } catch (e) {
+      toast.error(e instanceof Error && e.message ? e.message : "A IA não conseguiu gerar agora.");
+    } finally {
+      setAiBusy(false);
     }
   }
 
@@ -134,14 +188,18 @@ export function SimulatorStudio() {
           {/* grão sutil */}
           <div className="pointer-events-none absolute inset-0 opacity-[0.05] shadow-[inset_0_0_90px_20px_rgba(20,15,10,0.4)]" />
 
-          {/* arte */}
+          {/* arte — escondida quando o resultado da IA está em exibição */}
           <div
             ref={svgWrapRef}
             onPointerDown={(e) => {
+              if (aiVisible) return;
               (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
               setDragging(true);
             }}
-            className={cn("absolute mix-blend-multiply", dragging ? "cursor-grabbing" : "cursor-grab")}
+            className={cn(
+              "absolute mix-blend-multiply",
+              aiVisible ? "invisible" : dragging ? "cursor-grabbing" : "cursor-grab",
+            )}
             style={{
               left: `${t.x * 100}%`,
               top: `${t.y * 100}%`,
@@ -153,6 +211,39 @@ export function SimulatorStudio() {
             <design.Svg />
             {dragging && <span className="pointer-events-none absolute -inset-3 rounded-md ring-2 ring-primary/70" />}
           </div>
+
+          {/* resultado da IA por cima da composição */}
+          {aiVisible && aiImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={aiImage} alt="Simulação gerada por IA" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+          )}
+
+          {/* gerando: véu com pulso */}
+          {aiBusy && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/70 backdrop-blur-sm">
+              <Sparkles className="size-6 animate-pulse text-primary" />
+              <p className="px-6 text-center text-sm text-foreground">
+                A IA está aplicando sua tatuagem…
+                <span className="block font-mono text-[11px] text-muted-foreground">leva alguns segundos</span>
+              </p>
+            </div>
+          )}
+
+          {/* antes / depois */}
+          {aiImage && !aiBusy && (
+            <div className="absolute right-2 top-2 flex overflow-hidden rounded-md border border-border bg-background/85 font-mono text-[11px] uppercase tracking-wider backdrop-blur-sm">
+              {([["antes", false], ["depois · ia", true]] as const).map(([label, v]) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setShowAi(v)}
+                  className={cn("px-2.5 py-1.5 transition-colors", showAi === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* fonte da imagem */}
@@ -167,10 +258,12 @@ export function SimulatorStudio() {
             <button
               key={s.id}
               type="button"
-              onClick={() => {
-                setPhoto(null);
-                setSkin(i);
-              }}
+              onClick={() =>
+                recompose(() => {
+                  setPhoto(null);
+                  setSkin(i);
+                })
+              }
               aria-label={`Pele ${s.label}`}
               className={cn(
                 "size-8 rounded-full border-2 transition-transform hover:scale-110",
@@ -191,7 +284,7 @@ export function SimulatorStudio() {
               <button
                 key={d.id}
                 type="button"
-                onClick={() => setDesignId(d.id)}
+                onClick={() => recompose(() => setDesignId(d.id))}
                 aria-label={d.name}
                 className={cn(
                   "flex aspect-square items-center justify-center rounded-md border p-2 text-foreground transition-all hover:-translate-y-0.5",
@@ -208,17 +301,31 @@ export function SimulatorStudio() {
         </div>
 
         <div className="flex flex-col gap-4 border-t border-border pt-6">
-          <Slider label="Tamanho" value={`${t.scale.toFixed(2)}×`} min={0.3} max={2.5} step={0.05} v={t.scale} on={(v) => setT((p) => ({ ...p, scale: v }))} />
-          <Slider label="Rotação" value={`${t.rotation > 0 ? "+" : ""}${Math.round(t.rotation)}°`} min={-180} max={180} step={1} v={t.rotation} on={(v) => setT((p) => ({ ...p, rotation: v }))} icon={<RotateCw className="size-3" />} />
+          <Slider label="Tamanho" value={`${t.scale.toFixed(2)}×`} min={0.3} max={2.5} step={0.05} v={t.scale} on={(v) => recompose(() => setT((p) => ({ ...p, scale: v })))} />
+          <Slider label="Rotação" value={`${t.rotation > 0 ? "+" : ""}${Math.round(t.rotation)}°`} min={-180} max={180} step={1} v={t.rotation} on={(v) => recompose(() => setT((p) => ({ ...p, rotation: v })))} icon={<RotateCw className="size-3" />} />
         </div>
 
-        <div className="flex flex-wrap gap-2 border-t border-border pt-6">
-          <Button onClick={download} variant="ink" disabled={busy}>
-            <Download /> {busy ? "Gerando…" : "Baixar prévia"}
-          </Button>
-          <Button onClick={reset} variant="ghost">
-            Recomeçar
-          </Button>
+        <div className="flex flex-col gap-2 border-t border-border pt-6">
+          {aiEnabled && (
+            <Button onClick={generateAi} disabled={aiBusy || busy} className="group/ai w-full">
+              <Sparkles className="transition-transform group-hover/ai:rotate-12" />
+              {aiBusy ? "Gerando com IA…" : aiImage ? "Gerar de novo com IA" : "Ver com IA real"}
+            </Button>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={download} variant="ink" disabled={busy || aiBusy}>
+              <Download /> {busy ? "Gerando…" : aiVisible ? "Baixar resultado da IA" : "Baixar prévia"}
+            </Button>
+            <Button onClick={reset} variant="ghost">
+              Recomeçar
+            </Button>
+          </div>
+          {aiEnabled && (
+            <p className="font-mono text-[11px] leading-relaxed text-muted-foreground">
+              Ao gerar com IA, a imagem composta é enviada para processamento. A prévia interativa
+              continua 100% no seu navegador.
+            </p>
+          )}
         </div>
 
         {/* CTA — fazer de verdade */}

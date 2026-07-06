@@ -49,7 +49,7 @@ _Repo: https://github.com/rickjs2005/inkvision (branch `main`)._
 ### Alta prioridade (maior impacto)
 1. ~~**Ligar a prova social a dados reais.**~~ ✅ Feito (ver seção acima).
 2. ~~**Login social Google de verdade.**~~ ✅ Código pronto: `socialProviders.google` condicional a env + account linking confiável (mesmo e-mail). Verificado: sem env → toast "em breve"; com env → redirect OAuth (PKCE). **Falta só criar as credenciais no Google Cloud Console** (ver tabela "Pronto para ativar"). _Apple fica para depois (exige Apple Developer pago)._
-3. **`/simular` com IA real (opcional).** Hoje é prévia por sobreposição (blend). Fazer a página pública chamar o `FalProvider` quando `FAL_API_KEY` existir — "wow" ainda maior na landing.
+3. ~~**`/simular` com IA real.**~~ ✅ Código pronto: com `FAL_API_KEY`, a página ganha o botão "Ver com IA real" — o cliente manda a composição (pele + arte posicionada) p/ `POST /api/simular` (rate limit 5/10min por IP, prompt fixo no server, resposta inline como data URI) e a Fal refina via img2img (`strength 0.5`). Antes/depois no palco; sem a chave, a página segue 100% client-side. `falImageToImage` extraído em `packages/ai` (compartilhado com o `FalProvider`). **Falta só a `FAL_API_KEY` real** (obs.: simulações públicas não entram no `AiUsageLog` — sem estúdio — então não contam na prova social).
 4. **Deploy na VPS.** Artefatos Docker prontos (`docker/`, `compose.prod.yml`, migration inicial, `prod-init.ts` cria o role não-superusuário). Falta rodar na máquina + preencher `docker/.env.prod`.
 
 ### Média prioridade
