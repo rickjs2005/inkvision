@@ -6,7 +6,13 @@ import type {
   Conversation,
   CreateMessageData,
 } from "../application/ports/chat-repository";
-import { SendClientMessageUseCase, SendStudioMessageUseCase } from "../application/use-cases/chat/chat-use-cases";
+import {
+  ListOlderClientMessagesUseCase,
+  MESSAGES_PAGE_SIZE,
+  OpenClientConversationUseCase,
+  SendClientMessageUseCase,
+  SendStudioMessageUseCase,
+} from "../application/use-cases/chat/chat-use-cases";
 import { InMemoryArtistRepo } from "./fakes-artist";
 import { InMemoryNotificationRepo, InMemoryOrderRepo } from "./fakes-order";
 
@@ -21,8 +27,12 @@ class InMemoryChatRepo implements ChatRepository {
     }
     return c;
   }
-  async listMessages(conversationId: string) {
-    return this.messages.filter((m) => m.conversationId === conversationId);
+  async listMessages(conversationId: string, opts?: { take?: number; beforeId?: string }) {
+    const all = this.messages.filter((m) => m.conversationId === conversationId);
+    const take = opts?.take ?? 50;
+    const end = opts?.beforeId ? all.findIndex((m) => m.id === opts.beforeId) : all.length;
+    const start = Math.max(0, end - take);
+    return { items: all.slice(start, end), hasMore: start > 0 };
   }
   async createMessage(data: CreateMessageData) {
     const m: ChatMessage = {
@@ -103,6 +113,31 @@ describe("chat", () => {
     await expect(
       new SendStudioMessageUseCase(deps()).execute(stranger, STUDIO, orderId, { kind: "TEXT", body: "oi" }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("paginação: abre com a página mais recente e carrega as anteriores", async () => {
+    const send = new SendClientMessageUseCase(deps());
+    const total = MESSAGES_PAGE_SIZE + 10;
+    for (let i = 1; i <= total; i++) {
+      await send.execute(client, orderId, { kind: "TEXT", body: `msg ${i}` });
+    }
+
+    const open = await new OpenClientConversationUseCase(deps()).execute(client, orderId);
+    expect(open.messages).toHaveLength(MESSAGES_PAGE_SIZE);
+    expect(open.hasMoreMessages).toBe(true);
+    // A página aberta termina na mensagem mais NOVA (não trunca o fim).
+    expect(open.messages.at(-1)!.body).toBe(`msg ${total}`);
+    expect(open.messages[0]!.body).toBe("msg 11");
+
+    const older = await new ListOlderClientMessagesUseCase(deps()).execute(
+      client,
+      orderId,
+      open.messages[0]!.id,
+    );
+    expect(older.items).toHaveLength(10);
+    expect(older.items[0]!.body).toBe("msg 1");
+    expect(older.items.at(-1)!.body).toBe("msg 10");
+    expect(older.hasMore).toBe(false);
   });
 
   it("rejeita mensagem de texto vazia", async () => {

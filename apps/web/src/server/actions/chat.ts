@@ -41,6 +41,23 @@ export async function sendStudioMessageAction(
   });
 }
 
+export async function loadOlderClientMessagesAction(
+  orderId: string,
+  beforeId: string,
+): Promise<ActionResult<{ items: ChatMessage[]; hasMore: boolean }>> {
+  const actor = await getActor();
+  return run(() => useCases.listOlderClientMessages.execute(actor, orderId, beforeId));
+}
+
+export async function loadOlderStudioMessagesAction(
+  studioId: string,
+  orderId: string,
+  beforeId: string,
+): Promise<ActionResult<{ items: ChatMessage[]; hasMore: boolean }>> {
+  const actor = await requireActor();
+  return run(() => useCases.listOlderStudioMessages.execute(actor, studioId, orderId, beforeId));
+}
+
 export async function markReadClientAction(orderId: string): Promise<{ ok: boolean }> {
   const actor = await getActor();
   if (!actor) return { ok: false };

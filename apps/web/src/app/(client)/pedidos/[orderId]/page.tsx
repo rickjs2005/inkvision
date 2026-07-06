@@ -41,6 +41,7 @@ export default async function ClientOrderDetailPage({
     order,
     conversation,
     messages,
+    hasMoreMessages,
     latestDesign,
     latestSimulation: latestSim,
     appointment,
@@ -187,6 +188,7 @@ export default async function ClientOrderDetailPage({
               currentUserId={actor.userId}
               roomToken={roomToken}
               initialMessages={messages}
+              initialHasMore={hasMoreMessages}
             />
           </section>
         </div>

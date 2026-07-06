@@ -27,6 +27,7 @@ export interface ClientOrderDetail {
   order: Order;
   conversation: Conversation;
   messages: ChatMessage[];
+  hasMoreMessages: boolean;
   latestDesign: DesignVersion | null;
   latestSimulation: Simulation | null;
   /** Horários disponíveis (só quando canBook); vazio caso contrário. */
@@ -59,7 +60,7 @@ export class GetClientOrderDetailUseCase {
     assertAuthenticated(actor);
     // Mesma checagem de dono + conversa do openClientConversation (lança NotFoundError).
     const { order, conversation } = await resolveClientOrder(this.deps, actor, orderId);
-    const messages = await this.deps.chat.listMessages(conversation.id);
+    const messagesPage = await this.deps.chat.listMessages(conversation.id, { take: 50 });
 
     const status = order.status;
 
@@ -84,7 +85,17 @@ export class GetClientOrderDetailUseCase {
       ? await this.deps.reviews.getForOrder(order.studioId, order.id)
       : null;
 
-    return { order, conversation, messages, latestDesign, latestSimulation, slots, appointment, review };
+    return {
+      order,
+      conversation,
+      messages: messagesPage.items,
+      hasMoreMessages: messagesPage.hasMore,
+      latestDesign,
+      latestSimulation,
+      slots,
+      appointment,
+      review,
+    };
   }
 
   /**

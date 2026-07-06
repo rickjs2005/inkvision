@@ -86,6 +86,86 @@ function Arrow() {
   );
 }
 
+function Anchor() {
+  return (
+    <svg viewBox="0 0 100 130" {...stroke}>
+      <circle cx="50" cy="22" r="9" />
+      <path d="M50 31 L50 104" />
+      <path d="M32 48 H68" />
+      <path d="M50 104 C32 104 20 90 18 74 M18 74 L9 83 M18 74 L29 78" />
+      <path d="M50 104 C68 104 80 90 82 74 M82 74 L91 83 M82 74 L71 78" />
+    </svg>
+  );
+}
+
+function Rose() {
+  return (
+    <svg viewBox="0 0 100 130" {...stroke}>
+      <path d="M50 40 C46 35 52 31 56 35 C60 41 52 48 45 44 C38 38 45 27 55 28" />
+      <path d="M33 44 C29 32 38 22 50 22 C62 22 71 32 67 44" />
+      <path d="M33 44 C30 57 38 66 50 66 C62 66 70 57 67 44" />
+      <path d="M28 40 C20 44 18 54 26 60 M72 40 C80 44 82 54 74 60" />
+      <path d="M50 66 C50 84 50 100 50 118" />
+      <path d="M50 88 C41 84 35 76 34 67 C42 71 48 78 50 86" />
+      <path d="M50 102 C59 98 65 90 66 81 C58 85 52 92 50 100" />
+      <circle cx="43" cy="54" r="1.4" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function Butterfly() {
+  return (
+    <svg viewBox="0 0 100 130" {...stroke}>
+      <path d="M50 42 L50 88" />
+      <path d="M50 42 C46 34 42 29 36 25 M50 42 C54 34 58 29 64 25" />
+      <circle cx="35" cy="23" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="65" cy="23" r="1.2" fill="currentColor" stroke="none" />
+      <path d="M50 52 C32 36 12 40 10 56 C9 70 34 72 48 62" />
+      <path d="M50 52 C68 36 88 40 90 56 C91 70 66 72 52 62" />
+      <path d="M50 68 C38 66 27 74 29 85 C31 95 46 92 50 80" />
+      <path d="M50 68 C62 66 73 74 71 85 C69 95 54 92 50 80" />
+      <circle cx="28" cy="54" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="72" cy="54" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="40" cy="82" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="60" cy="82" r="1.2" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function Lightning() {
+  return (
+    <svg viewBox="0 0 100 130" {...stroke}>
+      <path d="M58 14 L38 62 H52 L34 116 L68 54 H52 L70 14 Z" />
+      <path d="M46 30 L52 30 M40 44 L48 44" strokeWidth={1.2} opacity={0.7} />
+    </svg>
+  );
+}
+
+function Lettering() {
+  return (
+    <svg viewBox="0 0 100 130">
+      <text
+        x="50"
+        y="72"
+        textAnchor="middle"
+        fontSize="34"
+        fontStyle="italic"
+        fontFamily="'Snell Roundhand', 'Brush Script MT', 'Segoe Script', cursive"
+        fill="currentColor"
+      >
+        amor
+      </text>
+      <path
+        d="M22 84 C40 80 62 82 80 78"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.6}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export interface TattooDesign {
   id: string;
   name: string;
@@ -99,4 +179,9 @@ export const DESIGNS: TattooDesign[] = [
   { id: "moth", name: "Mariposa", tag: "Fine line", Svg: Moth },
   { id: "sunmoon", name: "Sol & Lua", tag: "Geométrico", Svg: SunMoon },
   { id: "arrow", name: "Flecha", tag: "Minimalista", Svg: Arrow },
+  { id: "anchor", name: "Âncora", tag: "Old school", Svg: Anchor },
+  { id: "rose", name: "Rosa", tag: "Old school", Svg: Rose },
+  { id: "butterfly", name: "Borboleta", tag: "Fine line", Svg: Butterfly },
+  { id: "lightning", name: "Raio", tag: "Old school", Svg: Lightning },
+  { id: "lettering", name: "Amor", tag: "Lettering", Svg: Lettering },
 ];

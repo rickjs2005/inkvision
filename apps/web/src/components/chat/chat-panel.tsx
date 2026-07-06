@@ -36,28 +36,64 @@ export function ChatPanel({
   studioId,
   roomToken,
   initialMessages,
+  initialHasMore = false,
   onSend,
   onMarkRead,
+  onLoadOlder,
 }: {
   currentUserId: string;
   studioId: string;
   roomToken: string;
   initialMessages: ChatMessage[];
+  /** Há mensagens mais antigas que a primeira página. */
+  initialHasMore?: boolean;
   onSend: (input: SendMessageInput) => Promise<ActionResult<ChatMessage>>;
   onMarkRead: () => Promise<{ ok: boolean }>;
+  /** Pagina para trás a partir da mensagem mais antiga em tela. */
+  onLoadOlder?: (
+    beforeId: string,
+  ) => Promise<ActionResult<{ items: ChatMessage[]; hasMore: boolean }>>;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [peerTyping, setPeerTyping] = useState(false);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const flowRef = useRef<HTMLDivElement | null>(null);
+  // Ao PREPENDER histórico, o auto-scroll pro fim deve ficar quieto.
+  const skipAutoScroll = useRef(false);
   const seen = useRef(new Set(initialMessages.map((m) => m.id)));
 
   function append(m: ChatMessage) {
     if (seen.current.has(m.id)) return;
     seen.current.add(m.id);
     setMessages((prev) => [...prev, m]);
+  }
+
+  async function loadOlder() {
+    const first = messages[0];
+    if (!onLoadOlder || !first || loadingOlder) return;
+    setLoadingOlder(true);
+    const flow = flowRef.current;
+    const prevHeight = flow?.scrollHeight ?? 0;
+    try {
+      const res = await onLoadOlder(first.id);
+      if (!res.ok) return;
+      const fresh = res.data.items.filter((m) => !seen.current.has(m.id));
+      fresh.forEach((m) => seen.current.add(m.id));
+      skipAutoScroll.current = true;
+      setMessages((prev) => [...fresh, ...prev]);
+      setHasMore(res.data.hasMore);
+      // Mantém o usuário olhando para a mesma mensagem após o prepend.
+      requestAnimationFrame(() => {
+        if (flow) flow.scrollTop += flow.scrollHeight - prevHeight;
+      });
+    } finally {
+      setLoadingOlder(false);
+    }
   }
 
   useEffect(() => {
@@ -81,6 +117,10 @@ export function ChatPanel({
   }, [roomToken]);
 
   useEffect(() => {
+    if (skipAutoScroll.current) {
+      skipAutoScroll.current = false;
+      return;
+    }
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, peerTyping]);
 
@@ -137,7 +177,19 @@ export function ChatPanel({
       </div>
 
       {/* Fluxo de mensagens */}
-      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5" aria-live="polite">
+      <div ref={flowRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-5" aria-live="polite">
+        {hasMore && onLoadOlder && (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={loadOlder}
+              disabled={loadingOlder}
+              className="rounded-md border border-border px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground disabled:opacity-60"
+            >
+              {loadingOlder ? "Carregando…" : "Carregar mensagens anteriores"}
+            </button>
+          </div>
+        )}
         {messages.map((m) => {
           const mine = m.senderId === currentUserId;
           return (

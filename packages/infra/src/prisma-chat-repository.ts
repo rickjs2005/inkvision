@@ -5,6 +5,7 @@ import type {
   Conversation,
   CreateMessageData,
   MessageKind,
+  MessagePage,
 } from "@inkvision/core";
 
 function convToDomain(c: {
@@ -62,13 +63,22 @@ export class PrismaChatRepository implements ChatRepository {
     });
   }
 
-  async listMessages(conversationId: string, opts?: { take?: number }): Promise<ChatMessage[]> {
+  async listMessages(
+    conversationId: string,
+    opts?: { take?: number; beforeId?: string },
+  ): Promise<MessagePage> {
+    const take = opts?.take ?? 50;
+    // Busca DESC (mais novas primeiro) com cursor para trás; +1 detecta se há
+    // página anterior. Reverte para ascendente na saída.
     const rows = await prisma.message.findMany({
       where: { conversationId },
-      orderBy: { createdAt: "asc" },
-      take: opts?.take ?? 200,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: take + 1,
+      ...(opts?.beforeId ? { cursor: { id: opts.beforeId }, skip: 1 } : {}),
     });
-    return this.attachNames(rows);
+    const hasMore = rows.length > take;
+    const page = rows.slice(0, take).reverse();
+    return { items: await this.attachNames(page), hasMore };
   }
 
   async createMessage(data: CreateMessageData): Promise<ChatMessage> {

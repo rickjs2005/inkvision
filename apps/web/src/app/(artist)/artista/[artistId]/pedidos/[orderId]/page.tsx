@@ -35,7 +35,7 @@ export default async function ArtistOrderDetailPage({
     if (e instanceof DomainError) notFound();
     throw e;
   }
-  const { order, conversation, messages } = conv;
+  const { order, conversation, messages, hasMoreMessages } = conv;
   const roomToken = await signRoomToken(actor.userId, conversation.id);
   const canQuote = canTransition(order.status, "QUOTED");
   const canDesign = DESIGNABLE.includes(order.status);
@@ -150,6 +150,7 @@ export default async function ArtistOrderDetailPage({
                 currentUserId={actor.userId}
                 roomToken={roomToken}
                 initialMessages={messages}
+                initialHasMore={hasMoreMessages}
               />
             </div>
           </section>

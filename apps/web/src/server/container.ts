@@ -38,6 +38,8 @@ import {
   SendClientMessageUseCase,
   SendStudioMessageUseCase,
   MarkReadClientUseCase,
+  ListOlderClientMessagesUseCase,
+  ListOlderStudioMessagesUseCase,
   MarkReadStudioUseCase,
   // payment
   ConnectStudioPaymentsUseCase,
@@ -224,6 +226,8 @@ export const useCases = {
   getClientOrderDetail: new GetClientOrderDetailUseCase(clientOrderDetailDeps),
   // chat
   openClientConversation: new OpenClientConversationUseCase(chatDeps),
+  listOlderClientMessages: new ListOlderClientMessagesUseCase(chatDeps),
+  listOlderStudioMessages: new ListOlderStudioMessagesUseCase(chatDeps),
   openStudioConversation: new OpenStudioConversationUseCase(chatDeps),
   sendClientMessage: new SendClientMessageUseCase(chatDeps),
   sendStudioMessage: new SendStudioMessageUseCase(chatDeps),

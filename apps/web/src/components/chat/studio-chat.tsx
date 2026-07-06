@@ -1,7 +1,11 @@
 "use client";
 
 import type { ChatMessage, SendMessageInput } from "@inkvision/core";
-import { sendStudioMessageAction, markReadStudioAction } from "@/server/actions/chat";
+import {
+  loadOlderStudioMessagesAction,
+  markReadStudioAction,
+  sendStudioMessageAction,
+} from "@/server/actions/chat";
 import { ChatPanel } from "./chat-panel";
 
 export function StudioChat({
@@ -10,12 +14,14 @@ export function StudioChat({
   currentUserId,
   roomToken,
   initialMessages,
+  initialHasMore = false,
 }: {
   orderId: string;
   studioId: string;
   currentUserId: string;
   roomToken: string;
   initialMessages: ChatMessage[];
+  initialHasMore?: boolean;
 }) {
   return (
     <ChatPanel
@@ -23,8 +29,10 @@ export function StudioChat({
       studioId={studioId}
       roomToken={roomToken}
       initialMessages={initialMessages}
+      initialHasMore={initialHasMore}
       onSend={(input: SendMessageInput) => sendStudioMessageAction(studioId, orderId, input)}
       onMarkRead={() => markReadStudioAction(studioId, orderId)}
+      onLoadOlder={(beforeId) => loadOlderStudioMessagesAction(studioId, orderId, beforeId)}
     />
   );
 }
