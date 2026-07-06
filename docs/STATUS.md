@@ -43,6 +43,12 @@ _Repo: https://github.com/rickjs2005/inkvision (branch `main`)._
   1. **Migration `1_appointment_no_overlap` quebrava em `migrate deploy` de verdade** — `tstzrange()` num índice exigia cast timestamp→timestamptz dependente do fuso da sessão (STABLE, não IMMUTABLE); trocado para `tsrange()` (bate com o tipo real da coluna). Nunca fora exercida: local usa `db push` (ignora SQL bruto) e o CI não roda migrations — **isso bloquearia o primeiro deploy na VPS também**.
   2. **Next.js 15.1.3 tinha CVE conhecido** (bypass de autorização via middleware) — a própria Vercel recusou o deploy. Atualizado para `15.5.20`.
   3. **Prisma "perdia" o query engine no bundle da Vercel** (monorepo pnpm + tracing de serverless function) — corrigido com o plugin oficial `@prisma/nextjs-monorepo-workaround-plugin` (só ativo com `VERCEL=1`, não afeta o Docker/VPS).
+
+### Bug crítico de RLS + auditoria visual completa — commits `9e352dc`, `17527a4`
+- **`getActor()` lia `StudioMember` sem contexto de tenant/admin** — tabela protegida por RLS, então a política nunca casava e a consulta voltava vazia sempre, mesmo com memberships reais. Efeito: donos de estúdio ficavam com o painel idêntico ao de cliente comum, `/estudio/{id}/tatuadores` dava 404. Nunca apareceu porque o dev local usa role que ignora RLS. Fix: `withAdmin()` (seguro — o filtro já é pelo próprio `userId`).
+- Auditoria visual com screenshots reais (Playwright) das 18 telas do produto (marketing, auth, dashboards de cliente/dono/tatuador/admin, perfis públicos). Achado: o redesign "Ateliê de Tinta" já estava consistente em quase tudo — só 2 lacunas reais, ambas corrigidas:
+  1. `/s/{slug}` (perfil público do estúdio) dizia "Portfólio em breve" mesmo com dados reais → agora mostra equipe (`StudioTeam`) + galeria combinada do portfólio (`StudioPortfolio`), com leituras cacheadas dedicadas em `public-cache.ts`.
+  2. `/painel` parecia genérico pra todo mundo (era o bug de RLS acima) → com o fix, título dinâmico por papel (admin/dono/tatuador/cliente) + botão "Meu perfil" pro tatuador puro (antes só via "Ver página" do estúdio, sem atalho pro próprio perfil).
 - **Limitação conhecida:** só o `web` roda na Vercel. Chat e simulação em tempo real (Socket.IO) não conectam nesse ambiente — normal, é só para testar a landing/cadastro/`/simular`. Produção de verdade continua sendo a VPS (`docs/DEPLOY.md`).
 
 ---
