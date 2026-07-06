@@ -1,0 +1,13 @@
+# Arquivos de env locais NUNCA sobem no deploy via CLI — na Vercel, env vem do
+# dashboard do projeto. (Causa raiz de um bug real: o apps/web/.env de dev, com
+# REDIS_URL=localhost, subiu num deploy CLI e roteou a fila de simulação pro
+# BullMQ — sem worker na Vercel, os jobs ficavam presos em QUEUED, e o ioredis
+# martelava 127.0.0.1:6379 em toda função, causando 504s.)
+.env
+.env.*
+!.env.example
+
+# Nunca necessários no build remoto
+test-results
+playwright-report
+scratchpad
