@@ -66,7 +66,13 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
 
   function onStagePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (aiVisible || aiBusy) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    // Alguns browsers lançam se o ponteiro já se foi — capturar é otimização
+    // (não perder o arrasto na borda), nunca pode abortar o gesto.
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* segue sem captura */
+    }
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.current.size === 1) {
       setDragging(true);
