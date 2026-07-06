@@ -36,6 +36,7 @@ _Repo: https://github.com/rickjs2005/inkvision (branch `main`)._
 
 | O quê | Como ativar |
 |---|---|
+| **Login social Google** | `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` (redirect URI: `${BETTER_AUTH_URL}/api/auth/callback/google`) |
 | **IA real de simulação** (Fal) | `FAL_API_KEY` + `AI_SIMULATION_PROVIDER=fal` |
 | **Pagamentos reais** (Stripe) | `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` + `STRIPE_PRICE_<PLANO>` |
 | **Redis** (rate limit distribuído, fila BullMQ, adapter realtime) | `REDIS_URL` |
@@ -47,7 +48,7 @@ _Repo: https://github.com/rickjs2005/inkvision (branch `main`)._
 
 ### Alta prioridade (maior impacto)
 1. ~~**Ligar a prova social a dados reais.**~~ ✅ Feito (ver seção acima).
-2. **Login social Google/Apple de verdade.** Os botões existem (hoje mostram toast "em breve"). Falta: registrar `socialProviders` no `apps/web/src/lib/auth.ts` (condicional a env) + `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (e Apple). Aí os botões passam a funcionar sozinhos.
+2. ~~**Login social Google de verdade.**~~ ✅ Código pronto: `socialProviders.google` condicional a env + account linking confiável (mesmo e-mail). Verificado: sem env → toast "em breve"; com env → redirect OAuth (PKCE). **Falta só criar as credenciais no Google Cloud Console** (ver tabela "Pronto para ativar"). _Apple fica para depois (exige Apple Developer pago)._
 3. **`/simular` com IA real (opcional).** Hoje é prévia por sobreposição (blend). Fazer a página pública chamar o `FalProvider` quando `FAL_API_KEY` existir — "wow" ainda maior na landing.
 4. **Deploy na VPS.** Artefatos Docker prontos (`docker/`, `compose.prod.yml`, migration inicial, `prod-init.ts` cria o role não-superusuário). Falta rodar na máquina + preencher `docker/.env.prod`.
 

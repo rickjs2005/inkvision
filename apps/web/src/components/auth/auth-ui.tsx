@@ -143,28 +143,45 @@ const STRENGTH = [
   { label: "forte", bar: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
 ] as const;
 
-/* ── Login social (Google/Apple) ── */
+/* ── Login social (Google/Apple) ──
+   O servidor só registra o provider quando as credenciais existem no env;
+   sem elas o signIn.social falha e o botão degrada para o toast "em breve". */
 export function SocialButtons() {
+  const [busy, setBusy] = useState<"google" | "apple" | null>(null);
+
   async function social(provider: "google" | "apple", nome: string) {
+    setBusy(provider);
     try {
       const res = (await signIn.social({
         provider,
         callbackURL: "/painel",
       } as Parameters<typeof signIn.social>[0])) as { error?: unknown } | undefined;
       if (res?.error) throw new Error();
+      // Sucesso = redirect para o provedor em andamento; mantém o botão travado.
     } catch {
       toast.error(`Login com ${nome} chega em breve. Use e-mail por enquanto.`);
+      setBusy(null);
     }
   }
   return (
     <div className="grid grid-cols-2 gap-3">
-      <button type="button" onClick={() => social("google", "Google")} className="btn-social">
-        <GoogleIcon /> Google
+      <button
+        type="button"
+        onClick={() => social("google", "Google")}
+        disabled={busy !== null}
+        className="btn-social"
+      >
+        <GoogleIcon /> {busy === "google" ? "Abrindo…" : "Google"}
       </button>
-      <button type="button" onClick={() => social("apple", "Apple")} className="btn-social">
-        <AppleIcon /> Apple
+      <button
+        type="button"
+        onClick={() => social("apple", "Apple")}
+        disabled={busy !== null}
+        className="btn-social"
+      >
+        <AppleIcon /> {busy === "apple" ? "Abrindo…" : "Apple"}
       </button>
-      <style>{`.btn-social{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;height:2.75rem;border-radius:var(--radius);border:1px solid var(--border);font-size:.875rem;font-weight:500;transition:background-color .2s,border-color .2s,transform .2s}.btn-social:hover{background:color-mix(in oklab,var(--foreground) 4%,transparent);border-color:color-mix(in oklab,var(--foreground) 30%,transparent);transform:translateY(-1px)}`}</style>
+      <style>{`.btn-social{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;height:2.75rem;border-radius:var(--radius);border:1px solid var(--border);font-size:.875rem;font-weight:500;transition:background-color .2s,border-color .2s,transform .2s}.btn-social:hover:not(:disabled){background:color-mix(in oklab,var(--foreground) 4%,transparent);border-color:color-mix(in oklab,var(--foreground) 30%,transparent);transform:translateY(-1px)}.btn-social:disabled{opacity:.6;cursor:default}`}</style>
     </div>
   );
 }

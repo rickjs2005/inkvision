@@ -8,6 +8,13 @@ import { env } from "./env";
  * `platformRole` é adicionado ao usuário; roles de estúdio vivem em StudioMember
  * e serão expostos via plugin `organization` na Sprint 1.
  */
+/** Providers sociais registrados só quando o par de credenciais existe no env. */
+const socialProviders = {
+  ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+    ? { google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET } }
+    : {}),
+};
+
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
   secret: env.BETTER_AUTH_SECRET,
@@ -15,6 +22,12 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
+  },
+  socialProviders,
+  account: {
+    // Quem criou conta com e-mail/senha pode entrar depois com o Google do
+    // MESMO e-mail (o Google verifica a posse do endereço).
+    accountLinking: { enabled: true, trustedProviders: ["google"] },
   },
   user: {
     additionalFields: {
