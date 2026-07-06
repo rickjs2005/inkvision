@@ -81,8 +81,8 @@ _Repo: https://github.com/rickjs2005/inkvision (branch `main`)._
 9. ~~**ISR estático real**~~ ✅ `/t` e `/s` são SSG/ISR (revalidate 5min, generateStaticParams vazio — geram na 1ª visita): sessão+likes hidratam no cliente via `getViewerPortfolioStateAction`; prévia de estúdio não publicado saiu para `/s/{slug}/previa` (dinâmica, noindex). Comprovado em produção: X-Vercel-Cache MISS→HIT.
 
 ### Baixa prioridade / polimento
-10. Mais desenhos no `/simular` (lettering, etc.) e reação da página enquanto digita.
-11. Paginação das mensagens do chat · cache Redis compartilhado de leitura (hoje `unstable_cache` in-memory por instância) · i18n (só pt-BR).
+10. ~~Mais desenhos no `/simular`~~ ✅ 10 desenhos (era 5): +âncora, rosa, borboleta, raio e lettering "amor" — ecoando o flash old school do fundo do site.
+11. ~~Paginação das mensagens do chat~~ ✅ Cursor para trás (MessagePage no port; conversa abre nas 50 mais recentes — o antigo asc+take(200) TRUNCAVA as novas em conversa longa — e "Carregar anteriores" preserva a rolagem). **De fora com justificativa:** cache Redis de leitura (só compensa com 2+ instâncias do web — revisitar na VPS) e i18n (projeto próprio; só pt-BR por ora).
 
 ---
 
