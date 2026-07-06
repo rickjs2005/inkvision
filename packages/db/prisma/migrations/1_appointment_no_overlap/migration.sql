@@ -13,10 +13,15 @@
 -- Necessária para usar operadores de igualdade (=) em índices GiST junto com &&.
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
+-- `startsAt`/`endsAt` são `timestamp` SEM fuso (mapeamento default do Prisma
+-- para `DateTime` sem `@db.Timestamptz`). `tsrange()` (sem fuso) é o construtor
+-- correto para esse tipo e é IMMUTABLE de verdade — diferente de `tstzrange()`,
+-- que exigiria um cast timestamp→timestamptz dependente do fuso da SESSÃO
+-- (STABLE, não IMMUTABLE) e o Postgres rejeita isso em expressão de índice.
 ALTER TABLE "Appointment"
   ADD CONSTRAINT appointment_no_overlap
   EXCLUDE USING gist (
     "artistId" WITH =,
-    tstzrange("startsAt", "endsAt") WITH &&
+    tsrange("startsAt", "endsAt") WITH &&
   )
   WHERE (status IN ('CONFIRMED', 'RESCHEDULED'));
