@@ -147,6 +147,17 @@ async function main() {
     }
   }
 
+  // Histórico de simulações de IA — alimenta a prova social pública
+  // (hero/diretórios mostram a contagem real de AiUsageLog).
+  await prisma.aiUsageLog.createMany({
+    data: Array.from({ length: 38 }, (_, i) => ({
+      studioId: studio.id,
+      provider: "mock",
+      operation: "simulate",
+      createdAt: new Date(Date.now() - i * 7 * 36e5),
+    })),
+  });
+
   // Pedido de exemplo (cliente → Rafa), aguardando orçamento.
   await prisma.order.deleteMany({ where: { clientId: client.id } });
   await prisma.order.create({

@@ -1,4 +1,4 @@
-import { getGallery, getTopArtists } from "@/server/queries/home";
+import { getGallery, getPublicStats, getTopArtists } from "@/server/queries/home";
 import { Hero } from "@/components/marketing/hero";
 import { StyleCategories } from "@/components/marketing/style-categories";
 import { TopArtists } from "@/components/marketing/top-artists";
@@ -13,14 +13,18 @@ import { FaqJsonLd, OrganizationJsonLd, WebSiteJsonLd } from "@/components/seo/j
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const [artists, gallery] = await Promise.all([getTopArtists(), getGallery()]);
+  const [artists, gallery, stats] = await Promise.all([
+    getTopArtists(),
+    getGallery(),
+    getPublicStats(),
+  ]);
 
   return (
     <>
       <OrganizationJsonLd />
       <WebSiteJsonLd />
       <FaqJsonLd items={FAQ_ITEMS.map((f) => ({ q: f.q, a: f.a }))} />
-      <Hero />
+      <Hero stats={stats} artists={artists} />
       <StyleCategories />
       <TopArtists artists={artists} />
       <Gallery items={gallery} />

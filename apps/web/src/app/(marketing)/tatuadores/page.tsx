@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { ArrowUpRight, Star } from "lucide-react";
 import { repositories } from "@/server/container";
 import { getDiscoveryArtists } from "@/server/public-cache";
+import { getPublicStats } from "@/server/queries/home";
+import { ProofStrip } from "@/components/marketing/proof-strip";
 import { cn } from "@/lib/utils";
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
@@ -31,7 +33,7 @@ export default async function ArtistsDiscoveryPage({
 }) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
-  const [styles, { items, total }] = await Promise.all([
+  const [styles, { items, total }, stats] = await Promise.all([
     repositories.styles.listAll(),
     getDiscoveryArtists({
       styleSlug: sp.estilo,
@@ -39,6 +41,7 @@ export default async function ArtistsDiscoveryPage({
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
+    getPublicStats(),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -58,23 +61,8 @@ export default async function ArtistsDiscoveryPage({
         </p>
       </div>
 
-      {/* Faixa de prova social — autoridade do marketplace */}
-      <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5">
-          <Star className="size-3.5 fill-primary text-primary" />
-          <span className="font-display text-sm tracking-normal text-foreground">4.9</span>
-          média
-        </span>
-        <span className="text-border">·</span>
-        <span>
-          <span className="font-display text-sm tracking-normal text-foreground">12.000+</span>{" "}
-          simulações
-        </span>
-        <span className="text-border">·</span>
-        <span>
-          <span className="font-display text-sm tracking-normal text-foreground">120</span> estúdios
-        </span>
-      </div>
+      {/* Faixa de prova social — números reais do marketplace */}
+      <ProofStrip stats={stats} show={["rating", "simulations", "studios"]} />
 
       {/* Filtros — ticks editoriais, não pílulas */}
       <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 border-y border-border py-4">

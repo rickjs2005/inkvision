@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Check, Eye, EyeOff, Lock, type LucideIcon } from "lucide-react";
 import { signIn } from "@/lib/auth-client";
 import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
+import { useAuthStats } from "@/components/auth/auth-stats";
+import { formatRating, formatStatCount } from "@/lib/public-stats";
 
 /* ── Campo com label flutuante + validação em tempo real (check verde) ── */
 export function Field({
@@ -178,15 +180,44 @@ export function AuthDivider() {
 }
 
 export function AuthProof() {
+  const stats = useAuthStats();
+  if (!stats) return null;
+
+  const entries: React.ReactNode[] = [];
+  if (stats.ratingAvg && stats.ratingCount > 0)
+    entries.push(
+      <div key="rating" className="inline-flex items-center gap-1.5">
+        <span className="text-primary">★★★★★</span> {formatRating(stats.ratingAvg)}
+      </div>,
+    );
+  if (stats.simulations > 0)
+    entries.push(
+      <div key="sim">
+        <span className="font-display text-sm normal-case tracking-normal text-foreground">
+          {formatStatCount(stats.simulations)}
+        </span>{" "}
+        {stats.simulations === 1 ? "simulação" : "simulações"}
+      </div>,
+    );
+  if (stats.activeStudios > 0)
+    entries.push(
+      <div key="studios">
+        <span className="font-display text-sm normal-case tracking-normal text-foreground">
+          {formatStatCount(stats.activeStudios)}
+        </span>{" "}
+        {stats.activeStudios === 1 ? "estúdio" : "estúdios"}
+      </div>,
+    );
+  if (entries.length === 0) return null;
+
   return (
     <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border pt-5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-      <div className="inline-flex items-center gap-1.5">
-        <span className="text-primary">★★★★★</span> 4.9
-      </div>
-      <span className="h-3 w-px bg-border" />
-      <div><span className="font-display text-sm normal-case tracking-normal text-foreground">12.000+</span> simulações</div>
-      <span className="h-3 w-px bg-border" />
-      <div><span className="font-display text-sm normal-case tracking-normal text-foreground">120</span> estúdios</div>
+      {entries.map((entry, i) => (
+        <Fragment key={i}>
+          {i > 0 && <span className="h-3 w-px bg-border" />}
+          {entry}
+        </Fragment>
+      ))}
     </dl>
   );
 }

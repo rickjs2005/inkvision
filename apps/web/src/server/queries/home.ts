@@ -1,13 +1,54 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import type { Artist } from "@inkvision/core";
-import { prisma } from "@inkvision/db";
+import { prisma, withAdmin } from "@inkvision/db";
 import { useCases } from "@/server/container";
+import type { PublicStats } from "@/lib/public-stats";
 
 export const CACHE_TAGS = {
   topArtists: "home:top-artists",
   gallery: "home:gallery",
+  publicStats: "home:public-stats",
 } as const;
+
+// Se a leitura falhar, o erro propaga e o unstable_cache NÃO grava — uma
+// indisponibilidade momentânea do banco não pode virar 5 min de faixa vazia.
+const cachedPublicStats = unstable_cache(
+  async (): Promise<PublicStats> => {
+    const [activeStudios, ratings, simulations] = await Promise.all([
+      prisma.studio.count({ where: { status: "ACTIVE" } }),
+      prisma.artistProfile.findMany({
+        where: { isActive: true, ratingCount: { gt: 0 }, studio: { status: "ACTIVE" } },
+        select: { ratingAvg: true, ratingCount: true },
+      }),
+      // AiUsageLog fica sob RLS — contagem cross-tenant via admin.
+      withAdmin((tx) => tx.aiUsageLog.count({ where: { operation: "simulate" } })),
+    ]);
+
+    const ratingCount = ratings.reduce((n, r) => n + r.ratingCount, 0);
+    const weighted = ratings.reduce((s, r) => s + Number(r.ratingAvg ?? 0) * r.ratingCount, 0);
+    return {
+      simulations,
+      activeStudios,
+      ratingAvg: ratingCount > 0 ? weighted / ratingCount : null,
+      ratingCount,
+    };
+  },
+  ["home-public-stats"],
+  { revalidate: 300, tags: [CACHE_TAGS.publicStats] },
+);
+
+/**
+ * Números reais de prova social (hero, diretórios, auth). `null` quando o
+ * banco está indisponível — as telas escondem a faixa em vez de inventar.
+ */
+export async function getPublicStats(): Promise<PublicStats | null> {
+  try {
+    return await cachedPublicStats();
+  } catch {
+    return null;
+  }
+}
 
 /** Melhores tatuadores (por avaliação). Resiliente a banco indisponível. */
 export const getTopArtists = unstable_cache(

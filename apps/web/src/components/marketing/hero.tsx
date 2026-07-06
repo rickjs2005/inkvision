@@ -5,22 +5,50 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
 import { ArrowRight, Check, Search, Sparkles } from "lucide-react";
+import type { Artist } from "@inkvision/core";
 import { Button } from "@/components/ui/button";
+import { formatRating, formatStatCount, type PublicStats } from "@/lib/public-stats";
 import { HeroSimulation } from "./hero-simulation";
 
 const FEATURES = ["Simulação IA", "Chat com o artista", "Aprovação da arte", "Agendamento"];
 
-const ARTISTS = [
-  { initials: "RC", name: "Rafa Costa", meta: "Fine line · ★ 4.9" },
-  { initials: "AB", name: "Ana Black", meta: "Blackwork · ★ 5.0" },
-  { initials: "LF", name: "Lucas Faria", meta: "Realismo · ★ 4.8" },
-];
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .map((w) => w[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
 
-const STATS = [
-  { value: "12.000+", label: "simulações geradas" },
-  { value: "140", label: "estúdios ativos" },
-  { value: "4.9★", label: "320 avaliações" },
-];
+/** Chip rotativo do marketplace — derivado dos melhores tatuadores reais. */
+function toChip(a: Artist) {
+  const style = a.styles[0]?.name ?? "Tatuador";
+  const rating = a.ratingAvg && a.ratingCount > 0 ? ` · ★ ${formatRating(a.ratingAvg)}` : "";
+  return { initials: initialsOf(a.name), name: a.name, meta: `${style}${rating}` };
+}
+
+/** Números de autoridade — só o que existe de verdade no banco. */
+function toStats(s: PublicStats | null) {
+  if (!s) return [];
+  const out: { value: string; label: string }[] = [];
+  if (s.simulations > 0)
+    out.push({
+      value: formatStatCount(s.simulations),
+      label: s.simulations === 1 ? "simulação gerada" : "simulações geradas",
+    });
+  if (s.activeStudios > 0)
+    out.push({
+      value: formatStatCount(s.activeStudios),
+      label: s.activeStudios === 1 ? "estúdio ativo" : "estúdios ativos",
+    });
+  if (s.ratingAvg && s.ratingCount > 0)
+    out.push({
+      value: `${formatRating(s.ratingAvg)}★`,
+      label: `${s.ratingCount} ${s.ratingCount === 1 ? "avaliação" : "avaliações"}`,
+    });
+  return out;
+}
 
 const MODES = [
   { key: "tatuador", label: "Tatuador", placeholder: "Nome do tatuador ou estilo" },
@@ -29,21 +57,24 @@ const MODES = [
   { key: "cidade", label: "Cidade", placeholder: "Sua cidade" },
 ] as const;
 
-export function Hero() {
+export function Hero({ stats, artists }: { stats: PublicStats | null; artists: Artist[] }) {
   const router = useRouter();
   const reduce = useReducedMotion();
   const [mode, setMode] = useState<(typeof MODES)[number]["key"]>("tatuador");
   const [q, setQ] = useState("");
   const active = MODES.find((x) => x.key === mode)!;
 
+  const chips = artists.slice(0, 3).map(toChip);
+  const heroStats = toStats(stats);
+
   // Marketplace "vivo": o artista em destaque troca a cada ~3.2s.
   const [artistIdx, setArtistIdx] = useState(0);
   useEffect(() => {
-    if (reduce) return;
-    const id = setInterval(() => setArtistIdx((i) => (i + 1) % ARTISTS.length), 3200);
+    if (reduce || chips.length < 2) return;
+    const id = setInterval(() => setArtistIdx((i) => (i + 1) % chips.length), 3200);
     return () => clearInterval(id);
-  }, [reduce]);
-  const artist = ARTISTS[artistIdx]!;
+  }, [reduce, chips.length]);
+  const artist = chips[artistIdx % Math.max(chips.length, 1)];
 
   function search(e: React.FormEvent) {
     e.preventDefault();
@@ -157,17 +188,19 @@ export function Hero() {
               </form>
             </m.div>
 
-            {/* Prova social — números de autoridade */}
-            <m.dl variants={rise} className="mt-10 flex flex-wrap gap-x-10 gap-y-4 border-t border-border pt-7">
-              {STATS.map((s) => (
-                <div key={s.label}>
-                  <dt className="font-display text-3xl leading-none tracking-tight sm:text-4xl">{s.value}</dt>
-                  <dd className="mt-1.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                    {s.label}
-                  </dd>
-                </div>
-              ))}
-            </m.dl>
+            {/* Prova social — números reais da plataforma */}
+            {heroStats.length > 0 && (
+              <m.dl variants={rise} className="mt-10 flex flex-wrap gap-x-10 gap-y-4 border-t border-border pt-7">
+                {heroStats.map((s) => (
+                  <div key={s.label}>
+                    <dt className="font-display text-3xl leading-none tracking-tight sm:text-4xl">{s.value}</dt>
+                    <dd className="mt-1.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {s.label}
+                    </dd>
+                  </div>
+                ))}
+              </m.dl>
+            )}
           </m.div>
 
           {/* ─────────── Demonstração viva (direita) ─────────── */}
@@ -180,7 +213,8 @@ export function Hero() {
             {/* cartão-sombra atrás, para profundidade */}
             <div className="absolute -right-6 top-8 -z-10 h-full w-full -rotate-3 rounded-2xl border border-border bg-card/60 shadow-[var(--shadow-ink)]" />
             <HeroSimulation />
-            {/* chip de artista ROTATIVO — marketplace vivo, saindo da moldura */}
+            {/* chip de artista ROTATIVO — tatuadores reais da rede */}
+            {artist && (
             <div className="absolute -bottom-5 -left-7 flex h-[68px] w-64 items-center overflow-hidden rounded-md border border-border bg-background px-3.5 shadow-[var(--shadow-lift)]">
               <AnimatePresence mode="wait">
                 <m.div
@@ -203,6 +237,7 @@ export function Hero() {
                 </m.div>
               </AnimatePresence>
             </div>
+            )}
           </m.div>
         </div>
 

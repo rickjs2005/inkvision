@@ -26,6 +26,10 @@ _Repo: https://github.com/rickjs2005/inkvision (branch `main`)._
 ### Simulador público `/simular` — commit `396193a`
 - Página pública, **sem login, 100% client-side**: escolhe pele (foto própria ou sintética) → escolhe desenho (5 SVG fine-line) → posiciona (arrastar/escala/rotação) → baixa a prévia. CTA → `/cadastro`.
 
+### Prova social com dados REAIS
+- `getPublicStats` (cacheado 5 min, tag `home:public-stats`): simulações (AiUsageLog via admin), estúdios ativos, média/contagem de avaliações (ponderada de `ArtistProfile`). Falha de banco **não é cacheada** (catch fora do `unstable_cache`) → telas escondem a faixa em vez de inventar número.
+- Hero: números + chip rotativo com os **tatuadores reais** do topo. Diretórios `/tatuadores` e `/estudios` usam `<ProofStrip>` compartilhado. Grupo auth: layout busca stats e injeta via `AuthStatsProvider` (páginas são client). Seed demo agora cria 38 `AiUsageLog` de simulação.
+
 ---
 
 ## 🔌 Pronto para ATIVAR (só configurar env — código já existe)
@@ -42,7 +46,7 @@ _Repo: https://github.com/rickjs2005/inkvision (branch `main`)._
 ## 🟡 O QUE FALTA (backlog priorizado p/ amanhã)
 
 ### Alta prioridade (maior impacto)
-1. **Ligar a prova social a dados reais.** Hoje os números do hero/índices (12.000+ · 140 · 4.9★) são ilustrativos. Puxar do banco: contagens reais + `getPlatformMetrics` + top artistas. _(Perfil de artista já usa dados reais.)_
+1. ~~**Ligar a prova social a dados reais.**~~ ✅ Feito (ver seção acima).
 2. **Login social Google/Apple de verdade.** Os botões existem (hoje mostram toast "em breve"). Falta: registrar `socialProviders` no `apps/web/src/lib/auth.ts` (condicional a env) + `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (e Apple). Aí os botões passam a funcionar sozinhos.
 3. **`/simular` com IA real (opcional).** Hoje é prévia por sobreposição (blend). Fazer a página pública chamar o `FalProvider` quando `FAL_API_KEY` existir — "wow" ainda maior na landing.
 4. **Deploy na VPS.** Artefatos Docker prontos (`docker/`, `compose.prod.yml`, migration inicial, `prod-init.ts` cria o role não-superusuário). Falta rodar na máquina + preencher `docker/.env.prod`.
