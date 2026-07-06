@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Actor } from "@inkvision/core";
 import type { PlatformRole, StudioRole } from "@inkvision/shared";
-import { prisma } from "@inkvision/db";
+import { withAdmin } from "@inkvision/db";
 import { auth } from "@/lib/auth";
 
 /** Sessão atual (ou null). Memoizado por request. */
@@ -18,10 +18,16 @@ export const getActor = cache(async (): Promise<Actor | null> => {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const memberships = await prisma.studioMember.findMany({
-    where: { userId: user.id },
-    select: { studioId: true, role: true },
-  });
+  // StudioMember tem RLS por studioId — sem contexto de tenant/admin a
+  // política nunca casa e a consulta sempre volta vazia (mesmo com
+  // memberships reais). Aqui filtramos pelo PRÓPRIO userId, então é seguro
+  // ler via admin: cada usuário só enxerga a si mesmo.
+  const memberships = await withAdmin((tx) =>
+    tx.studioMember.findMany({
+      where: { userId: user.id },
+      select: { studioId: true, role: true },
+    }),
+  );
 
   return {
     userId: user.id,
