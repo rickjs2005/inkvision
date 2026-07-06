@@ -56,14 +56,17 @@ export function ClientSimulationSection({
 
   const designUrl = simulation?.designUrl ?? design?.imageUrl ?? "";
 
-  // Watcher realtime enquanto a IA processa.
+  // Watcher realtime enquanto a IA processa + polling de fallback (ambientes
+  // sem o serviço de realtime no ar, como o deploy de teste na Vercel).
   useEffect(() => {
     if (status !== "SIMULATING") return;
     const socket = io(REALTIME_URL, { auth: { token: roomToken }, transports: ["websocket"] });
     socket.on(RT.SIMULATION_DONE, () => router.refresh());
     socket.on(RT.SIMULATION_FAILED, () => router.refresh());
+    const poll = setInterval(() => router.refresh(), 4000);
     return () => {
       socket.disconnect();
+      clearInterval(poll);
     };
   }, [status, roomToken, router]);
 

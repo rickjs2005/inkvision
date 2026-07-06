@@ -149,20 +149,20 @@ const chatDeps = { chat, orders, artists, notifications };
 const paymentDeps = { payments, orders, studios, artists, subscriptions, gateway, notifications, audit, platformFeePercent };
 
 /**
- * Fila de simulação in-process (fallback de dev, sem Redis): agenda o
- * processamento para logo após a resposta da action. Em produção, o apps/worker
- * (BullMQ) consome a mesma fila. Reforço = REDIS_URL + BullMQ.
+ * Fila de simulação in-process (fallback sem Redis): processa INLINE, na
+ * própria requisição. Não pode ser setTimeout: em serverless (Vercel) a
+ * função congela após responder e o job nunca rodaria — o pedido ficaria
+ * preso em SIMULATING. Com o mock é instantâneo; provider real em produção
+ * deve usar REDIS_URL + apps/worker (BullMQ), que é o caminho da VPS.
  */
 let processSimulationRef: ProcessSimulationUseCase;
 const inProcessQueue: SimulationQueue = {
   async enqueue(simulationId: string) {
-    setTimeout(() => {
-      processSimulationRef.execute(simulationId).catch((e) => console.error("[sim]", e));
-    }, 0);
+    await processSimulationRef.execute(simulationId).catch((e) => console.error("[sim]", e));
   },
 };
 // Com REDIS_URL, publica na fila BullMQ (o apps/worker processa, durável e
-// escalável). Sem Redis, usa o fallback in-process (setTimeout) do dev.
+// escalável). Sem Redis, usa o fallback in-process (inline) acima.
 const simulationQueue = process.env.REDIS_URL ? new BullMqSimulationQueue() : inProcessQueue;
 const simulationDeps = {
   orders,
