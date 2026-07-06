@@ -3,8 +3,9 @@
 
 generator client {
   provider      = "prisma-client-js"
-  // native = dev (Windows/host); debian = imagem Docker de produção.
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  // native = dev (Windows/host); debian = imagem Docker (VPS); rhel = runtime
+  // das serverless functions da Vercel (Amazon Linux).
+  binaryTargets = ["native", "debian-openssl-3.0.x", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
