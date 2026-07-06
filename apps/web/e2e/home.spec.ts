@@ -6,7 +6,7 @@ test.describe("Home", () => {
 
     // Heading do hero (h1). Usa um trecho estável do texto.
     await expect(
-      page.getByRole("heading", { level: 1, name: /Sua próxima tatuagem/i }),
+      page.getByRole("heading", { level: 1, name: /Veja a arte/i }),
     ).toBeVisible();
 
     // Campo de busca (input tem aria-label="Buscar").

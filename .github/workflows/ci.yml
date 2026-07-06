@@ -57,3 +57,96 @@ jobs:
 
       - name: Build web
         run: pnpm --filter @inkvision/web build
+
+  # E2E com o caminho de PRODUÇÃO: migrate deploy real + prod-init (role
+  # não-superusuário + RLS) e o app conectando com o role RLS — o cenário
+  # que pegaria os bugs que só apareceram no primeiro deploy real
+  # (migration inválida, RLS bloqueando memberships, etc.).
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: inkvision
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      # Superusuário — só para migrations/init/seed (como o job `migrate` do Docker).
+      ADMIN_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/inkvision
+      # O app roda com o role RLS criado pelo prod-init (não-superusuário).
+      DATABASE_URL: postgresql://inkvision_app:e2e-app-password@localhost:5432/inkvision
+      APP_DB_PASSWORD: e2e-app-password
+      BETTER_AUTH_SECRET: ci-secret-placeholder-min-16-chars
+      BETTER_AUTH_URL: http://localhost:3000
+      APP_URL: http://localhost:3000
+      ROOT_DOMAIN: localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      CI: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @inkvision/db generate
+
+      - name: Migrations + role do app + RLS (caminho de produção)
+        run: |
+          pnpm --filter @inkvision/db exec prisma migrate deploy
+          pnpm --filter @inkvision/db exec tsx prisma/prod-init.ts
+        env:
+          DATABASE_URL: ${{ env.ADMIN_DATABASE_URL }}
+
+      - name: Seed de demonstração
+        run: pnpm --filter @inkvision/web seed:demo
+        env:
+          DATABASE_URL: ${{ env.ADMIN_DATABASE_URL }}
+
+      - name: Write apps/web/.env (role RLS)
+        run: |
+          cat > apps/web/.env <<EOF
+          DATABASE_URL=${DATABASE_URL}
+          BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+          BETTER_AUTH_URL=${BETTER_AUTH_URL}
+          APP_URL=${APP_URL}
+          ROOT_DOMAIN=${ROOT_DOMAIN}
+          NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+          EOF
+
+      - name: Build web (com banco semeado — ISR gera páginas com dados)
+        run: pnpm --filter @inkvision/web build
+
+      - name: Instala Chromium do Playwright
+        run: pnpm --filter @inkvision/web exec playwright install --with-deps chromium
+
+      - name: E2E (Playwright)
+        run: pnpm --filter @inkvision/web exec playwright test
+
+      - name: Upload do relatório (em falha)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 7

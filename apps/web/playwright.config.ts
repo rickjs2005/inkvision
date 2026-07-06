@@ -17,6 +17,10 @@ import { defineConfig, devices } from "@playwright/test";
  * Se nenhum estiver de pé, ele tenta subir `pnpm dev` a partir da raiz do monorepo
  * — mas isso NÃO semeia o banco, então rode `pnpm setup:local` antes de qualquer forma.
  */
+// Com E2E_BASE_URL definido, testa um ambiente já no ar (ex.: o deploy de
+// teste da Vercel) em vez de subir servidor local.
+const externalBaseUrl = process.env.E2E_BASE_URL;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -26,7 +30,7 @@ export default defineConfig({
   reporter: "html",
 
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: externalBaseUrl ?? "http://localhost:3000",
     trace: "on-first-retry",
   },
 
@@ -41,13 +45,16 @@ export default defineConfig({
     },
   ],
 
-  // Reutiliza um `pnpm dev` já rodando. Se não houver, sobe a partir da raiz do
-  // monorepo (`--dir ..`). Lembre-se: isto não semeia o banco — rode
-  // `pnpm setup:local` antes. Timeout generoso porque o turbo sobe vários apps.
-  webServer: {
-    command: "pnpm --dir .. dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: true,
-    timeout: 120_000,
-  },
+  // Local: reutiliza um `pnpm dev` já rodando (ou sobe a partir da raiz — isto
+  // não semeia o banco; rode `pnpm setup:local` antes). CI: serve o build de
+  // produção (`next start`), feito num passo anterior do workflow — mais perto
+  // do deploy real e sem depender do turbo subir realtime/worker.
+  webServer: externalBaseUrl
+    ? undefined
+    : {
+        command: process.env.CI ? "pnpm start" : "pnpm --dir .. dev",
+        url: "http://localhost:3000",
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+      },
 });
