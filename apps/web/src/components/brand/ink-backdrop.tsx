@@ -179,37 +179,58 @@ export function InkBackdrop() {
         <circle cx="60" cy="86" r="2" fill="currentColor" stroke="none" />
       </svg>
 
-      {/* ── Leão — juba em chamas de traço, centro-direita alto ── */}
+      {/* ── Leão — juba densa em duas camadas, olhar sério ── */}
       <svg
-        viewBox="0 0 140 140"
+        viewBox="0 0 160 160"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="absolute right-[10vw] top-[30vh] h-[24vh] w-auto -rotate-3 opacity-[0.05]"
+        className="absolute right-[9vw] top-[28vh] h-[27vh] w-auto -rotate-3 opacity-[0.05]"
       >
-        {/* juba — labaredas radiais */}
-        <path d="M70 18 C64 8 74 4 76 12 C78 6 88 8 84 18" />
-        <path d="M100 26 C108 18 118 24 110 34 M40 26 C32 18 22 24 30 34" />
-        <path d="M116 52 C128 50 130 62 118 66 M24 52 C12 50 10 62 22 66" />
-        <path d="M120 86 C132 90 126 102 114 98 M20 86 C8 90 14 102 26 98" />
-        <path d="M104 116 C112 126 100 134 94 124 M36 116 C28 126 40 134 46 124" />
-        <path d="M70 128 C66 138 78 140 74 130" />
-        {/* rosto */}
-        <circle cx="70" cy="74" r="34" />
-        {/* orelhas */}
-        <path d="M46 48 C42 40 50 34 56 40 M94 48 C98 40 90 34 84 40" />
-        {/* olhos */}
-        <path d="M56 68 C59 65 63 65 66 68 M74 68 C77 65 81 65 84 68" />
-        {/* focinho */}
-        <path d="M64 84 H76 L70 92 Z" />
-        <path d="M70 92 V98 M70 98 C64 104 58 104 54 100 M70 98 C76 104 82 104 86 100" />
+        {/* juba — camada externa (labaredas longas radiais) */}
+        <path d="M80 6 C77 15 78 24 80 31" />
+        <path d="M106 10 C101 18 100 26 101 33 M54 10 C59 18 60 26 59 33" />
+        <path d="M128 24 C121 29 117 36 116 43 M32 24 C39 29 43 36 44 43" />
+        <path d="M143 46 C135 48 130 54 128 60 M17 46 C25 48 30 54 32 60" />
+        <path d="M150 74 C141 73 135 77 132 82 M10 74 C19 73 25 77 28 82" />
+        <path d="M147 102 C139 99 133 101 129 105 M13 102 C21 99 27 101 31 105" />
+        <path d="M134 126 C128 121 122 121 117 124 M26 126 C32 121 38 121 43 124" />
+        <path d="M113 142 C109 135 104 132 99 132 M47 142 C51 135 56 132 61 132" />
+        <path d="M80 148 C78 140 78 134 80 128" />
+        {/* juba — camada interna (tufos curtos) */}
+        <path d="M80 36 C78 42 78 48 80 53" strokeWidth="1" />
+        <path d="M100 38 C96 44 95 50 96 55 M60 38 C64 44 65 50 64 55" strokeWidth="1" />
+        <path d="M116 52 C110 56 107 61 107 66 M44 52 C50 56 53 61 53 66" strokeWidth="1" />
+        <path d="M124 76 C117 77 113 81 112 86 M36 76 C43 77 47 81 48 86" strokeWidth="1" />
+        <path d="M118 102 C112 101 108 104 106 108 M42 102 C48 101 52 104 54 108" strokeWidth="1" />
+        {/* orelhas dentro da juba */}
+        <path d="M56 38 C52 30 60 24 66 30 M104 38 C108 30 100 24 94 30" />
+        {/* testa e maçãs com tufos de pelo */}
+        <path d="M58 60 C62 46 74 40 80 40 C86 40 98 46 102 60" />
+        <path d="M52 78 C50 88 52 98 58 106 L54 112 L62 112 C66 118 72 122 80 123" />
+        <path d="M108 78 C110 88 108 98 102 106 L106 112 L98 112 C94 118 88 122 80 123" />
+        {/* sobrancelhas franzidas */}
+        <path d="M58 60 C64 55 72 54 77 57 M102 60 C96 55 88 54 83 57" strokeWidth="1.4" />
+        {/* olhos estreitados */}
+        <path d="M60 68 C65 64 71 64 75 68 M62 69 C66 71 71 71 74 69" />
+        <path d="M120 68 C115 64 109 64 105 68 M118 69 C114 71 109 71 106 69" />
+        <circle cx="67" cy="67" r="1" fill="currentColor" stroke="none" />
+        <circle cx="113" cy="67" r="1" fill="currentColor" stroke="none" />
+        {/* cano do focinho */}
+        <path d="M77 60 C78 70 77 80 75 88 M103 60 C102 70 103 80 105 88" strokeWidth="1" />
+        {/* nariz, filtro e mandíbulas */}
+        <path d="M72 90 H88 L83 100 H77 Z" />
+        <path d="M80 100 V106" />
+        <path d="M80 106 C72 114 62 114 56 108 M80 106 C88 114 98 114 104 108" />
+        {/* queixo */}
+        <path d="M72 120 C76 126 84 126 88 120" strokeWidth="1" />
         {/* bigodes */}
-        <circle cx="58" cy="88" r="0.8" fill="currentColor" stroke="none" />
-        <circle cx="52" cy="90" r="0.8" fill="currentColor" stroke="none" />
-        <circle cx="82" cy="88" r="0.8" fill="currentColor" stroke="none" />
-        <circle cx="88" cy="90" r="0.8" fill="currentColor" stroke="none" />
+        <circle cx="64" cy="110" r="0.8" fill="currentColor" stroke="none" />
+        <circle cx="58" cy="113" r="0.8" fill="currentColor" stroke="none" />
+        <circle cx="96" cy="110" r="0.8" fill="currentColor" stroke="none" />
+        <circle cx="102" cy="113" r="0.8" fill="currentColor" stroke="none" />
       </svg>
 
       {/* ── 刺青 (irezumi, "tatuagem") — kanji vertical, centro-baixo ── */}
