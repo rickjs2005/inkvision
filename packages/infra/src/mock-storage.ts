@@ -49,4 +49,9 @@ export class MockStorageService implements StorageService {
   async delete(): Promise<void> {
     // no-op no mock
   }
+
+  async readHead(): Promise<Uint8Array | null> {
+    // Mock não persiste bytes — a validação de magic bytes acontece no sink.
+    return null;
+  }
 }

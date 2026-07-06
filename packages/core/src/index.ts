@@ -5,6 +5,7 @@ export * from "./domain/slug";
 export * from "./domain/order-state-machine";
 export * from "./domain/scheduling";
 export * from "./domain/sanitize";
+export * from "./domain/magic-bytes";
 
 // Ports
 export * from "./application/ports/studio-repository";

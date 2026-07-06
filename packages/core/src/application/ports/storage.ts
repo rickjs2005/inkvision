@@ -30,6 +30,12 @@ export interface UploadTicket {
 export interface StorageService {
   createUploadUrl(input: CreateUploadUrlInput): Promise<UploadTicket>;
   delete(key: string): Promise<void>;
+  /**
+   * Primeiros bytes do objeto (verificação de magic bytes pós-upload).
+   * `null` quando o provider não persiste bytes (mock) — nesse caso a
+   * validação acontece no sink de upload do dev.
+   */
+  readHead(key: string, maxBytes: number): Promise<Uint8Array | null>;
 }
 
 /** Restrições de upload aplicadas na borda antes de gerar o ticket. */

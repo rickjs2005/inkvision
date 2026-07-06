@@ -19,6 +19,7 @@ export { PrismaMetricsRepository } from "./prisma-metrics-repository";
 export { PrismaAuditReadRepository } from "./prisma-audit-read-repository";
 export { PrismaLgpdRepository } from "./prisma-lgpd-repository";
 export { MockStorageService } from "./mock-storage";
+export { R2StorageService } from "./r2-storage";
 export { MockPaymentGateway } from "./mock-payment-gateway";
 export { StripePaymentGateway, parseStripeWebhook } from "./stripe-payment-gateway";
 export { BullMqSimulationQueue, SIMULATION_QUEUE } from "./bullmq-simulation-queue";

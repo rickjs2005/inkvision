@@ -78,6 +78,7 @@ import {
   HttpRealtimePublisher,
   MockPaymentGateway,
   MockStorageService,
+  R2StorageService,
   StripePaymentGateway,
   PrismaAiUsageRepository,
   PrismaArtistRepository,
@@ -132,8 +133,11 @@ const metrics = new PrismaMetricsRepository();
 const auditRead = new PrismaAuditReadRepository();
 const lgpd = new PrismaLgpdRepository();
 
-/** Storage mockado no dev (ver R2 na Sprint 2 → prod). Troca por env. */
-export const storage = new MockStorageService(process.env.APP_URL ?? "");
+/** R2 real quando as credenciais estão no env; mock no dev. */
+export const storage =
+  process.env.R2_ACCOUNT_ID && process.env.R2_ACCESS_KEY_ID
+    ? new R2StorageService()
+    : new MockStorageService(process.env.APP_URL ?? "");
 
 const studioDeps = { studios, users, audit };
 const artistDeps = { artists, styles, users, studios, subscriptions, audit };
