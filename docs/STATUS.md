@@ -30,6 +30,21 @@ _Repo: https://github.com/rickjs2005/inkvision (branch `main`)._
 - `getPublicStats` (cacheado 5 min, tag `home:public-stats`): simulações (AiUsageLog via admin), estúdios ativos, média/contagem de avaliações (ponderada de `ArtistProfile`). Falha de banco **não é cacheada** (catch fora do `unstable_cache`) → telas escondem a faixa em vez de inventar número.
 - Hero: números + chip rotativo com os **tatuadores reais** do topo. Diretórios `/tatuadores` e `/estudios` usam `<ProofStrip>` compartilhado. Grupo auth: layout busca stats e injeta via `AuthStatsProvider` (páginas são client). Seed demo agora cria 38 `AiUsageLog` de simulação.
 
+### Login social Google — commit `5f4b64b`
+- `socialProviders.google` no better-auth, condicional a `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` no env. Sem credenciais, botão degrada pro toast "em breve"; com credenciais, funciona sozinho (account linking confiável pro mesmo e-mail).
+
+### `/simular` com IA real — commit `8b88eb5`
+- Com `FAL_API_KEY`, botão "Ver com IA real" chama `POST /api/simular` (rate limit 5/10min por IP, prompt fixo no servidor) e a Fal refina a composição via img2img.
+
+### Deploy de TESTE ao vivo na Vercel + Neon — **https://inkvision-eight.vercel.app**
+- Banco: projeto Neon (São Paulo) via integração Vercel; migrations + RLS + role `inkvision_app` (não-superusuário, `bypass_rls=false` confirmado) aplicados na conexão direta. A app roda com o role dedicado, nunca com o `neondb_owner`.
+- Seed de demo aplicado nesse banco (Estúdio Alma, Rafa/Bia, 1 pedido) — o site mostra dados reais, não vazio.
+- **3 bugs reais encontrados e corrigidos** só de tentar rodar em produção pela primeira vez (nenhum ambiente até então exercia esses caminhos):
+  1. **Migration `1_appointment_no_overlap` quebrava em `migrate deploy` de verdade** — `tstzrange()` num índice exigia cast timestamp→timestamptz dependente do fuso da sessão (STABLE, não IMMUTABLE); trocado para `tsrange()` (bate com o tipo real da coluna). Nunca fora exercida: local usa `db push` (ignora SQL bruto) e o CI não roda migrations — **isso bloquearia o primeiro deploy na VPS também**.
+  2. **Next.js 15.1.3 tinha CVE conhecido** (bypass de autorização via middleware) — a própria Vercel recusou o deploy. Atualizado para `15.5.20`.
+  3. **Prisma "perdia" o query engine no bundle da Vercel** (monorepo pnpm + tracing de serverless function) — corrigido com o plugin oficial `@prisma/nextjs-monorepo-workaround-plugin` (só ativo com `VERCEL=1`, não afeta o Docker/VPS).
+- **Limitação conhecida:** só o `web` roda na Vercel. Chat e simulação em tempo real (Socket.IO) não conectam nesse ambiente — normal, é só para testar a landing/cadastro/`/simular`. Produção de verdade continua sendo a VPS (`docs/DEPLOY.md`).
+
 ---
 
 ## 🔌 Pronto para ATIVAR (só configurar env — código já existe)
