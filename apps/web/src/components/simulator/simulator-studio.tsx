@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Download, ImageUp, Move, RotateCw, Sparkles } from "lucide-react";
+import { ArrowRight, Camera, Download, ImageUp, Move, RotateCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
@@ -252,6 +252,13 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
             <ImageUp className="size-4 text-primary" />
             Enviar minha foto
             <input type="file" accept="image/*" className="sr-only" onChange={onUpload} />
+          </label>
+          {/* No celular, abre a CÂMERA direto (capture); no desktop seria
+              redundante com o seletor de arquivo, então fica escondido. */}
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm transition-colors hover:border-foreground/30 hover:bg-foreground/[0.04] sm:hidden">
+            <Camera className="size-4 text-primary" />
+            Tirar foto
+            <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={onUpload} />
           </label>
           <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">ou pele</span>
           {SKINS.map((s, i) => (

@@ -10,7 +10,7 @@ import {
   requestSimulationAction,
   reviewDesignAction,
 } from "@/server/actions/simulation";
-import { Check, ImageUp, Loader2, Sparkles } from "lucide-react";
+import { Camera, Check, ImageUp, Loader2, Sparkles } from "lucide-react";
 import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -175,6 +175,19 @@ export function ClientSimulationSection({
               className="sr-only"
             />
             <span className="eyebrow text-primary">Escolher imagem</span>
+          </label>
+          {/* No celular, abre a CÂMERA direto; no desktop seria redundante. */}
+          <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-border px-3 py-2.5 text-sm transition-colors hover:border-foreground/30 hover:bg-foreground/[0.04] sm:hidden">
+            <Camera className="size-4 text-primary" />
+            Tirar foto agora
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={uploadPhoto}
+              disabled={busy}
+              className="sr-only"
+            />
           </label>
           {busy && (
             <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
