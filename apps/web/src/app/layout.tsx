@@ -5,6 +5,7 @@ import { GeistMono } from "geist/font/mono";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PwaRegister } from "@/components/pwa-register";
 import { Toaster } from "@/components/ui/toaster";
+import { InkBackdrop } from "@/components/brand/ink-backdrop";
 import "./globals.css";
 
 // Serifa de display editorial (opsz alto p/ títulos com contraste).
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${fraunces.variable} ${GeistSans.variable} ${GeistMono.variable}`}
     >
       <body className="font-sans antialiased">
+        <InkBackdrop />
         <ThemeProvider>{children}</ThemeProvider>
         <Toaster />
         <PwaRegister />
