@@ -5,10 +5,12 @@ import { ArrowRight, MapPin, Phone, Sparkles, Users } from "lucide-react";
 import { DomainError } from "@inkvision/core";
 import { getActor } from "@/server/auth-context";
 import { useCases } from "@/server/container";
-import { getPublicStudio } from "@/server/public-cache";
+import { getPublicStudio, getStudioArtists, getStudioPortfolio } from "@/server/public-cache";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LocalBusinessJsonLd } from "@/components/seo/json-ld";
+import { StudioTeam } from "./studio-team";
+import { StudioPortfolio } from "./studio-portfolio";
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
 
@@ -52,10 +54,15 @@ export default async function StudioPublicPage({
   const studio = await loadStudio(slug);
   if (!studio) notFound();
 
+  const [artists, portfolio] = await Promise.all([
+    getStudioArtists(studio.id),
+    getStudioPortfolio(studio.id),
+  ]);
+
   const location = [studio.address.city, studio.address.state].filter(Boolean).join(" · ");
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-16">
+    <div className="mx-auto max-w-5xl px-6 py-16">
       <LocalBusinessJsonLd
         name={studio.name}
         description={studio.description ?? undefined}
@@ -140,9 +147,14 @@ export default async function StudioPublicPage({
         )}
       </dl>
 
-      <p className="mt-16 border-t border-border pt-6 font-mono text-sm text-muted-foreground">
-        Portfólio dos tatuadores em breve.
-      </p>
+      <StudioTeam artists={artists} />
+      <StudioPortfolio items={portfolio} />
+
+      {artists.length === 0 && (
+        <p className="mt-16 border-t border-border pt-6 font-mono text-sm text-muted-foreground">
+          Portfólio dos tatuadores em breve.
+        </p>
+      )}
     </div>
   );
 }

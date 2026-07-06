@@ -264,4 +264,5 @@ export const repositories = {
   simulations,
   schedule,
   reviews,
+  artists,
 } as const;

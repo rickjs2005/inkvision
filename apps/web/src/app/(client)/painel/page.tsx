@@ -29,10 +29,26 @@ const NOTIF_TEXT: Record<string, string> = {
 
 const dtFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
 
+/** Papel de maior peso do ator, pro cabeçalho e ordem de prioridade das seções. */
+function primaryRole(actor: Awaited<ReturnType<typeof requireActor>>): "ADMIN" | "OWNER" | "ARTIST" | "CLIENT" {
+  if (actor.platformRole === "ADMIN") return "ADMIN";
+  const roles = actor.memberships.map((m) => m.role);
+  if (roles.some((r) => r === "OWNER" || r === "MANAGER")) return "OWNER";
+  if (roles.includes("ARTIST")) return "ARTIST";
+  return "CLIENT";
+}
+
+const HEADER_BY_ROLE: Record<ReturnType<typeof primaryRole>, { eyebrow: string; title: string }> = {
+  ADMIN: { eyebrow: "Seu painel", title: "Visão da plataforma" },
+  OWNER: { eyebrow: "Seu painel", title: "Seu ateliê" },
+  ARTIST: { eyebrow: "Seu painel", title: "Sua agulha, seu painel" },
+  CLIENT: { eyebrow: "Seu painel", title: "Bem-vindo de volta" },
+};
+
 export default async function PainelPage() {
   const actor = await requireActor();
 
-  const [studios, notifications] = await Promise.all([
+  const [studios, notifications, ownArtistProfiles] = await Promise.all([
     actor.memberships.length
       ? prisma.studio.findMany({
           where: { id: { in: actor.memberships.map((m) => m.studioId) } },
@@ -40,8 +56,18 @@ export default async function PainelPage() {
         })
       : Promise.resolve([]),
     repositories.notifications.listForUser(actor.userId, { take: 10 }),
+    // Papel ARTIST não tem atalho pro próprio perfil hoje — precisa do artistId
+    // por estúdio (ArtistProfile é público-legível, leitura direta é segura).
+    actor.memberships.some((m) => m.role === "ARTIST")
+      ? prisma.artistProfile.findMany({
+          where: { userId: actor.userId, studioId: { in: actor.memberships.map((m) => m.studioId) } },
+          select: { id: true, studioId: true },
+        })
+      : Promise.resolve([]),
   ]);
   const hasUnread = notifications.some((n) => n.readAt === null);
+  const header = HEADER_BY_ROLE[primaryRole(actor)];
+  const artistIdByStudio = new Map(ownArtistProfiles.map((a) => [a.studioId, a.id]));
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-16">
@@ -50,10 +76,10 @@ export default async function PainelPage() {
         <div>
           <div className="flex items-center gap-3">
             <span className="h-px w-8 bg-primary" />
-            <span className="eyebrow">Seu painel</span>
+            <span className="eyebrow">{header.eyebrow}</span>
           </div>
           <h1 className="mt-5 font-display text-5xl font-light leading-[0.95] tracking-[-0.025em]">
-            Bem-vindo de volta
+            {header.title}
           </h1>
         </div>
         <div className="flex gap-2">
@@ -182,6 +208,11 @@ export default async function PainelPage() {
                     {role === "OWNER" && (
                       <Button size="sm" variant="outline" asChild>
                         <Link href={`/estudio/${s.id}/planos`}>Pagamentos</Link>
+                      </Button>
+                    )}
+                    {artistIdByStudio.has(s.id) && (
+                      <Button size="sm" variant="outline" asChild>
+                        <Link href={`/artista/${artistIdByStudio.get(s.id)}`}>Meu perfil</Link>
                       </Button>
                     )}
                     <Button size="sm" variant="ghost" asChild>
