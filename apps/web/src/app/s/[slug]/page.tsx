@@ -10,6 +10,12 @@ const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
 // não publicado (dono/admin) vive em /s/{slug}/previa, dinâmica.
 export const revalidate = 300;
 
+// Sem pré-gerar slugs no build; cada estúdio é gerado na primeira visita e
+// cacheado (dynamicParams default).
+export function generateStaticParams(): Array<{ slug: string }> {
+  return [];
+}
+
 export async function generateMetadata({
   params,
 }: {

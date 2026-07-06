@@ -17,6 +17,12 @@ const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
 // cliente) — a página é gerada estática e revalidada a cada 5 min.
 export const revalidate = 300;
 
+// Sem pré-gerar nenhum artista no build (o banco pode nem estar acessível);
+// cada perfil é gerado na primeira visita e cacheado (dynamicParams default).
+export function generateStaticParams(): Array<{ artistId: string }> {
+  return [];
+}
+
 const reviewFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
 
 export async function generateMetadata({
