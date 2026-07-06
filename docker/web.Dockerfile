@@ -25,6 +25,14 @@ FROM deps AS build
 COPY . .
 RUN pnpm --filter @inkvision/db generate
 ENV NODE_ENV=production
+# NEXT_PUBLIC_* é INLINED no bundle do cliente durante o `next build` — precisa
+# chegar como build arg (o compose passa via build.args), não como env de runtime.
+ARG NEXT_PUBLIC_APP_URL
+ARG NEXT_PUBLIC_REALTIME_URL
+ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
+    NEXT_PUBLIC_REALTIME_URL=$NEXT_PUBLIC_REALTIME_URL \
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 RUN pnpm --filter @inkvision/web build
 
 # ── Runner (mínimo) ──

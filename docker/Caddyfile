@@ -1,0 +1,13 @@
+# Borda da InkVision — TLS automático via Let's Encrypt.
+# APP_DOMAIN / RT_DOMAIN vêm do docker/.env.prod (via environment do serviço).
+# Sem domínio ainda? Use APP_DOMAIN=http://SEU-IP para servir HTTP puro.
+
+{$APP_DOMAIN} {
+	encode gzip
+	reverse_proxy web:3000
+}
+
+{$RT_DOMAIN} {
+	# Socket.IO (websocket + polling) — reverse_proxy já trata upgrade de ws.
+	reverse_proxy realtime:4000
+}
