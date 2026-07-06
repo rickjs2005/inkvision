@@ -49,6 +49,64 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
     }));
   }
 
+  // ── Gestos no palco ──
+  // 1 dedo/ponteiro: a arte vai para onde você toca e segue o arrasto (não
+  // precisa acertar o desenho — essencial no celular). 2 dedos: pinça ajusta
+  // tamanho e giro ao mesmo tempo.
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinchBase = useRef<{ dist: number; angle: number; scale: number; rotation: number } | null>(null);
+
+  function pinchOf(): { dist: number; angle: number } {
+    const [a, b] = [...pointers.current.values()];
+    return {
+      dist: Math.hypot(b!.x - a!.x, b!.y - a!.y),
+      angle: (Math.atan2(b!.y - a!.y, b!.x - a!.x) * 180) / Math.PI,
+    };
+  }
+
+  function onStagePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (aiVisible || aiBusy) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.current.size === 1) {
+      setDragging(true);
+      moveTo(e.clientX, e.clientY);
+    } else if (pointers.current.size === 2) {
+      setDragging(false);
+      const { dist, angle } = pinchOf();
+      pinchBase.current = { dist, angle, scale: t.scale, rotation: t.rotation };
+    }
+  }
+
+  function onStagePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!pointers.current.has(e.pointerId)) return;
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.current.size >= 2 && pinchBase.current) {
+      const base = pinchBase.current;
+      const { dist, angle } = pinchOf();
+      setAiImage(null);
+      setT((prev) => {
+        // Normaliza para a faixa do slider (-180..180).
+        let rotation = base.rotation + (angle - base.angle);
+        rotation = ((rotation + 540) % 360) - 180;
+        return {
+          ...prev,
+          scale: Math.min(2.5, Math.max(0.3, (base.scale * dist) / Math.max(base.dist, 1))),
+          rotation,
+        };
+      });
+    } else if (dragging) {
+      moveTo(e.clientX, e.clientY);
+    }
+  }
+
+  function onStagePointerEnd(e: React.PointerEvent<HTMLDivElement>) {
+    pointers.current.delete(e.pointerId);
+    if (pointers.current.size < 2) pinchBase.current = null;
+    // Sobrou um dedo? Continua arrastando com ele.
+    setDragging(pointers.current.size === 1);
+  }
+
   /** Muda a composição (pele/arte/ajustes) e descarta o resultado da IA. */
   function recompose(fn: () => void) {
     setAiImage(null);
@@ -174,15 +232,21 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
         <div className="mb-3 flex items-center justify-between">
           <span className="eyebrow">O palco · sua pele</span>
           <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
-            <Move className="size-3" /> arraste a arte
+            <Move className="size-3" />
+            <span className="sm:hidden">toque e arraste · pince p/ tamanho e giro</span>
+            <span className="hidden sm:inline">clique e arraste a arte</span>
           </span>
         </div>
         <div
           ref={stageRef}
-          className="relative mx-auto aspect-[3/4] w-full max-w-md touch-none select-none overflow-hidden rounded-xl border border-border shadow-[var(--shadow-lift)]"
-          onPointerMove={(e) => dragging && moveTo(e.clientX, e.clientY)}
-          onPointerUp={() => setDragging(false)}
-          onPointerLeave={() => setDragging(false)}
+          className={cn(
+            "relative mx-auto aspect-[3/4] w-full max-w-md touch-none select-none overflow-hidden rounded-xl border border-border shadow-[var(--shadow-lift)]",
+            !aiVisible && (dragging ? "cursor-grabbing" : "cursor-grab"),
+          )}
+          onPointerDown={onStagePointerDown}
+          onPointerMove={onStagePointerMove}
+          onPointerUp={onStagePointerEnd}
+          onPointerCancel={onStagePointerEnd}
         >
           {photo ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -193,19 +257,15 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
           {/* grão sutil */}
           <div className="pointer-events-none absolute inset-0 opacity-[0.05] shadow-[inset_0_0_90px_20px_rgba(20,15,10,0.4)]" />
 
-          {/* arte — escondida quando o resultado da IA está em exibição */}
+          {/* arte — escondida quando o resultado da IA está em exibição.
+              pointer-events-none: os gestos vivem no palco inteiro. */}
           <div
             ref={svgWrapRef}
-            onPointerDown={(e) => {
-              if (aiVisible) return;
-              (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-              setDragging(true);
-            }}
             className={cn(
               // aspect fixo = altura definida p/ o SVG de 100% (Safari/iOS
               // colapsa sem isso); proporção espelha o viewBox 100x130.
-              "absolute aspect-[10/13] mix-blend-multiply",
-              aiVisible ? "invisible" : dragging ? "cursor-grabbing" : "cursor-grab",
+              "pointer-events-none absolute aspect-[10/13] mix-blend-multiply",
+              aiVisible && "invisible",
             )}
             style={{
               left: `${t.x * 100}%`,
