@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { PrismaPlugin } from "@prisma/nextjs-monorepo-workaround-plugin";
 
 const isProd = process.env.NODE_ENV === "production";
 const realtime = process.env.NEXT_PUBLIC_REALTIME_URL ?? "http://localhost:4000";
@@ -46,6 +47,16 @@ const nextConfig: NextConfig = {
   // standalone nesse caso já foi visto quebrando o rastreio do binário nativo
   // do Prisma (query engine não copiado para o bundle da function).
   output: process.env.VERCEL ? undefined : "standalone",
+  // Na Vercel, o tracing de serverless function do webpack não segue os
+  // binários nativos do Prisma através da virtual store do pnpm num monorepo
+  // — o engine some do bundle da function. Plugin oficial da Prisma para
+  // exatamente este cenário (só builds de servidor, só na Vercel).
+  webpack: (config, { isServer }) => {
+    if (isServer && process.env.VERCEL) {
+      config.plugins = [...config.plugins, new PrismaPlugin()];
+    }
+    return config;
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

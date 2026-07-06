@@ -42,6 +42,7 @@
   "devDependencies": {
     "@inkvision/config": "workspace:*",
     "@playwright/test": "^1.61.1",
+    "@prisma/nextjs-monorepo-workaround-plugin": "^7.8.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
