@@ -4,12 +4,16 @@
  */
 import type { ComponentType } from "react";
 
+// width/height 100% explícitos: sem eles o Safari/iOS colapsa SVGs que só têm
+// viewBox para altura zero (cards e palco ficavam vazios no iPhone).
 const stroke = {
   fill: "none",
   stroke: "currentColor",
   strokeWidth: 2,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
+  width: "100%",
+  height: "100%",
 };
 
 function Botanical() {
@@ -143,7 +147,7 @@ function Lightning() {
 
 function Lettering() {
   return (
-    <svg viewBox="0 0 100 130">
+    <svg viewBox="0 0 100 130" width="100%" height="100%">
       <text
         x="50"
         y="72"

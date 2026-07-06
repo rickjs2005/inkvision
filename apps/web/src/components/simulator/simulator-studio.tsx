@@ -99,6 +99,11 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
     // arte (blend multiply)
     const clone = svgEl.cloneNode(true) as SVGSVGElement;
     clone.setAttribute("color", INK);
+    // Dimensões numéricas explícitas: sem elas o SVG standalone não tem tamanho
+    // intrínseco — o Chrome assume 300x150 (proporção errada) e o Safari se
+    // recusa a desenhar no canvas (download quebrado no iOS).
+    clone.setAttribute("width", "100");
+    clone.setAttribute("height", "130");
     const dataUrl = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(new XMLSerializer().serializeToString(clone))));
     const art = await loadImage(dataUrl);
     const dW = (BASE_WIDTH / 100) * W * t.scale;
@@ -197,7 +202,9 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
               setDragging(true);
             }}
             className={cn(
-              "absolute mix-blend-multiply",
+              // aspect fixo = altura definida p/ o SVG de 100% (Safari/iOS
+              // colapsa sem isso); proporção espelha o viewBox 100x130.
+              "absolute aspect-[10/13] mix-blend-multiply",
               aiVisible ? "invisible" : dragging ? "cursor-grabbing" : "cursor-grab",
             )}
             style={{
