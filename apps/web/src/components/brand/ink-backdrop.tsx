@@ -1,9 +1,10 @@
 /**
- * Fundo decorativo do ateliê — traços fine-line, pontilhismo e respingos de
- * tinta na mesma linguagem dos desenhos do simulador. Fixo atrás de TODO o
- * conteúdo (z negativo), enxergável só onde o fundo aparece; painéis com bg
- * sólido simplesmente o cobrem. Opacidade baixíssima para nunca competir com
- * texto; cores via currentColor/tokens, então adapta a claro/escuro sozinho.
+ * Fundo decorativo do ateliê — parede de flash old school em traço fine-line:
+ * âncora, andorinha, raio e estrelas náuticas, como os desenhos clássicos
+ * pregados na parede do estúdio. Fixo atrás de TODO o conteúdo (z negativo);
+ * painéis com bg sólido simplesmente o cobrem. Opacidade baixíssima para
+ * nunca competir com texto; cores via currentColor/tokens, então adapta a
+ * claro/escuro sozinho.
  */
 export function InkBackdrop() {
   return (
@@ -11,93 +12,83 @@ export function InkBackdrop() {
       aria-hidden
       className="pointer-events-none fixed inset-0 -z-10 overflow-hidden text-foreground"
     >
-      {/* ── Traço longo de agulha — canto superior esquerdo, desce a lateral ── */}
+      {/* ── Âncora — canto inferior esquerdo, levemente inclinada ── */}
       <svg
-        viewBox="0 0 320 900"
+        viewBox="0 0 100 120"
         fill="none"
         stroke="currentColor"
+        strokeWidth="1.4"
         strokeLinecap="round"
-        className="absolute -left-10 top-0 h-[90vh] w-auto opacity-[0.05]"
+        strokeLinejoin="round"
+        className="absolute -bottom-[8vh] -left-8 h-[56vh] w-auto -rotate-[10deg] opacity-[0.05]"
       >
-        <path d="M120 -20 C60 140 190 260 110 420 C40 560 150 700 90 920" strokeWidth="1.5" />
-        <path d="M150 -20 C95 150 215 270 140 430 C75 565 180 705 125 920" strokeWidth="1" opacity="0.7" />
-        {/* pontilhismo acompanhando o traço */}
-        <g fill="currentColor" stroke="none" opacity="0.8">
-          <circle cx="95" cy="180" r="1.6" />
-          <circle cx="108" cy="210" r="1.1" />
-          <circle cx="88" cy="238" r="1.3" />
-          <circle cx="152" cy="480" r="1.5" />
-          <circle cx="138" cy="512" r="1" />
-          <circle cx="122" cy="545" r="1.3" />
-        </g>
+        <circle cx="50" cy="18" r="8" />
+        <path d="M50 26 L50 92" />
+        <path d="M34 40 H66" />
+        <path d="M50 92 C34 92 22 80 20 66 M20 66 L12 74 M20 66 L30 70" />
+        <path d="M50 92 C66 92 78 80 80 66 M80 66 L88 74 M80 66 L70 70" />
       </svg>
 
-      {/* ── Ramo botânico fantasma — lateral direita ── */}
+      {/* ── Andorinha — topo direito, em voo ── */}
       <svg
-        viewBox="0 0 100 130"
+        viewBox="0 0 140 100"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="absolute right-[5vw] top-[7vh] h-[24vh] w-auto opacity-[0.05]"
+      >
+        <path d="M70 40 C58 26 40 20 18 24 C36 32 46 40 52 52" />
+        <path d="M70 40 C82 26 100 20 122 24 C104 32 94 40 88 52" />
+        <path d="M52 52 C58 62 62 72 60 86 L70 72 L80 86 C78 72 82 62 88 52" />
+        <circle cx="70" cy="36" r="1.2" fill="currentColor" stroke="none" />
+      </svg>
+
+      {/* ── Raio — vermelhão, meia altura à direita ── */}
+      <svg
+        viewBox="0 0 60 100"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="absolute -right-2 top-[52vh] h-[22vh] w-auto rotate-[8deg] text-primary opacity-[0.06]"
+      >
+        <path d="M36 8 L20 46 H32 L18 88 L44 40 H30 L44 8 Z" />
+      </svg>
+
+      {/* ── Estrela náutica — centro-direita baixa ── */}
+      <svg
+        viewBox="0 0 100 100"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="absolute bottom-[16vh] right-[24vw] h-[18vh] w-auto opacity-[0.045]"
+      >
+        <path d="M50 6 L58 42 L94 50 L58 58 L50 94 L42 58 L6 50 L42 42 Z" />
+        <path d="M50 6 L50 94 M6 50 H94" strokeDasharray="1 7" />
+      </svg>
+
+      {/* ── Estrela menor — topo esquerdo, quase imperceptível ── */}
+      <svg
+        viewBox="0 0 100 100"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="absolute -right-16 top-[16vh] h-[62vh] w-auto rotate-[14deg] opacity-[0.045]"
+        className="absolute left-[22vw] top-[9vh] h-[8vh] w-auto rotate-12 opacity-[0.04]"
       >
-        <path d="M50 124 C50 100 50 74 50 48 C50 34 50 22 50 10" />
-        <path d="M50 100 C37 95 29 84 27 70 M50 100 C63 95 71 84 73 70" />
-        <path d="M50 80 C40 76 34 67 33 56 M50 80 C60 76 66 67 67 56" />
-        <path d="M50 60 C43 57 39 50 38 42 M50 60 C57 57 61 50 62 42" />
-        <path d="M50 10 C43 14 40 22 46 28 C49 31 51 31 54 28 C60 22 57 14 50 10 Z" />
+        <path d="M50 6 L58 42 L94 50 L58 58 L50 94 L42 58 L6 50 L42 42 Z" />
       </svg>
 
-      {/* ── Curva de serpente — rodapé esquerdo ── */}
-      <svg
-        viewBox="0 0 100 130"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        className="absolute -bottom-20 left-[6vw] h-[52vh] w-auto -rotate-12 opacity-[0.04]"
-      >
-        <path d="M50 18 C34 26 34 44 50 52 C66 60 66 78 50 86 C36 93 36 108 50 116" />
-        <path d="M44 40 h12 M44 46 h12 M44 72 h12 M44 78 h12" strokeWidth="0.8" opacity="0.7" />
-      </svg>
-
-      {/* ── Respingo de tinta — vermelhão, canto inferior direito ── */}
-      <svg
-        viewBox="0 0 200 200"
-        className="absolute -bottom-10 right-[4vw] h-[34vh] w-auto text-primary opacity-[0.06]"
-        fill="currentColor"
-        stroke="none"
-      >
-        <circle cx="100" cy="104" r="7" />
-        <circle cx="128" cy="86" r="3.4" />
-        <circle cx="76" cy="126" r="2.6" />
-        <circle cx="142" cy="118" r="1.8" />
-        <circle cx="88" cy="76" r="1.5" />
-        <circle cx="118" cy="140" r="1.2" />
-        <circle cx="62" cy="96" r="1" />
-        <path d="M104 96 C118 78 134 66 152 58 C136 72 124 88 112 104 Z" opacity="0.8" />
-        <path d="M92 112 C80 128 72 142 68 158 C78 144 88 132 98 120 Z" opacity="0.6" />
-      </svg>
-
-      {/* ── Respingo menor — topo direito, foreground ── */}
-      <svg
-        viewBox="0 0 120 120"
-        className="absolute right-[16vw] top-[6vh] h-[10vh] w-auto opacity-[0.05]"
-        fill="currentColor"
-        stroke="none"
-      >
-        <circle cx="60" cy="60" r="3.4" />
-        <circle cx="78" cy="48" r="1.6" />
-        <circle cx="44" cy="72" r="1.3" />
-        <circle cx="86" cy="70" r="1" />
-        <path d="M63 54 C72 44 82 37 94 32 C84 41 76 50 68 60 Z" opacity="0.7" />
-      </svg>
-
-      {/* ── Pontilhismo esparso — meio da tela, quase imperceptível ── */}
+      {/* ── Pontilhismo esparso — textura de sombreamento entre os desenhos ── */}
       <svg
         viewBox="0 0 400 400"
-        className="absolute left-[38vw] top-[42vh] h-[30vh] w-auto opacity-[0.035]"
+        className="absolute left-[36vw] top-[40vh] h-[32vh] w-auto opacity-[0.035]"
         fill="currentColor"
         stroke="none"
       >
