@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { CheckoutSession, PaymentGateway, PaymentKind } from "@inkvision/core";
+import type { AccountStatus, CheckoutSession, PaymentGateway, PaymentKind } from "@inkvision/core";
 
 const ref = (prefix: string) => `${prefix}_${randomBytes(8).toString("hex")}`;
 
@@ -11,6 +11,19 @@ const ref = (prefix: string) => `${prefix}_${randomBytes(8).toString("hex")}`;
 export class MockPaymentGateway implements PaymentGateway {
   async connectStudio(studioId: string): Promise<{ accountId: string }> {
     return { accountId: `acct_mock_${studioId}` };
+  }
+
+  async createAccountOnboardingLink(input: {
+    accountId: string;
+    refreshUrl: string;
+    returnUrl: string;
+  }): Promise<{ url: string }> {
+    // Sem provedor real: "conclui" o onboarding na hora, voltando direto.
+    return { url: input.returnUrl };
+  }
+
+  async getAccountStatus(_accountId: string): Promise<AccountStatus> {
+    return { chargesEnabled: true, detailsSubmitted: true };
   }
 
   async createOrderCheckout(input: {

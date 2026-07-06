@@ -5,8 +5,13 @@ import { useRouter } from "next/navigation";
 import { connectPaymentsAction, subscribeStudioAction } from "@/server/actions/payment";
 import { Button } from "@/components/ui/button";
 
-export function ConnectButton({ studioId }: { studioId: string }) {
-  const router = useRouter();
+export function ConnectButton({
+  studioId,
+  label = "Conectar pagamentos",
+}: {
+  studioId: string;
+  label?: string;
+}) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
@@ -16,12 +21,13 @@ export function ConnectButton({ studioId }: { studioId: string }) {
         onClick={() =>
           start(async () => {
             const res = await connectPaymentsAction(studioId);
-            if (res.ok) router.refresh();
+            // URL do provedor (Stripe) é externa — navegação completa.
+            if (res.ok) window.location.href = res.data.url;
             else setError(res.error);
           })
         }
       >
-        Conectar pagamentos
+        {pending ? "Abrindo…" : label}
       </Button>
       {error && <span className="text-sm text-destructive">{error}</span>}
     </div>

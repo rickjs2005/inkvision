@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Check } from "lucide-react";
 import { studioRoleAtLeast } from "@inkvision/shared";
 import { requireActor } from "@/server/auth-context";
-import { repositories } from "@/server/container";
+import { repositories, useCases } from "@/server/container";
 import { prisma } from "@inkvision/db";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,12 @@ export default async function PlansPage({
     repositories.subscriptions.getActiveForStudio(studioId),
   ]);
   if (!studio) notFound();
+
+  // Status real da conta de recebimento (provedor). Falha do provedor não
+  // derruba a página — mostra o estado neutro "Conectada".
+  const account = studio.stripeAccountId
+    ? await useCases.getPaymentsAccountStatus.execute(actor, studioId).catch(() => null)
+    : null;
 
   // Destaque presentacional: nível intermediário quando há 3+, senão o topo.
   const recommendedIndex = plans.length >= 3 ? 1 : plans.length - 1;
@@ -50,13 +56,25 @@ export default async function PlansPage({
               Conecte para receber os sinais e pagamentos dos clientes.
             </p>
           </div>
-          {studio.stripeAccountId ? (
+          {!studio.stripeAccountId ? (
+            <ConnectButton studioId={studioId} />
+          ) : account && !account.chargesEnabled ? (
+            <div className="flex flex-col items-start gap-2 sm:items-end">
+              <div className="flex items-center gap-2">
+                <Badge variant="warning">
+                  {account.detailsSubmitted ? "Em análise" : "Onboarding pendente"}
+                </Badge>
+                <span className="font-mono text-xs text-muted-foreground">{account.accountId}</span>
+              </div>
+              {!account.detailsSubmitted && (
+                <ConnectButton studioId={studioId} label="Completar onboarding" />
+              )}
+            </div>
+          ) : (
             <div className="flex items-center gap-2">
               <Badge variant="success">Conectada</Badge>
               <span className="font-mono text-xs text-muted-foreground">{studio.stripeAccountId}</span>
             </div>
-          ) : (
-            <ConnectButton studioId={studioId} />
           )}
         </div>
       </section>

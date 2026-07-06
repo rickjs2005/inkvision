@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import type { CheckoutSession, PaymentGateway, PaymentKind } from "@inkvision/core";
+import type { AccountStatus, CheckoutSession, PaymentGateway, PaymentKind } from "@inkvision/core";
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
 
@@ -9,8 +9,8 @@ const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
  * O metadata (orderId/kind/studioId) volta no webhook, que confirma o pedido de
  * forma segura — nunca confie na confirmação vinda do cliente.
  *
- * Pendências conhecidas p/ produção plena: fluxo completo de onboarding do
- * Connect (account link + retorno) e mapear cada plano a um Price do Stripe.
+ * Pendência conhecida p/ produção plena: mapear cada plano a um Price do Stripe
+ * (STRIPE_PRICE_<SLUG> em env).
  */
 export class StripePaymentGateway implements PaymentGateway {
   private readonly stripe: Stripe;
@@ -25,8 +25,29 @@ export class StripePaymentGateway implements PaymentGateway {
       type: "express",
       metadata: { studioId },
     });
-    // TODO: gerar accountLinks para o onboarding e expor a URL de retorno.
     return { accountId: account.id };
+  }
+
+  async createAccountOnboardingLink(input: {
+    accountId: string;
+    refreshUrl: string;
+    returnUrl: string;
+  }): Promise<{ url: string }> {
+    const link = await this.stripe.accountLinks.create({
+      account: input.accountId,
+      refresh_url: input.refreshUrl,
+      return_url: input.returnUrl,
+      type: "account_onboarding",
+    });
+    return { url: link.url };
+  }
+
+  async getAccountStatus(accountId: string): Promise<AccountStatus> {
+    const account = await this.stripe.accounts.retrieve(accountId);
+    return {
+      chargesEnabled: account.charges_enabled === true,
+      detailsSubmitted: account.details_submitted === true,
+    };
   }
 
   async createOrderCheckout(input: {

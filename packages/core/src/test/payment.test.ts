@@ -14,6 +14,10 @@ import {
   ConfirmOrderPaymentUseCase,
   StartOrderPaymentUseCase,
 } from "../application/use-cases/payment/order-payment";
+import {
+  ConnectStudioPaymentsUseCase,
+  GetPaymentsAccountStatusUseCase,
+} from "../application/use-cases/payment/connect-studio";
 import { ConfirmSubscriptionUseCase } from "../application/use-cases/payment/subscription";
 import { InMemoryAudit, InMemoryStudioRepo } from "./fakes";
 import { InMemoryArtistRepo, InMemorySubscriptionRepo } from "./fakes-artist";
@@ -40,8 +44,20 @@ class InMemoryPaymentRepo implements PaymentRepository {
 }
 
 class MockGateway implements PaymentGateway {
+  /** Contas criadas — deixa os testes afirmarem que NÃO houve conta órfã. */
+  created: string[] = [];
+  chargesEnabled = false;
+
   async connectStudio(studioId: string) {
-    return { accountId: `acct_${studioId}` };
+    const accountId = `acct_${studioId}_${this.created.length + 1}`;
+    this.created.push(accountId);
+    return { accountId };
+  }
+  async createAccountOnboardingLink(input: { accountId: string; refreshUrl: string; returnUrl: string }) {
+    return { url: `https://connect.mock/onboarding/${input.accountId}?return=${encodeURIComponent(input.returnUrl)}` };
+  }
+  async getAccountStatus(_accountId: string) {
+    return { chargesEnabled: this.chargesEnabled, detailsSubmitted: this.chargesEnabled };
   }
   async createOrderCheckout(input: { orderId: string; kind: PaymentKind }): Promise<CheckoutSession> {
     return { providerRef: `pi_${input.orderId}_${input.kind}`, url: `/checkout/mock/${input.orderId}?kind=${input.kind}` };
@@ -146,5 +162,55 @@ describe("pagamentos (mock)", () => {
     ).execute(owner, STUDIO, "pro");
     const active = await subscriptions.getActiveForStudio(STUDIO);
     expect(active?.maxArtists).toBe(8);
+  });
+});
+
+describe("onboarding da conta de recebimento (Connect)", () => {
+  const URLS = { refreshUrl: "https://app/planos?connect=refresh", returnUrl: "https://app/planos?connect=retorno" };
+  let studios: InMemoryStudioRepo;
+  let gateway: MockGateway;
+
+  const connectDeps = () => ({ studios, gateway, audit: new InMemoryAudit() });
+
+  beforeEach(async () => {
+    studios = new InMemoryStudioRepo();
+    gateway = new MockGateway();
+    await studios.create({ slug: "alma", name: "Alma" });
+    studios.studios[0]!.id = STUDIO;
+  });
+
+  it("cria a conta na 1ª vez, persiste no estúdio e devolve o link de onboarding", async () => {
+    const res = await new ConnectStudioPaymentsUseCase(connectDeps()).execute(owner, STUDIO, URLS);
+    expect(gateway.created).toHaveLength(1);
+    expect(studios.studios[0]!.stripeAccountId).toBe(res.accountId);
+    expect(res.url).toContain(res.accountId);
+    expect(res.url).toContain(encodeURIComponent(URLS.returnUrl));
+  });
+
+  it("reusa a conta existente — clicar de novo NÃO cria conta órfã", async () => {
+    const uc = new ConnectStudioPaymentsUseCase(connectDeps());
+    const first = await uc.execute(owner, STUDIO, URLS);
+    const second = await uc.execute(owner, STUDIO, URLS);
+    expect(gateway.created).toHaveLength(1);
+    expect(second.accountId).toBe(first.accountId);
+  });
+
+  it("só o OWNER inicia o onboarding", async () => {
+    await expect(
+      new ConnectStudioPaymentsUseCase(connectDeps()).execute(client, STUDIO, URLS),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("status: null sem conta; reflete o provedor com conta", async () => {
+    const uc = new GetPaymentsAccountStatusUseCase(connectDeps());
+    expect(await uc.execute(owner, STUDIO)).toBeNull();
+
+    await new ConnectStudioPaymentsUseCase(connectDeps()).execute(owner, STUDIO, URLS);
+    const pending = await uc.execute(owner, STUDIO);
+    expect(pending).toMatchObject({ chargesEnabled: false, detailsSubmitted: false });
+
+    gateway.chargesEnabled = true;
+    const enabled = await uc.execute(owner, STUDIO);
+    expect(enabled).toMatchObject({ chargesEnabled: true });
   });
 });

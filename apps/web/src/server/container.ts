@@ -41,6 +41,7 @@ import {
   MarkReadStudioUseCase,
   // payment
   ConnectStudioPaymentsUseCase,
+  GetPaymentsAccountStatusUseCase,
   StartOrderPaymentUseCase,
   ConfirmOrderPaymentUseCase,
   ConfirmPaymentByReferenceUseCase,
@@ -226,6 +227,7 @@ export const useCases = {
   markReadStudio: new MarkReadStudioUseCase(chatDeps),
   // payment
   connectStudioPayments: new ConnectStudioPaymentsUseCase(paymentDeps),
+  getPaymentsAccountStatus: new GetPaymentsAccountStatusUseCase(paymentDeps),
   startOrderPayment: new StartOrderPaymentUseCase(paymentDeps),
   confirmOrderPayment: new ConfirmOrderPaymentUseCase(paymentDeps),
   confirmPaymentByReference: new ConfirmPaymentByReferenceUseCase(paymentDeps),
