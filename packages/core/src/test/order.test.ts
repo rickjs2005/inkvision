@@ -4,7 +4,7 @@ import { assertTransition, canTransition } from "../domain/order-state-machine";
 import { CreateOrderUseCase } from "../application/use-cases/order/create-order";
 import { SendQuoteUseCase } from "../application/use-cases/order/send-quote";
 import { AcceptQuoteUseCase } from "../application/use-cases/order/client-actions";
-import { InMemoryAudit } from "./fakes";
+import { InMemoryAudit, InMemoryEmailService, InMemoryUserRepo } from "./fakes";
 import { InMemoryArtistRepo } from "./fakes-artist";
 import { InMemoryNotificationRepo, InMemoryOrderRepo } from "./fakes-order";
 
@@ -27,6 +27,8 @@ describe("fluxo de pedido", () => {
   let artists: InMemoryArtistRepo;
   let notifications: InMemoryNotificationRepo;
   let audit: InMemoryAudit;
+  let users: InMemoryUserRepo;
+  let email: InMemoryEmailService;
   let artistId: string;
 
   beforeEach(() => {
@@ -34,10 +36,12 @@ describe("fluxo de pedido", () => {
     artists = new InMemoryArtistRepo();
     notifications = new InMemoryNotificationRepo();
     audit = new InMemoryAudit();
+    users = new InMemoryUserRepo([{ id: "u_client", name: "Cliente", email: "cliente@teste.com" }]);
+    email = new InMemoryEmailService();
     artistId = artists.seed({ userId: "u_artist", studioId: STUDIO, name: "Rafa" }).id;
   });
 
-  const deps = () => ({ orders, artists, notifications, audit });
+  const deps = () => ({ orders, artists, notifications, audit, users, email, appUrl: "https://inkvision.app" });
 
   async function submit() {
     const uc = new CreateOrderUseCase(deps());
@@ -71,6 +75,8 @@ describe("fluxo de pedido", () => {
     expect(quoted.quoteAmountCents).toBe(90000);
     expect(quoted.depositCents).toBe(30000);
     expect(await notifications.countUnread("u_client")).toBe(1);
+    expect(email.sent).toHaveLength(1);
+    expect(email.sent[0]!.to).toBe("cliente@teste.com");
   });
 
   it("estranho não pode orçar", async () => {

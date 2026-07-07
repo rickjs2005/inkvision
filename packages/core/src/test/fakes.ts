@@ -9,6 +9,7 @@ import type {
 } from "../application/ports/studio-repository";
 import type { BasicUser, UserRepository } from "../application/ports/user-repository";
 import type { AuditEntry, AuditLogger } from "../application/ports/audit-logger";
+import type { EmailMessage, EmailService } from "../application/ports/email-service";
 
 let seq = 0;
 const id = (p: string) => `${p}_${(++seq).toString(36)}`;
@@ -83,5 +84,12 @@ export class InMemoryAudit implements AuditLogger {
   entries: AuditEntry[] = [];
   async log(entry: AuditEntry) {
     this.entries.push(entry);
+  }
+}
+
+export class InMemoryEmailService implements EmailService {
+  sent: EmailMessage[] = [];
+  async send(message: EmailMessage) {
+    this.sent.push(message);
   }
 }

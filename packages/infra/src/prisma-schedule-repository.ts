@@ -1,4 +1,4 @@
-import { Prisma, prisma, withStudio } from "@inkvision/db";
+import { Prisma, prisma, withAdmin, withStudio } from "@inkvision/db";
 import { ConflictError } from "@inkvision/core";
 import type { AvailabilityRule, BusyInterval } from "@inkvision/core";
 import type {
@@ -37,6 +37,7 @@ function apptToDomain(a: {
   startsAt: Date;
   endsAt: Date;
   status: string;
+  reminderSentAt?: Date | null;
 }): Appointment {
   return { ...a, status: a.status as AppointmentStatus };
 }
@@ -166,5 +167,25 @@ export class PrismaScheduleRepository implements ScheduleRepository {
       }
       throw e;
     }
+  }
+
+  // ── Lembretes (varredura cross-tenant do worker — bypassa RLS via withAdmin) ──
+  async listAppointmentsNeedingReminder(from: Date, to: Date): Promise<Appointment[]> {
+    const appts = await withAdmin((tx) =>
+      tx.appointment.findMany({
+        where: {
+          reminderSentAt: null,
+          status: { in: [...ACTIVE_APPT] },
+          startsAt: { gt: from, lte: to },
+        },
+      }),
+    );
+    return appts.map(apptToDomain);
+  }
+
+  async markReminderSent(appointmentId: string): Promise<void> {
+    await withAdmin((tx) =>
+      tx.appointment.update({ where: { id: appointmentId }, data: { reminderSentAt: new Date() } }),
+    );
   }
 }

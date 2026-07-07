@@ -4,6 +4,7 @@ import { NotFoundError } from "../../../domain/errors";
 import { assertTransition } from "../../../domain/order-state-machine";
 import { sendQuoteSchema, type SendQuoteInput } from "../../dtos/order.dto";
 import type { Order } from "../../ports/order-repository";
+import { quoteReadyEmail } from "../../email/templates";
 import { assertStudioSide, type OrderUseCaseDeps } from "./deps";
 
 /**
@@ -44,6 +45,22 @@ export class SendQuoteUseCase {
       type: "order.quoted",
       payload: { orderId, quoteCents: updated.quoteAmountCents },
     });
+    const client = await this.deps.users.findById(order.clientId);
+    if (client && updated.quoteAmountCents != null) {
+      // Best-effort: um provedor de e-mail fora do ar não pode desfazer um
+      // orçamento já enviado e persistido.
+      await this.deps.email
+        .send(
+          quoteReadyEmail({
+            to: client.email,
+            clientName: client.name,
+            quoteAmountCents: updated.quoteAmountCents,
+            currency: updated.currency,
+            orderUrl: `${this.deps.appUrl}/pedidos/${orderId}`,
+          }),
+        )
+        .catch(() => {});
+    }
     await this.deps.audit.log({
       studioId,
       userId: actor.userId,

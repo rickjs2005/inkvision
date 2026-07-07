@@ -30,6 +30,8 @@ x-app-env: &app-env
   AI_SIMULATION_PROVIDER: ${AI_SIMULATION_PROVIDER:-mock}
   FAL_API_KEY: ${FAL_API_KEY:-}
   REPLICATE_API_TOKEN: ${REPLICATE_API_TOKEN:-}
+  RESEND_API_KEY: ${RESEND_API_KEY:-}
+  EMAIL_FROM: ${EMAIL_FROM:-InkVision <onboarding@resend.dev>}
 
 services:
   postgres:

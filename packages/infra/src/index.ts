@@ -23,3 +23,5 @@ export { R2StorageService } from "./r2-storage";
 export { MockPaymentGateway } from "./mock-payment-gateway";
 export { StripePaymentGateway, parseStripeWebhook } from "./stripe-payment-gateway";
 export { BullMqSimulationQueue, SIMULATION_QUEUE } from "./bullmq-simulation-queue";
+export { ResendEmailService } from "./resend-email-service";
+export { MockEmailService } from "./mock-email-service";

@@ -9,6 +9,8 @@ import type {
   TimeOffItem,
 } from "../application/ports/schedule-repository";
 import { ScheduleSessionUseCase } from "../application/use-cases/schedule/booking";
+import { SendSessionRemindersUseCase } from "../application/use-cases/schedule/reminders";
+import { InMemoryEmailService, InMemoryUserRepo } from "./fakes";
 import { InMemoryArtistRepo } from "./fakes-artist";
 import { InMemoryNotificationRepo, InMemoryOrderRepo } from "./fakes-order";
 
@@ -64,7 +66,7 @@ class InMemoryScheduleRepo implements ScheduleRepository {
     );
   }
   async createAppointment(d: CreateAppointmentData): Promise<Appointment> {
-    const a: Appointment = { id: `ap_${this.appts.length + 1}`, status: "CONFIRMED", ...d };
+    const a: Appointment = { id: `ap_${this.appts.length + 1}`, status: "CONFIRMED", reminderSentAt: null, ...d };
     this.appts.push(a);
     return a;
   }
@@ -78,6 +80,19 @@ class InMemoryScheduleRepo implements ScheduleRepository {
     a.status = "RESCHEDULED";
     return a;
   }
+  async listAppointmentsNeedingReminder(from: Date, to: Date) {
+    return this.appts.filter(
+      (a) =>
+        !a.reminderSentAt &&
+        (a.status === "CONFIRMED" || a.status === "RESCHEDULED") &&
+        a.startsAt > from &&
+        a.startsAt <= to,
+    );
+  }
+  async markReminderSent(id: string) {
+    const a = this.appts.find((x) => x.id === id);
+    if (a) a.reminderSentAt = new Date();
+  }
 }
 
 const STUDIO = "studio_1";
@@ -88,6 +103,8 @@ describe("ScheduleSession", () => {
   let schedule: InMemoryScheduleRepo;
   let artists: InMemoryArtistRepo;
   let notifications: InMemoryNotificationRepo;
+  let users: InMemoryUserRepo;
+  let email: InMemoryEmailService;
   let orderId: string;
 
   beforeEach(async () => {
@@ -95,6 +112,8 @@ describe("ScheduleSession", () => {
     schedule = new InMemoryScheduleRepo();
     artists = new InMemoryArtistRepo();
     notifications = new InMemoryNotificationRepo();
+    users = new InMemoryUserRepo([{ id: "u_client", name: "Cliente", email: "cliente@teste.com" }]);
+    email = new InMemoryEmailService();
     const artist = artists.seed({ userId: "u_artist", studioId: STUDIO });
     const order = await orders.create({
       studioId: STUDIO,
@@ -108,7 +127,7 @@ describe("ScheduleSession", () => {
     orderId = order.id;
   });
 
-  const deps = () => ({ schedule, orders, artists, notifications, now: () => MON });
+  const deps = () => ({ schedule, orders, artists, notifications, users, email, appUrl: "https://inkvision.app", now: () => MON });
 
   it("agenda a sessão → SCHEDULED e notifica o tatuador", async () => {
     const appt = await new ScheduleSessionUseCase(deps()).execute(client, orderId, {
@@ -117,6 +136,8 @@ describe("ScheduleSession", () => {
     expect(appt.status).toBe("CONFIRMED");
     expect(orders.orders[0]!.status).toBe("SCHEDULED");
     expect(await notifications.countUnread("u_artist")).toBe(1);
+    expect(email.sent).toHaveLength(1);
+    expect(email.sent[0]!.to).toBe("cliente@teste.com");
   });
 
   it("bloqueia horário em conflito", async () => {
@@ -134,5 +155,36 @@ describe("ScheduleSession", () => {
     await expect(
       new ScheduleSessionUseCase(deps()).execute(client, orderId, { startsAt: new Date("2026-01-05T10:00:00Z") }),
     ).rejects.toMatchObject({ code: "VALIDATION" });
+  });
+
+  describe("SendSessionReminders", () => {
+    it("lembra sessões nas próximas 24h e marca como avisadas (uma vez só)", async () => {
+      await new ScheduleSessionUseCase(deps()).execute(client, orderId, {
+        startsAt: new Date("2026-01-05T20:00:00Z"), // 20h depois de MON (2026-01-05T00:00:00Z)
+      });
+      email.sent = []; // limpa o e-mail da própria confirmação de agendamento
+
+      const remindersDeps = { schedule, orders, artists, users, email, appUrl: "https://inkvision.app", now: () => MON };
+      const sent = await new SendSessionRemindersUseCase(remindersDeps).execute();
+      expect(sent).toBe(1);
+      expect(email.sent).toHaveLength(1);
+      expect(email.sent[0]!.to).toBe("cliente@teste.com");
+
+      const again = await new SendSessionRemindersUseCase(remindersDeps).execute();
+      expect(again).toBe(0);
+      expect(email.sent).toHaveLength(1);
+    });
+
+    it("ignora sessões fora da janela de 24h", async () => {
+      await new ScheduleSessionUseCase(deps()).execute(client, orderId, {
+        startsAt: new Date("2026-01-10T09:00:00Z"), // dias depois de MON
+      });
+      email.sent = [];
+
+      const remindersDeps = { schedule, orders, artists, users, email, appUrl: "https://inkvision.app", now: () => MON };
+      const sent = await new SendSessionRemindersUseCase(remindersDeps).execute();
+      expect(sent).toBe(0);
+      expect(email.sent).toHaveLength(0);
+    });
   });
 });

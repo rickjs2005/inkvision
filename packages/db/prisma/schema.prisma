@@ -458,8 +458,11 @@ model Appointment {
   studio    Studio            @relation(fields: [studioId], references: [id], onDelete: Cascade)
   order     Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
   createdAt DateTime          @default(now())
+  /// Marcado quando o lembrete de sessão (24h antes) é enviado — evita duplicar o e-mail.
+  reminderSentAt DateTime?
 
   @@index([artistId, startsAt])
+  @@index([reminderSentAt, startsAt])
 }
 
 // ──────────────────────────── Financeiro ────────────────────────────

@@ -20,6 +20,8 @@ export interface Appointment {
   startsAt: Date;
   endsAt: Date;
   status: AppointmentStatus;
+  /** Quando o lembrete de sessão foi enviado (null = ainda não). */
+  reminderSentAt?: Date | null;
 }
 
 export interface CreateAppointmentData {
@@ -51,9 +53,16 @@ export interface ScheduleRepository {
   createAppointment(data: CreateAppointmentData): Promise<Appointment>;
   getAppointmentForOrder(studioId: string, orderId: string): Promise<Appointment | null>;
   reschedule(studioId: string, appointmentId: string, startsAt: Date, endsAt: Date): Promise<Appointment>;
+
+  // Lembretes (cross-tenant — varredura periódica do worker, não vem de uma requisição de um tenant).
+  /** Agendamentos ativos, sem lembrete enviado, começando entre `from` e `to`. */
+  listAppointmentsNeedingReminder(from: Date, to: Date): Promise<Appointment[]>;
+  markReminderSent(appointmentId: string): Promise<void>;
 }
 
 /** Duração padrão de uma sessão (min). Simplificação — futuro: por pedido/estúdio. */
 export const SESSION_MINUTES = 120;
 /** Horizonte de agendamento (dias à frente). */
 export const SCHEDULE_HORIZON_DAYS = 21;
+/** Quanto antes da sessão o lembrete é disparado. */
+export const REMINDER_LEAD_HOURS = 24;

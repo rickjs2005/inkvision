@@ -78,9 +78,11 @@ import { getSimulationProvider } from "@inkvision/ai";
 import {
   BullMqSimulationQueue,
   HttpRealtimePublisher,
+  MockEmailService,
   MockPaymentGateway,
   MockStorageService,
   R2StorageService,
+  ResendEmailService,
   StripePaymentGateway,
   PrismaAiUsageRepository,
   PrismaArtistRepository,
@@ -123,6 +125,9 @@ const subscriptions = new PrismaSubscriptionRepository();
 const gateway = process.env.STRIPE_SECRET_KEY
   ? new StripePaymentGateway()
   : new MockPaymentGateway();
+// Resend real quando a chave está presente; mock (só loga) no dev.
+const email = process.env.RESEND_API_KEY ? new ResendEmailService() : new MockEmailService();
+const appUrl = process.env.APP_URL ?? "http://localhost:3000";
 const platformFeePercent = Number(process.env.STRIPE_PLATFORM_FEE_PERCENT ?? 10);
 const designs = new PrismaDesignRepository();
 const simulations = new PrismaSimulationRepository();
@@ -144,7 +149,7 @@ export const storage =
 const studioDeps = { studios, users, audit };
 const artistDeps = { artists, styles, users, studios, subscriptions, audit };
 const portfolioDeps = { portfolio, artists, styles, audit };
-const orderDeps = { orders, artists, notifications, audit };
+const orderDeps = { orders, artists, notifications, audit, users, email, appUrl };
 const chatDeps = { chat, orders, artists, notifications };
 const paymentDeps = { payments, orders, studios, artists, subscriptions, gateway, notifications, audit, platformFeePercent };
 
@@ -177,7 +182,7 @@ const simulationDeps = {
 };
 processSimulationRef = new ProcessSimulationUseCase(simulationDeps);
 
-const scheduleDeps = { schedule, orders, artists, notifications, now: () => new Date() };
+const scheduleDeps = { schedule, orders, artists, notifications, users, email, appUrl, now: () => new Date() };
 const reviewDeps = { reviews, orders, artists, notifications };
 // Agregador da página de detalhe do pedido (cliente): reúne chat + design +
 // simulação + agenda + avaliação num único caso de uso.

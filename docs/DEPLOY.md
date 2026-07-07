@@ -127,8 +127,8 @@ No Coolify, crie um recurso **Docker Compose** apontando para `docker/compose.pr
   ```
 
 - **Trocar os mocks por real:** preencha as chaves no `.env.prod`
-  (`AI_SIMULATION_PROVIDER=fal` + `FAL_API_KEY`, R2, Stripe, Google) e rode o
-  passo 6 (o `--build` importa: parte é inlined no build).
+  (`AI_SIMULATION_PROVIDER=fal` + `FAL_API_KEY`, R2, Stripe, Google, `RESEND_API_KEY`)
+  e rode o passo 6 (o `--build` importa: parte é inlined no build).
 - **Webhook do Stripe:** aponte para `https://SEU_DOMINIO/api/webhooks/stripe`.
 - **Subdomínios de estúdio (`{slug}.dominio`) — opcional:** o caminho canônico é
   `/s/{slug}` e funciona sem nada extra. Para servir subdomínios com TLS, o Caddy

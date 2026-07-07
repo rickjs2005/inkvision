@@ -5,6 +5,7 @@ import { generateSlots, type Slot } from "../../../domain/scheduling";
 import { scheduleSessionSchema, type ScheduleSessionInput } from "../../dtos/schedule.dto";
 import type { Appointment } from "../../ports/schedule-repository";
 import { SCHEDULE_HORIZON_DAYS, SESSION_MINUTES } from "../../ports/schedule-repository";
+import { sessionRescheduledEmail, sessionScheduledEmail } from "../../email/templates";
 import type { ScheduleUseCaseDeps } from "./deps";
 
 /** Horários disponíveis para agendar a sessão de um pedido. */
@@ -69,6 +70,21 @@ export class ScheduleSessionUseCase {
         payload: { orderId, startsAt: startsAt.toISOString() },
       });
     }
+    const client = await this.deps.users.findById(actor.userId);
+    if (client) {
+      // Best-effort: falha no provedor de e-mail não pode desfazer o agendamento já persistido.
+      await this.deps.email
+        .send(
+          sessionScheduledEmail({
+            to: client.email,
+            clientName: client.name,
+            artistName: artist?.name,
+            startsAt,
+            orderUrl: `${this.deps.appUrl}/pedidos/${orderId}`,
+          }),
+        )
+        .catch(() => {});
+    }
     return appointment;
   }
 }
@@ -103,6 +119,20 @@ export class RescheduleSessionUseCase {
         type: "session.rescheduled",
         payload: { orderId, startsAt: startsAt.toISOString() },
       });
+    }
+    const client = await this.deps.users.findById(actor.userId);
+    if (client) {
+      await this.deps.email
+        .send(
+          sessionRescheduledEmail({
+            to: client.email,
+            clientName: client.name,
+            artistName: artist?.name,
+            startsAt,
+            orderUrl: `${this.deps.appUrl}/pedidos/${orderId}`,
+          }),
+        )
+        .catch(() => {});
     }
     return updated;
   }

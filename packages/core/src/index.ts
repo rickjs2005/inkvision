@@ -27,6 +27,10 @@ export * from "./application/ports/ai-support";
 export * from "./application/ports/schedule-repository";
 export * from "./application/ports/review-repository";
 export * from "./application/ports/admin-repository";
+export * from "./application/ports/email-service";
+
+// E-mail
+export * from "./application/email/templates";
 
 // DTOs
 export * from "./application/dtos/studio.dto";
