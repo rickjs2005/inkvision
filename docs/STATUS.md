@@ -1,6 +1,6 @@
 # InkVision — Estado atual & o que falta
 
-_Última atualização: 2026-07-07 — sessão completa: backlog de código zerado (itens 1–11), deploy de teste vivo na Vercel+Neon (inkvision-eight.vercel.app), CI com E2E de produção, fluxo de materialização tatuador→cliente verificado em WebKit/iPhone com gestos de toque, 10+ bugs reais corrigidos (o último: .env local vazando REDIS_URL pro deploy CLI). Pendências: só credenciais (Google/Fal/Stripe/R2/Resend) e a VPS — ver seções abaixo._
+_Última atualização: 2026-07-07 — sessão completa: backlog de código zerado (itens 1–11), deploy de teste vivo na Vercel+Neon (inkvision-eight.vercel.app), CI com E2E de produção, fluxo de materialização tatuador→cliente verificado em WebKit/iPhone com gestos de toque, 10+ bugs reais corrigidos (o último: .env local vazando REDIS_URL pro deploy CLI). E-mails transacionais + lembrete de sessão implementados, auditoria de segurança (3 gaps corrigidos: injeção de HTML nos e-mails, rate limiting incompleto, segredos parciais sem validação no boot) e o fluxo de materialização testado ponta a ponta com usuários reais (2 bugs achados e corrigidos). Pendências: só credenciais (Google/Fal/Stripe/R2/Resend) e a VPS — ver seções abaixo._
 _Repo: https://github.com/rickjs2005/inkvision (branch `main`)._
 
 ---
@@ -44,6 +44,18 @@ _Repo: https://github.com/rickjs2005/inkvision (branch `main`)._
   2. **Next.js 15.1.3 tinha CVE conhecido** (bypass de autorização via middleware) — a própria Vercel recusou o deploy. Atualizado para `15.5.20`.
   3. **Prisma "perdia" o query engine no bundle da Vercel** (monorepo pnpm + tracing de serverless function) — corrigido com o plugin oficial `@prisma/nextjs-monorepo-workaround-plugin` (só ativo com `VERCEL=1`, não afeta o Docker/VPS).
 
+### Auditoria de segurança + 3 gaps corrigidos — commit `9e5497c`
+- **Injeção de HTML armazenada nos e-mails**: `templates.ts` interpolava `clientName`/`artistName` (definidos pelo próprio usuário no cadastro, sem sanitização) direto na string HTML sem escapar. `escapeHtml()` aplicado nos 4 templates + teste comprovando (nome `<script>...</script>` sai escapado no HTML enviado).
+- **Rate limiting incompleto**: 12 Server Actions sem limite (agendamento, pagamento, simulação, artista, conta/LGPD, estúdio, notificação) agora usam `enforceRateLimit`, calibrado por risco. A rota do better-auth usava limitador em memória (não funciona com múltiplas instâncias) — trocado para `rateLimit.storage="database"` (nova tabela `RateLimit`, fora do RLS — não é multi-tenant, igual `User`/`Session`).
+- **Segredos parciais sem validação no boot**: `env.ts` agora falha no boot se só metade do par Stripe estiver configurada (antes só quebrava na primeira tentativa de webhook em produção); `RESEND_API_KEY`/`EMAIL_FROM` passam a ser reconhecidas no schema.
+- Áreas auditadas e já sólidas (sem gap): authN/authZ central (`getActor`/`requireActor` + reforço no domínio), isolamento multi-tenant (extensão Prisma + RLS), validação de input (`parseInput` na camada de domínio), assinatura do webhook Stripe, magic-bytes no upload, CSRF (Server Actions + `sameOrigin` na única rota de API mutável), headers de segurança/CSP.
+
+### Fluxo de materialização testado ponta a ponta + 2 bugs corrigidos — commit `f324b3f`
+- Rodado o fluxo real completo (via automação de navegador, dois usuários logados simultaneamente): orçamento → aceite → sinal → arte enviada → arte aprovada → foto do corpo → editor de posicionamento (gesto de arrastar + sliders de tamanho/rotação) → geração da simulação → aprovação. **O editor de gestos funciona corretamente** (drag de 1 ponteiro, matemática de pinça para 2 dedos) — nenhum bug na lógica de posicionamento.
+- **Achado 1**: quando o provider de IA falha, o pedido volta de `SIMULATING` pra `AWAITING_BODY_PHOTO` silenciosamente — o motivo (`Simulation.errorMessage`) já era gravado no banco mas nunca chegava à tela do cliente. `ClientSimulationSection` agora mostra um banner com o motivo, tanto na tela de upload quanto no editor.
+- **Achado 2**: `.env.example` trazia `AI_SIMULATION_PROVIDER=fal` como padrão — sem `FAL_API_KEY`, isso quebra a simulação real dentro do pedido (diferente do `/simular` público, que não depende disso). Trocado o padrão pra `mock` (que já existia e funciona out-of-the-box).
+- **Achado à parte (ambiente, não código)**: `apps/web/.env.local` (esquecido da sessão de deploy Vercel/Neon) sobrescrevia o `DATABASE_URL` local silenciosamente — Next.js prioriza `.env.local` sobre `.env`. Arquivo restaurado como estava; decisão de removê-lo fica com o usuário (ver Notas operacionais).
+
 ### Bug crítico de RLS + auditoria visual completa — commits `9e352dc`, `17527a4`
 - **`getActor()` lia `StudioMember` sem contexto de tenant/admin** — tabela protegida por RLS, então a política nunca casava e a consulta voltava vazia sempre, mesmo com memberships reais. Efeito: donos de estúdio ficavam com o painel idêntico ao de cliente comum, `/estudio/{id}/tatuadores` dava 404. Nunca apareceu porque o dev local usa role que ignora RLS. Fix: `withAdmin()` (seguro — o filtro já é pelo próprio `userId`).
 - Auditoria visual com screenshots reais (Playwright) das 18 telas do produto (marketing, auth, dashboards de cliente/dono/tatuador/admin, perfis públicos). Achado: o redesign "Ateliê de Tinta" já estava consistente em quase tudo — só 2 lacunas reais, ambas corrigidas:
@@ -58,7 +70,7 @@ _Repo: https://github.com/rickjs2005/inkvision (branch `main`)._
 | O quê | Como ativar |
 |---|---|
 | **Login social Google** | `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` (redirect URI: `${BETTER_AUTH_URL}/api/auth/callback/google`) |
-| **IA real de simulação** (Fal) | `FAL_API_KEY` + `AI_SIMULATION_PROVIDER=fal` |
+| **IA real de simulação** (Fal) | `FAL_API_KEY` + `AI_SIMULATION_PROVIDER=fal` (dev local usa `mock` por padrão — funciona sem chave) |
 | **Pagamentos reais** (Stripe) | `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` + `STRIPE_PRICE_<PLANO>` |
 | **Redis** (rate limit distribuído, fila BullMQ, adapter realtime) | `REDIS_URL` |
 | **E-mails transacionais** (orçamento, agendamento, lembrete de sessão) | `RESEND_API_KEY` (+ `EMAIL_FROM` opcional) |
@@ -89,7 +101,9 @@ _Repo: https://github.com/rickjs2005/inkvision (branch `main`)._
 
 ## ⚙️ Notas operacionais (para o dev local)
 - **NÃO rodar `next build` com `pnpm dev` no ar** — os dois escrevem em `apps/web/.next` e corrompem o dev (500 em tudo). Pare o dev + `rm -rf apps/web/.next` antes de buildar.
-- **`prisma dev` instável** entre comandos isolados. Subir o banco com `pnpm setup:local` (tem retry); se falhar 2×, recriar manualmente (`npx prisma dev rm inkvision --force && npx prisma dev -d --name inkvision`, esperar ~12s, depois `db push` + `apply-rls` + `seed:demo`).
+- **`prisma dev` instável** entre comandos isolados — inclusive caiu **várias vezes durante uma sessão de teste real** (não só entre comandos isolados). Subir o banco com `pnpm setup:local` (tem retry); se falhar 2×, recriar manualmente (`npx prisma dev rm inkvision --force && npx prisma dev -d --name inkvision`, esperar ~12s, depois `pnpm setup:local` de novo).
 - Rodar tudo: `pnpm setup:local` (1ª vez) + `pnpm dev` (web :3000, realtime :4000, worker).
 - Contas demo (senha `inkvision123`): `cliente@` · `rafa@` (tatuador) · `alma@` (dono) · `admin@` `@inkvision.app`.
+- **`apps/web/.env.local`, se existir, sobrescreve o `DATABASE_URL` do `.env` silenciosamente** (Next.js prioriza `.env.local`) — se alguém deixou credenciais do Neon lá (da sessão de deploy de teste), o dev local conecta no banco remoto sem avisar. Confira `cat apps/web/.env.local` antes de desconfiar do banco local; se não precisa mais dele, apague.
+- Sem `REDIS_URL`, o rate limit cai pro fallback em memória — **mas se a env var estiver setada e não houver Redis rodando** (ex.: sem `pnpm infra:up`), cada chamada tenta reconectar e falha, gerando ruído e lentidão real. Comente `REDIS_URL` no `.env` se não for usar `infra:up`.
 - O `standalone` do Next não faz build no Windows (EPERM symlink) — irrelevante, funciona no Docker/CI Linux.
