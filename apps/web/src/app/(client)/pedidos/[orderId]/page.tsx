@@ -173,6 +173,7 @@ export default async function ClientOrderDetailPage({
                         designUrl: latestSim.designUrl,
                         placement: latestSim.placement,
                         status: latestSim.status,
+                        errorMessage: latestSim.errorMessage,
                       }
                     : null
                 }

@@ -29,6 +29,7 @@ interface SimInfo {
   designUrl: string;
   placement: SimulationPlacement;
   status: string;
+  errorMessage: string | null;
 }
 
 export function ClientSimulationSection({
@@ -156,6 +157,14 @@ export function ClientSimulationSection({
 
   // ── Foto + editor de posicionamento ──
   if (status === "DESIGN_APPROVED" || status === "AWAITING_BODY_PHOTO" || redo) {
+    // A última tentativa falhou (provider de IA fora do ar, etc.) — o pedido
+    // volta pra cá silenciosamente; sem isto o cliente não sabe por quê.
+    const failedBanner = !redo && simulation?.status === "FAILED" && (
+      <p className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        A simulação anterior não foi gerada{simulation.errorMessage ? `: ${simulation.errorMessage}` : "."} Tente
+        de novo.
+      </p>
+    );
     if (!bodyPhotoUrl) {
       return (
         <div className="flex flex-col gap-5">
@@ -165,6 +174,7 @@ export function ClientSimulationSection({
               A tela do corpo
             </h3>
           </div>
+          {failedBanner}
           <label className="group flex cursor-pointer flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-10 text-center transition-colors hover:border-primary/50 hover:bg-muted/50">
             <ImageUp className="size-7 text-muted-foreground transition-colors group-hover:text-primary" />
             <span className="text-sm text-muted-foreground">
@@ -209,6 +219,7 @@ export function ClientSimulationSection({
             Componha a tatuagem
           </h3>
         </div>
+        {failedBanner}
         <SimulationEditor
           bodyPhotoUrl={bodyPhotoUrl}
           designUrl={designUrl}
