@@ -1,6 +1,6 @@
 # InkVision — Estado atual & o que falta
 
-_Última atualização: sessão de redesign + simulador público. Commit de referência: `396193a`._
+_Última atualização: 2026-07-07 — sessão completa: backlog de código zerado (itens 1–11), deploy de teste vivo na Vercel+Neon (inkvision-eight.vercel.app), CI com E2E de produção, fluxo de materialização tatuador→cliente verificado em WebKit/iPhone com gestos de toque, 10+ bugs reais corrigidos (o último: .env local vazando REDIS_URL pro deploy CLI). Pendências: só credenciais (Google/Fal/Stripe/R2/Resend) e a VPS — ver seções abaixo._
 _Repo: https://github.com/rickjs2005/inkvision (branch `main`)._
 
 ---
