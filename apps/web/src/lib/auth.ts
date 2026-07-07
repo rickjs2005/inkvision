@@ -42,6 +42,16 @@ export const auth = betterAuth({
   advanced: {
     cookiePrefix: "inkvision",
   },
+  // Sem isso, o better-auth usa seu limitador default em memória — não
+  // funciona corretamente com múltiplas instâncias serverless/container
+  // (cada instância teria seu próprio contador). `storage: "database"`
+  // persiste os contadores no Postgres via o adapter Prisma já configurado.
+  rateLimit: {
+    enabled: true,
+    window: 60, // segundos
+    max: 100,
+    storage: "database",
+  },
 });
 
 export type Session = typeof auth.$Infer.Session;

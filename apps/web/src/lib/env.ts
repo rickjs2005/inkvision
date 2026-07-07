@@ -19,7 +19,37 @@ const serverSchema = z.object({
     .transform((v) => (v?.trim() ? v.trim() : undefined)),
   APP_URL: z.string().url(),
   ROOT_DOMAIN: z.string().min(1),
-});
+  // Stripe — opcional (mock é usado quando ausente, ver server/container.ts),
+  // mas se presente precisa vir completo: ver .superRefine() abaixo.
+  STRIPE_SECRET_KEY: z
+    .string()
+    .optional()
+    .transform((v) => (v?.trim() ? v.trim() : undefined)),
+  STRIPE_WEBHOOK_SECRET: z
+    .string()
+    .optional()
+    .transform((v) => (v?.trim() ? v.trim() : undefined)),
+  // Resend — opcional (mock é usado quando ausente). EMAIL_FROM tem default
+  // sensato em ResendEmailService, então não precisa de dependência cruzada.
+  RESEND_API_KEY: z
+    .string()
+    .optional()
+    .transform((v) => (v?.trim() ? v.trim() : undefined)),
+  EMAIL_FROM: z
+    .string()
+    .optional()
+    .transform((v) => (v?.trim() ? v.trim() : undefined)),
+})
+  .superRefine((data, ctx) => {
+    const hasSecretKey = Boolean(data.STRIPE_SECRET_KEY);
+    const hasWebhookSecret = Boolean(data.STRIPE_WEBHOOK_SECRET);
+    if (hasSecretKey !== hasWebhookSecret) {
+      const message =
+        "STRIPE_SECRET_KEY e STRIPE_WEBHOOK_SECRET precisam estar configurados juntos — Stripe parcialmente configurado nunca confirma pagamentos.";
+      ctx.addIssue({ code: "custom", path: ["STRIPE_SECRET_KEY"], message });
+      ctx.addIssue({ code: "custom", path: ["STRIPE_WEBHOOK_SECRET"], message });
+    }
+  });
 
 const parsed = serverSchema.safeParse(process.env);
 

@@ -171,6 +171,16 @@ model Verification {
   @@index([identifier])
 }
 
+// Contador de rate limit do Better Auth (option `rateLimit.storage = "database"`
+// em apps/web/src/lib/auth.ts) — persiste em Postgres para funcionar
+// corretamente com múltiplas instâncias serverless/container.
+model RateLimit {
+  id          String @id @default(cuid())
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+}
+
 // ──────────────────────────── Tenant ────────────────────────────
 model Studio {
   id              String         @id @default(cuid())

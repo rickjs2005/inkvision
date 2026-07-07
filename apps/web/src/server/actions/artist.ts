@@ -4,6 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { requireActor } from "@/server/auth-context";
 import { run, type ActionResult } from "@/server/action-result";
 import { useCases } from "@/server/container";
+import { enforceRateLimit } from "@/server/rate-limit";
 
 export async function addArtistAction(
   studioId: string,
@@ -12,6 +13,7 @@ export async function addArtistAction(
 ): Promise<ActionResult<{ artistId: string }>> {
   const actor = await requireActor();
   const res = await run(async () => {
+    await enforceRateLimit(`artist:${actor.userId}`, 20, 60_000);
     const artist = await useCases.addArtist.execute(actor, studioId, {
       email: String(formData.get("email") ?? ""),
     });
@@ -27,8 +29,9 @@ export async function updateArtistAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const actor = await requireActor();
-  const res = await run(() =>
-    useCases.updateArtist.execute(actor, artistId, {
+  const res = await run(async () => {
+    await enforceRateLimit(`artist:${actor.userId}`, 20, 60_000);
+    return useCases.updateArtist.execute(actor, artistId, {
       bio: (formData.get("bio") as string) || null,
       experienceYears: formData.get("experienceYears")
         ? Number(formData.get("experienceYears"))
@@ -38,8 +41,8 @@ export async function updateArtistAction(
         ? Math.round(Number(formData.get("avgPrice")) * 100)
         : null,
       isActive: formData.get("isActive") === "on",
-    }),
-  );
+    });
+  });
   if (res.ok) {
     revalidatePath(`/artista/${artistId}`);
     revalidateTag(`artist:${artistId}`);
@@ -53,7 +56,10 @@ export async function setArtistStylesAction(
   styleIds: string[],
 ): Promise<ActionResult> {
   const actor = await requireActor();
-  const res = await run(() => useCases.setArtistStyles.execute(actor, artistId, { styleIds }));
+  const res = await run(async () => {
+    await enforceRateLimit(`artist:${actor.userId}`, 20, 60_000);
+    return useCases.setArtistStyles.execute(actor, artistId, { styleIds });
+  });
   if (res.ok) {
     revalidatePath(`/artista/${artistId}`);
     revalidateTag(`artist:${artistId}`);

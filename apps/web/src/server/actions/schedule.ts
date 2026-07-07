@@ -5,6 +5,7 @@ import type { AvailabilityRule } from "@inkvision/core";
 import { requireActor } from "@/server/auth-context";
 import { run, type ActionResult } from "@/server/action-result";
 import { useCases } from "@/server/container";
+import { enforceRateLimit } from "@/server/rate-limit";
 
 export async function setAvailabilityAction(
   artistId: string,
@@ -44,9 +45,10 @@ export async function scheduleSessionAction(
   startsAtISO: string,
 ): Promise<ActionResult> {
   const actor = await requireActor();
-  const res = await run(() =>
-    useCases.scheduleSession.execute(actor, orderId, { startsAt: new Date(startsAtISO) }),
-  );
+  const res = await run(async () => {
+    await enforceRateLimit(`schedule:${actor.userId}`, 10, 60_000);
+    return useCases.scheduleSession.execute(actor, orderId, { startsAt: new Date(startsAtISO) });
+  });
   if (res.ok) revalidatePath(`/pedidos/${orderId}`);
   return res.ok ? { ok: true, data: undefined } : res;
 }
@@ -56,9 +58,10 @@ export async function rescheduleSessionAction(
   startsAtISO: string,
 ): Promise<ActionResult> {
   const actor = await requireActor();
-  const res = await run(() =>
-    useCases.rescheduleSession.execute(actor, orderId, { startsAt: new Date(startsAtISO) }),
-  );
+  const res = await run(async () => {
+    await enforceRateLimit(`schedule:${actor.userId}`, 10, 60_000);
+    return useCases.rescheduleSession.execute(actor, orderId, { startsAt: new Date(startsAtISO) });
+  });
   if (res.ok) revalidatePath(`/pedidos/${orderId}`);
   return res.ok ? { ok: true, data: undefined } : res;
 }

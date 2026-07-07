@@ -79,6 +79,18 @@ describe("fluxo de pedido", () => {
     expect(email.sent[0]!.to).toBe("cliente@teste.com");
   });
 
+  it("escapa HTML do nome do cliente no e-mail de orçamento (anti-XSS armazenado)", async () => {
+    users = new InMemoryUserRepo([
+      { id: "u_client", name: "<script>alert(1)</script>", email: "cliente@teste.com" },
+    ]);
+    const order = await submit();
+    const uc = new SendQuoteUseCase(deps());
+    await uc.execute(artistActor, STUDIO, order.id, { quoteAmount: 900, depositAmount: 300 });
+    expect(email.sent).toHaveLength(1);
+    expect(email.sent[0]!.html).not.toContain("<script>alert(1)</script>");
+    expect(email.sent[0]!.html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+  });
+
   it("estranho não pode orçar", async () => {
     const order = await submit();
     const uc = new SendQuoteUseCase(deps());

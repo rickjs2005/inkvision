@@ -5,6 +5,19 @@ const BRAND = "#8b1e2e"; // Vermilion (Ateliê de Tinta)
 const money = (cents: number, currency: string) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(cents / 100);
 
+// Escapa os 5 caracteres HTML-sensíveis. Necessário porque clientName/artistName vêm de
+// User.name (definido pelo próprio usuário no cadastro, sem sanitização de HTML) e são
+// interpolados direto em templates de e-mail — sem isto, um nome malicioso vira XSS
+// armazenado no inbox de outro usuário.
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // `startsAt` vem de uma coluna sem fuso — o valor já é o horário local desejado,
 // então formatamos em UTC para não deslocar (ver migration 1_appointment_no_overlap).
 const dateTime = (d: Date) =>
@@ -34,7 +47,7 @@ export function quoteReadyEmail(data: {
   orderUrl: string;
 }): EmailMessage {
   const subject = "Seu orçamento chegou";
-  const body = `<p>Olá, ${data.clientName}!</p><p>O orçamento da sua tatuagem ficou pronto: <strong>${money(data.quoteAmountCents, data.currency)}</strong>.</p><p>Acesse o pedido para revisar e confirmar.</p>`;
+  const body = `<p>Olá, ${escapeHtml(data.clientName)}!</p><p>O orçamento da sua tatuagem ficou pronto: <strong>${money(data.quoteAmountCents, data.currency)}</strong>.</p><p>Acesse o pedido para revisar e confirmar.</p>`;
   return { to: data.to, subject, html: layout(subject, body, data.orderUrl, "Ver orçamento") };
 }
 
@@ -46,7 +59,7 @@ export function sessionScheduledEmail(data: {
   orderUrl: string;
 }): EmailMessage {
   const subject = "Sessão agendada";
-  const body = `<p>Olá, ${data.clientName}!</p><p>Sua sessão${data.artistName ? ` com ${data.artistName}` : ""} foi agendada para <strong>${dateTime(data.startsAt)}</strong>.</p>`;
+  const body = `<p>Olá, ${escapeHtml(data.clientName)}!</p><p>Sua sessão${data.artistName ? ` com ${escapeHtml(data.artistName)}` : ""} foi agendada para <strong>${dateTime(data.startsAt)}</strong>.</p>`;
   return { to: data.to, subject, html: layout(subject, body, data.orderUrl, "Ver pedido") };
 }
 
@@ -58,7 +71,7 @@ export function sessionRescheduledEmail(data: {
   orderUrl: string;
 }): EmailMessage {
   const subject = "Sessão reagendada";
-  const body = `<p>Olá, ${data.clientName}!</p><p>Sua sessão${data.artistName ? ` com ${data.artistName}` : ""} foi remarcada para <strong>${dateTime(data.startsAt)}</strong>.</p>`;
+  const body = `<p>Olá, ${escapeHtml(data.clientName)}!</p><p>Sua sessão${data.artistName ? ` com ${escapeHtml(data.artistName)}` : ""} foi remarcada para <strong>${dateTime(data.startsAt)}</strong>.</p>`;
   return { to: data.to, subject, html: layout(subject, body, data.orderUrl, "Ver pedido") };
 }
 
@@ -70,6 +83,6 @@ export function sessionReminderEmail(data: {
   orderUrl: string;
 }): EmailMessage {
   const subject = "Sua sessão é amanhã";
-  const body = `<p>Olá, ${data.clientName}!</p><p>Passando para lembrar: sua sessão${data.artistName ? ` com ${data.artistName}` : ""} é em <strong>${dateTime(data.startsAt)}</strong>.</p>`;
+  const body = `<p>Olá, ${escapeHtml(data.clientName)}!</p><p>Passando para lembrar: sua sessão${data.artistName ? ` com ${escapeHtml(data.artistName)}` : ""} é em <strong>${dateTime(data.startsAt)}</strong>.</p>`;
   return { to: data.to, subject, html: layout(subject, body, data.orderUrl, "Ver pedido") };
 }

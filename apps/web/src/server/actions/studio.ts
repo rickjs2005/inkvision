@@ -5,6 +5,7 @@ import type { StudioStatus } from "@inkvision/core";
 import { getActor, requireActor, requirePlatformAdmin } from "@/server/auth-context";
 import { run, type ActionResult } from "@/server/action-result";
 import { useCases } from "@/server/container";
+import { enforceRateLimit } from "@/server/rate-limit";
 
 export async function createStudioAction(
   _prev: ActionResult<{ slug: string }> | null,
@@ -12,6 +13,9 @@ export async function createStudioAction(
 ): Promise<ActionResult<{ slug: string }>> {
   const actor = await requirePlatformAdmin();
   return run(async () => {
+    // requirePlatformAdmin() já restringe a um conjunto pequeno e confiável;
+    // defesa em profundidade mesmo assim.
+    await enforceRateLimit(`studio-admin:${actor.userId}`, 30, 60_000);
     const studio = await useCases.createStudio.execute(actor, {
       name: String(formData.get("name") ?? ""),
       slug: (formData.get("slug") as string) || undefined,
@@ -28,7 +32,12 @@ export async function setStudioStatusAction(
   status: StudioStatus,
 ): Promise<ActionResult> {
   const actor = await requirePlatformAdmin();
-  const res = await run(() => useCases.setStudioStatus.execute(actor, studioId, status));
+  const res = await run(async () => {
+    // requirePlatformAdmin() já restringe a um conjunto pequeno e confiável;
+    // defesa em profundidade mesmo assim.
+    await enforceRateLimit(`studio-admin:${actor.userId}`, 30, 60_000);
+    return useCases.setStudioStatus.execute(actor, studioId, status);
+  });
   if (res.ok) {
     revalidatePath("/admin/estudios");
     revalidateTag(`studio:${res.data.slug}`);
@@ -40,7 +49,12 @@ export async function setStudioStatusAction(
 
 export async function removeStudioAction(studioId: string): Promise<ActionResult> {
   const actor = await requirePlatformAdmin();
-  const res = await run(() => useCases.removeStudio.execute(actor, studioId));
+  const res = await run(async () => {
+    // requirePlatformAdmin() já restringe a um conjunto pequeno e confiável;
+    // defesa em profundidade mesmo assim.
+    await enforceRateLimit(`studio-admin:${actor.userId}`, 30, 60_000);
+    return useCases.removeStudio.execute(actor, studioId);
+  });
   if (res.ok) revalidatePath("/admin/estudios");
   return res;
 }
@@ -51,8 +65,9 @@ export async function completeOnboardingAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const actor = await requireActor();
-  const res = await run(() =>
-    useCases.completeOnboarding.execute(actor, studioId, {
+  const res = await run(async () => {
+    await enforceRateLimit(`studio:${actor.userId}`, 10, 60_000);
+    return useCases.completeOnboarding.execute(actor, studioId, {
       name: String(formData.get("name") ?? ""),
       phone: String(formData.get("phone") ?? ""),
       description: (formData.get("description") as string) || undefined,
@@ -62,8 +77,8 @@ export async function completeOnboardingAction(
         state: (formData.get("state") as string) || undefined,
         zip: (formData.get("zip") as string) || undefined,
       },
-    }),
-  );
+    });
+  });
   if (res.ok) {
     revalidatePath("/estudio");
     revalidateTag(`studio:${res.data.slug}`);
