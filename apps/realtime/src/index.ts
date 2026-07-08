@@ -86,6 +86,11 @@ const io = new Server(httpServer, {
 if (process.env.REDIS_URL) {
   const pub = new Redis(process.env.REDIS_URL);
   const sub = pub.duplicate();
+  // Sem listener de "error", uma queda do Redis emite um evento sem
+  // handler — o Node trata isso como exceção não capturada e mata o
+  // processo inteiro (chat parava para TODOS, não só degradava o adapter).
+  pub.on("error", (err) => console.error("[realtime] erro na conexão Redis (pub):", err));
+  sub.on("error", (err) => console.error("[realtime] erro na conexão Redis (sub):", err));
   io.adapter(createAdapter(pub, sub));
   console.log("⚡ realtime usando adapter Redis (multi-instance)");
 } else {

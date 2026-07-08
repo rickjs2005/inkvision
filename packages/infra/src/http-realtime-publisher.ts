@@ -22,7 +22,9 @@ function requireSecret(name: string): string {
 
 /**
  * Publica eventos no serviço de realtime via POST /emit (server-to-server).
- * Falha em silêncio — a persistência não depende do realtime estar no ar.
+ * Não propaga falha (a persistência não depende do realtime estar no ar — o
+ * cliente recebe o dado no próximo refresh/poll), mas registra o erro: sem
+ * isso, o serviço de realtime cair era 100% invisível em qualquer log.
  */
 export class HttpRealtimePublisher implements RealtimePublisher {
   constructor(
@@ -32,14 +34,17 @@ export class HttpRealtimePublisher implements RealtimePublisher {
 
   async toUser(userId: string, event: string, payload: unknown): Promise<void> {
     try {
-      await fetch(`${this.emitUrl}/emit`, {
+      const res = await fetch(`${this.emitUrl}/emit`, {
         method: "POST",
         headers: { "content-type": "application/json", "x-emit-secret": this.emitSecret },
         body: JSON.stringify({ room: userRoom(userId), event, payload }),
         signal: AbortSignal.timeout(2000),
       });
-    } catch {
-      // realtime indisponível — ignora.
+      if (!res.ok) {
+        console.error(`[realtime] /emit respondeu ${res.status} (event=${event}, userId=${userId})`);
+      }
+    } catch (e) {
+      console.error(`[realtime] indisponível ao publicar (event=${event}, userId=${userId}):`, e);
     }
   }
 }

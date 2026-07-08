@@ -144,11 +144,20 @@ No Coolify, crie um recurso **Docker Compose** apontando para `docker/compose.pr
 | Chat/simulação não conecta | `REALTIME_PUBLIC_URL`/`RT_DOMAIN` errados — o valor é **inlined no build**; corrigiu? rode `up -d --build` de novo |
 | `migrate` falha após 1º deploy | Senhas mudaram com o volume `pgdata` antigo — o Postgres guarda as senhas originais |
 | Erro de engine do Prisma no `web` | Imagens usam Debian slim e `binaryTargets` já inclui `debian-openssl-3.0.x`; se ocorrer, copie `node_modules/.prisma` para dentro do standalone no Dockerfile (fallback) |
+| "Gerar simulação" falha sempre no pedido (mas o `/simular` público funciona) | Bucket R2 sem CORS de leitura — o navegador compõe a arte na foto (canvas) carregando `bodyPhotoUrl`/`designUrl` com `crossOrigin="anonymous"`; sem CORS no bucket, o canvas fica "tainted" e a composição falha. Configure CORS de **GET** no bucket R2 liberando a origem do seu domínio (`ROOT_DOMAIN`) — Cloudflare Dashboard → R2 → bucket → Settings → CORS Policy. |
 
 ## Notas
 
 - **Rate limit** usa Redis automaticamente quando `REDIS_URL` existe (o compose já
   injeta) — seguro para múltiplas instâncias do `web`.
+- **Deploy na Vercel + Neon** (o caminho de teste, fora deste compose): use a
+  connection string **pooled** do Neon (host com `-pooler`, `?pgbouncer=true`) em
+  `DATABASE_URL` — a direta esgota conexões rápido sob tráfego real, porque cada
+  invocação de function serverless abre seu próprio pool do Prisma (sem reuso de
+  processo entre invocações, diferente do container único do `web` aqui no compose).
+  Sem Redis configurado (add-on Upstash, por ex.), rate limit e a fila de simulação
+  de IA degradam para modo single-instance silenciosamente — ver o aviso de boot em
+  `apps/web/instrumentation.ts`.
 - **Build local no Windows:** `next build` (com `output: standalone`) falha no passo
   final de cópia por causa de symlinks (EPERM) — limitação do Windows sem admin.
   A compilação em si passa; o standalone é gerado normalmente no container Linux. Para
