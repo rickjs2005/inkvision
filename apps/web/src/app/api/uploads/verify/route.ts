@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { MAGIC_HEAD_BYTES, UPLOAD_LIMITS, sniffedMimeAllowed, type UploadPurpose } from "@inkvision/core";
 import { getActor } from "@/server/auth-context";
 import { storage } from "@/server/container";
-import { rateLimit } from "@/server/rate-limit";
+import { rateLimit, sameOrigin } from "@/server/rate-limit";
 
 /**
  * Verificação de magic bytes PÓS-upload. Com storage real (R2), o cliente
@@ -12,6 +12,8 @@ import { rateLimit } from "@/server/rate-limit";
  * No mock (readHead → null) a validação já aconteceu no sink do PUT.
  */
 export async function POST(req: Request) {
+  if (!sameOrigin(req)) return NextResponse.json({ error: "Origem inválida" }, { status: 403 });
+
   const actor = await getActor();
   if (!actor) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 

@@ -1,22 +1,10 @@
 import { NextResponse } from "next/server";
-import { UPLOAD_LIMITS, type UploadPurpose } from "@inkvision/core";
+import { UPLOAD_LIMITS, isPlatformAdmin, membershipIn, type UploadPurpose } from "@inkvision/core";
 import { getActor } from "@/server/auth-context";
 import { storage } from "@/server/container";
-import { rateLimit } from "@/server/rate-limit";
+import { rateLimit, sameOrigin } from "@/server/rate-limit";
 
 const PURPOSES = Object.keys(UPLOAD_LIMITS) as UploadPurpose[];
-const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
-
-/** Rejeita requisições de outra origem (defesa CSRF em rota que muta estado). */
-function sameOrigin(req: Request): boolean {
-  const origin = req.headers.get("origin");
-  if (!origin) return true; // navegadores enviam origin em POST cross-site; ausência = same-site/curl
-  try {
-    return new URL(origin).host === new URL(APP_URL).host;
-  } catch {
-    return false;
-  }
-}
 
 /** Gera um ticket de upload (presigned). Valida auth, origem, tipo e tamanho na borda. */
 export async function POST(req: Request) {
@@ -53,6 +41,12 @@ export async function POST(req: Request) {
   }
   if (!filename || !contentType || typeof sizeBytes !== "number") {
     return NextResponse.json({ error: "Parâmetros ausentes" }, { status: 400 });
+  }
+  // O studioId vira parte da key no bucket (`${purpose}/${studioId}/...`) —
+  // sem essa checagem, qualquer usuário autenticado conseguia um ticket de
+  // upload sob o namespace de storage de OUTRO estúdio (achado de pentest).
+  if (studioId && !isPlatformAdmin(actor) && !membershipIn(actor, studioId)) {
+    return NextResponse.json({ error: "Sem acesso a este estúdio" }, { status: 403 });
   }
 
   const limit = UPLOAD_LIMITS[purpose as UploadPurpose];

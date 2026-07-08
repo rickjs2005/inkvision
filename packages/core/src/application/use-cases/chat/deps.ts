@@ -1,9 +1,10 @@
-import { type Actor, isPlatformAdmin, membershipIn } from "../../../domain/actor";
-import { ForbiddenError, NotFoundError } from "../../../domain/errors";
+import { type Actor } from "../../../domain/actor";
+import { NotFoundError } from "../../../domain/errors";
 import type { ArtistRepository } from "../../ports/artist-repository";
 import type { ChatRepository, Conversation } from "../../ports/chat-repository";
 import type { Order, OrderRepository } from "../../ports/order-repository";
 import type { NotificationRepository } from "../../ports/notification-repository";
+import { assertStudioSide } from "../order/deps";
 
 export interface ChatUseCaseDeps {
   chat: ChatRepository;
@@ -24,16 +25,22 @@ export async function resolveClientOrder(
   return { order, conversation };
 }
 
-/** Carrega pedido + conversa no contexto de estúdio (membro/admin). */
+/**
+ * Carrega pedido + conversa no contexto de estúdio: só o tatuador DESIGNADO no
+ * pedido, ou manager+/admin — nunca "qualquer membro do estúdio". Sem isso, um
+ * ARTIST comum conseguia ler/escrever no chat de pedidos de outros colegas
+ * (achado de pentest: broken access control intra-tenant).
+ */
 export async function resolveStudioOrder(
   deps: ChatUseCaseDeps,
   actor: Actor,
   studioId: string,
   orderId: string,
 ): Promise<{ order: Order; conversation: Conversation }> {
-  if (!isPlatformAdmin(actor) && !membershipIn(actor, studioId)) throw new ForbiddenError();
   const order = await deps.orders.findByIdForStudio(orderId, studioId);
   if (!order) throw new NotFoundError("Pedido");
+  const artist = await deps.artists.findById(order.artistId);
+  assertStudioSide(actor, order, artist);
   const conversation = await deps.chat.getOrCreateForOrder(order);
   return { order, conversation };
 }

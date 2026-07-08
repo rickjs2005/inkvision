@@ -10,6 +10,7 @@ import {
   ListOlderClientMessagesUseCase,
   MESSAGES_PAGE_SIZE,
   OpenClientConversationUseCase,
+  OpenStudioConversationUseCase,
   SendClientMessageUseCase,
   SendStudioMessageUseCase,
 } from "../application/use-cases/chat/chat-use-cases";
@@ -60,6 +61,11 @@ const STUDIO = "studio_1";
 const client: Actor = { userId: "u_client", platformRole: "USER", memberships: [] };
 const artistActor: Actor = { userId: "u_artist", platformRole: "USER", memberships: [{ studioId: STUDIO, role: "ARTIST" }] };
 const stranger: Actor = { userId: "u_x", platformRole: "USER", memberships: [] };
+// Outro tatuador do MESMO estúdio, sem ser o designado no pedido — pentest:
+// antes, qualquer membro do estúdio (mesmo ARTIST comum) conseguia ler/escrever
+// no chat de pedidos de colegas.
+const colleagueArtist: Actor = { userId: "u_artist_2", platformRole: "USER", memberships: [{ studioId: STUDIO, role: "ARTIST" }] };
+const manager: Actor = { userId: "u_manager", platformRole: "USER", memberships: [{ studioId: STUDIO, role: "MANAGER" }] };
 
 describe("chat", () => {
   let chat: InMemoryChatRepo;
@@ -113,6 +119,23 @@ describe("chat", () => {
     await expect(
       new SendStudioMessageUseCase(deps()).execute(stranger, STUDIO, orderId, { kind: "TEXT", body: "oi" }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("ARTIST comum do MESMO estúdio, não designado no pedido, não lê nem escreve no chat de um colega", async () => {
+    await expect(
+      new OpenStudioConversationUseCase(deps()).execute(colleagueArtist, STUDIO, orderId),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      new SendStudioMessageUseCase(deps()).execute(colleagueArtist, STUDIO, orderId, { kind: "TEXT", body: "oi" }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("MANAGER do estúdio continua acessando pedidos de qualquer artista (supervisão legítima)", async () => {
+    const res = await new SendStudioMessageUseCase(deps()).execute(manager, STUDIO, orderId, {
+      kind: "TEXT",
+      body: "Vou assumir esse atendimento.",
+    });
+    expect(res.recipientUserId).toBe("u_client");
   });
 
   it("paginação: abre com a página mais recente e carrega as anteriores", async () => {

@@ -144,9 +144,38 @@ export async function enforceRateLimit(key: string, limit: number, windowMs: num
   }
 }
 
-/** Extrai um identificador de cliente da requisição (IP). */
+const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
+
+/** Rejeita requisições de outra origem (defesa CSRF em rotas de API que mutam estado). */
+export function sameOrigin(req: Request): boolean {
+  const origin = req.headers.get("origin");
+  if (!origin) return true; // navegadores enviam origin em POST cross-site; ausência = same-site/curl
+  try {
+    return new URL(origin).host === new URL(APP_URL).host;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Extrai um identificador de cliente da requisição (IP), para rate limit.
+ *
+ * `X-Forwarded-For` é uma lista de IPs separada por vírgula: cada proxy no
+ * caminho ANEXA o IP de quem lhe conectou. O PRIMEIRO valor é o IP que o
+ * cliente que fez a requisição inicial *declarou* — e, se esse cliente for o
+ * próprio atacante falando direto com o primeiro proxy confiável, ele pode
+ * mandar `X-Forwarded-For: 1.2.3.4` e o array terá só esse valor forjado
+ * (nenhum proxy intermediário para anexar o IP real antes dele). Usar o
+ * primeiro valor tornava o rate limit completamente inefetivo — bastava trocar
+ * o header a cada requisição. O ÚLTIMO valor da lista é o que o proxy mais
+ * próximo do nosso servidor (Vercel, ou Caddy no self-host) anexou com o IP
+ * de quem de fato conectou a ele — não é algo que o cliente final controla.
+ */
 export function clientIp(req: Request): string {
   const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0]!.trim();
+  if (xff) {
+    const ips = xff.split(",").map((ip) => ip.trim()).filter(Boolean);
+    if (ips.length > 0) return ips[ips.length - 1]!;
+  }
   return req.headers.get("x-real-ip") ?? "unknown";
 }

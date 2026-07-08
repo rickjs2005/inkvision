@@ -1,6 +1,6 @@
 import { parseInput } from "../../validate";
-import { type Actor, isPlatformAdmin, membershipIn } from "../../../domain/actor";
-import { ForbiddenError, NotFoundError, ValidationError } from "../../../domain/errors";
+import { type Actor } from "../../../domain/actor";
+import { NotFoundError, ValidationError } from "../../../domain/errors";
 import type { OrderStatus } from "../../../domain/order-state-machine";
 import {
   reviewDesignSchema,
@@ -9,6 +9,7 @@ import {
   type SendDesignInput,
 } from "../../dtos/simulation.dto";
 import type { DesignVersion } from "../../ports/design-repository";
+import { assertStudioSide } from "../order/deps";
 import { advance, type SimulationUseCaseDeps } from "./deps";
 
 const DESIGNABLE: OrderStatus[] = ["DEPOSIT_PAID", "IN_DESIGN", "DESIGN_REVIEW", "CHANGES_REQUESTED"];
@@ -18,7 +19,7 @@ export class SendDesignUseCase {
   constructor(
     private readonly deps: Pick<
       SimulationUseCaseDeps,
-      "orders" | "designs" | "notifications"
+      "orders" | "designs" | "notifications" | "artists"
     >,
   ) {}
 
@@ -28,9 +29,13 @@ export class SendDesignUseCase {
     orderId: string,
     rawInput: SendDesignInput,
   ): Promise<DesignVersion> {
-    if (!isPlatformAdmin(actor) && !membershipIn(actor, studioId)) throw new ForbiddenError();
     const order = await this.deps.orders.findByIdForStudio(orderId, studioId);
     if (!order) throw new NotFoundError("Pedido");
+    // Só o tatuador designado no pedido ou manager+/admin — não qualquer
+    // membro do estúdio (achado de pentest: um ARTIST comum conseguia enviar
+    // arte e avançar o estado de pedidos de OUTROS artistas do mesmo estúdio).
+    const artist = await this.deps.artists.findById(order.artistId);
+    assertStudioSide(actor, order, artist);
     if (!DESIGNABLE.includes(order.status)) {
       throw new ValidationError("O pedido não está na fase de arte.");
     }
