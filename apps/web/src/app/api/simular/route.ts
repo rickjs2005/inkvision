@@ -34,7 +34,9 @@ export async function POST(req: Request) {
     return err("A simulação por IA não está disponível no momento.", 503);
   }
 
-  const body = (await req.json().catch(() => null)) as { image?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as
+    | { image?: unknown; usesRealPhoto?: unknown; consent?: unknown }
+    | null;
   const image = body?.image;
   if (
     typeof image !== "string" ||
@@ -42,6 +44,16 @@ export async function POST(req: Request) {
     image.length > MAX_IMAGE_CHARS
   ) {
     return err("Imagem inválida.", 400);
+  }
+
+  // O servidor não pode distinguir uma foto real de uma pele sintética a
+  // partir só dos pixels — por isso o cliente PRECISA declarar explicitamente
+  // `usesRealPhoto`. Se declarar que é uma foto real, `consent` precisa vir
+  // `true`: sem isso, não processamos (a foto vai para um provedor de IA de
+  // terceiro — não fazemos isso sem consentimento explícito na própria
+  // requisição, já que o fluxo é anônimo e não há conta para vincular aceite).
+  if (body?.usesRealPhoto === true && body?.consent !== true) {
+    return err("É necessário consentir com o processamento da foto por IA antes de continuar.", 400);
   }
 
   const rl = await rateLimit(`public-simulate:${clientIp(req)}`, RL_LIMIT, RL_WINDOW_MS);

@@ -62,8 +62,16 @@ export function SiteFooter() {
       </div>
 
       <div className="border-t border-border">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-6 py-6 text-xs text-muted-foreground sm:flex-row">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-6 text-xs text-muted-foreground sm:flex-row">
           <span className="font-mono tracking-wide">© {new Date().getFullYear()} INKVISION</span>
+          <div className="flex items-center gap-4">
+            <Link href="/termos" className="ink-link transition-colors hover:text-foreground">
+              Termos de Uso
+            </Link>
+            <Link href="/privacidade" className="ink-link transition-colors hover:text-foreground">
+              Privacidade
+            </Link>
+          </div>
           <span className="font-mono tracking-wide">SAAS PARA ESTÚDIOS DE TATUAGEM · FEITO NO BRASIL</span>
         </div>
       </div>

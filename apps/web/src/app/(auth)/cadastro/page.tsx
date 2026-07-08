@@ -14,9 +14,14 @@ export default function CadastroPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!agreed) {
+      setError("Para criar sua conta, você precisa concordar com os Termos e a Política de Privacidade.");
+      return;
+    }
     setLoading(true);
     setError(null);
     const form = new FormData(e.currentTarget);
@@ -61,7 +66,27 @@ export default function CadastroPage() {
           <Benefits />
         </div>
 
-        <Button type="submit" size="lg" disabled={loading} className="mt-2 w-full">
+        <label className="flex items-start gap-2.5 text-sm leading-relaxed text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-0.5 size-4 shrink-0 accent-[var(--primary)]"
+          />
+          <span>
+            Li e concordo com os{" "}
+            <Link href="/termos" target="_blank" className="ink-link font-medium text-foreground">
+              Termos de Uso
+            </Link>{" "}
+            e a{" "}
+            <Link href="/privacidade" target="_blank" className="ink-link font-medium text-foreground">
+              Política de Privacidade
+            </Link>
+            , incluindo o envio de fotos a um provedor de IA para gerar simulações.
+          </span>
+        </label>
+
+        <Button type="submit" size="lg" disabled={loading || !agreed} className="mt-2 w-full">
           {loading ? "Criando…" : "Criar conta gratuitamente"}
         </Button>
         <p className="text-center font-mono text-xs text-muted-foreground">

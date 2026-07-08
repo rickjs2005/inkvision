@@ -24,6 +24,7 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const svgWrapRef = useRef<HTMLDivElement | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
+  const [photoConsent, setPhotoConsent] = useState(false);
   const [skin, setSkin] = useState(0);
   const [designId, setDesignId] = useState(DESIGNS[0]!.id);
   const [t, setT] = useState(DEFAULT_T);
@@ -122,6 +123,10 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
   function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!photoConsent) {
+      e.target.value = "";
+      return toast.error("Marque a caixa abaixo antes de enviar sua própria foto.");
+    }
     if (!file.type.startsWith("image/")) return toast.error("Envie uma imagem (JPG ou PNG).");
     recompose(() => setPhoto(URL.createObjectURL(file)));
   }
@@ -208,6 +213,12 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
 
   /** Manda a composição atual para a IA refinar (rota pública rate-limitada). */
   async function generateAi() {
+    // Checa o consentimento NO MOMENTO do envio (não só no upload) — evita que
+    // marcar, enviar a foto e depois desmarcar ainda mande a foto pra IA.
+    if (photo && !photoConsent) {
+      toast.error("Marque a caixa de consentimento antes de gerar com IA.");
+      return;
+    }
     setAiBusy(true);
     try {
       const canvas = await composeCanvas();
@@ -215,7 +226,7 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
       const res = await fetch("/api/simular", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image }),
+        body: JSON.stringify({ image, usesRealPhoto: photo !== null, consent: photo ? photoConsent : true }),
       });
       const data = (await res.json().catch(() => null)) as { image?: string; error?: string } | null;
       if (!res.ok || !data?.image) {
@@ -319,8 +330,26 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
           )}
         </div>
 
+        {/* Consentimento — só se aplica a foto real; peles sintéticas não precisam */}
+        <label className="mx-auto mt-4 flex w-full max-w-md items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={photoConsent}
+            onChange={(e) => setPhotoConsent(e.target.checked)}
+            className="mt-0.5 size-3.5 shrink-0 accent-[var(--primary)]"
+          />
+          <span>
+            Para enviar minha própria foto, entendo que ela será processada por um provedor de IA de
+            terceiro só para gerar esta prévia (
+            <Link href="/privacidade" target="_blank" className="ink-link">
+              saiba mais
+            </Link>
+            ).
+          </span>
+        </label>
+
         {/* fonte da imagem */}
-        <div className="mx-auto mt-4 flex w-full max-w-md flex-wrap items-center gap-2">
+        <div className="mx-auto mt-3 flex w-full max-w-md flex-wrap items-center gap-2">
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm transition-colors hover:border-foreground/30 hover:bg-foreground/[0.04]">
             <ImageUp className="size-4 text-primary" />
             Enviar minha foto

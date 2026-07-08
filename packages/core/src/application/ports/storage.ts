@@ -31,6 +31,15 @@ export interface StorageService {
   createUploadUrl(input: CreateUploadUrlInput): Promise<UploadTicket>;
   delete(key: string): Promise<void>;
   /**
+   * Apaga o objeto a partir da SUA PRÓPRIA URL pública (não da key) — usado
+   * pela eliminação LGPD, que só tem acesso às URLs gravadas no banco
+   * (fileUrl/bodyPhotoUrl/attachmentUrl/image), nunca à key bruta. Cada
+   * provider sabe extrair a key do formato da própria URL pública; uma URL
+   * que não pertence a este provider (ex.: imagem de demo externa) é
+   * ignorada com segurança — não é um objeto deste bucket para apagar.
+   */
+  deleteByPublicUrl(publicUrl: string): Promise<void>;
+  /**
    * Primeiros bytes do objeto (verificação de magic bytes pós-upload).
    * `null` quando o provider não persiste bytes (mock) — nesse caso a
    * validação acontece no sink de upload do dev.

@@ -70,6 +70,13 @@ export class R2StorageService implements StorageService {
     await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
 
+  async deleteByPublicUrl(publicUrl: string): Promise<void> {
+    const prefix = `${this.publicBaseUrl}/`;
+    if (!publicUrl.startsWith(prefix)) return; // não é um objeto deste bucket
+    const key = publicUrl.slice(prefix.length);
+    await this.delete(key);
+  }
+
   async readHead(key: string, maxBytes: number): Promise<Uint8Array | null> {
     try {
       const res = await this.s3.send(
