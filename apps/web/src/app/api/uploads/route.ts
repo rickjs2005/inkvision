@@ -1,8 +1,24 @@
 import { NextResponse } from "next/server";
-import { UPLOAD_LIMITS, isPlatformAdmin, membershipIn, type UploadPurpose } from "@inkvision/core";
+import { UPLOAD_LIMITS, isPlatformAdmin, membershipIn, type Actor, type UploadPurpose } from "@inkvision/core";
+import { withUser } from "@inkvision/db";
 import { getActor } from "@/server/auth-context";
 import { storage } from "@/server/container";
 import { rateLimit, sameOrigin } from "@/server/rate-limit";
+
+/**
+ * O actor tem uma relação legítima com este estúdio — como membro da equipe
+ * OU como cliente com pelo menos um pedido lá. Sem o segundo caso, um cliente
+ * comum (nunca é "membro" de estúdio) não conseguiria subir foto do corpo,
+ * referência ou anexo de chat para o próprio pedido — regressão real pega no
+ * teste manual do fluxo completo após o fix de IDOR desta rota.
+ */
+async function hasAccessToStudio(actor: Actor, studioId: string): Promise<boolean> {
+  if (isPlatformAdmin(actor) || membershipIn(actor, studioId)) return true;
+  const order = await withUser(actor.userId, (tx) =>
+    tx.order.findFirst({ where: { studioId, clientId: actor.userId }, select: { id: true } }),
+  );
+  return order !== null;
+}
 
 const PURPOSES = Object.keys(UPLOAD_LIMITS) as UploadPurpose[];
 
@@ -45,7 +61,7 @@ export async function POST(req: Request) {
   // O studioId vira parte da key no bucket (`${purpose}/${studioId}/...`) —
   // sem essa checagem, qualquer usuário autenticado conseguia um ticket de
   // upload sob o namespace de storage de OUTRO estúdio (achado de pentest).
-  if (studioId && !isPlatformAdmin(actor) && !membershipIn(actor, studioId)) {
+  if (studioId && !(await hasAccessToStudio(actor, studioId))) {
     return NextResponse.json({ error: "Sem acesso a este estúdio" }, { status: 403 });
   }
 
