@@ -18,7 +18,10 @@ import {
   ConnectStudioPaymentsUseCase,
   GetPaymentsAccountStatusUseCase,
 } from "../application/use-cases/payment/connect-studio";
-import { ConfirmSubscriptionUseCase } from "../application/use-cases/payment/subscription";
+import {
+  ConfirmSubscriptionByReferenceUseCase,
+  ConfirmSubscriptionUseCase,
+} from "../application/use-cases/payment/subscription";
 import { InMemoryAudit, InMemoryStudioRepo } from "./fakes";
 import { InMemoryArtistRepo, InMemorySubscriptionRepo } from "./fakes-artist";
 import { InMemoryNotificationRepo, InMemoryOrderRepo } from "./fakes-order";
@@ -99,7 +102,7 @@ describe("pagamentos (mock)", () => {
     if (connected) studios.studios[0]!.stripeAccountId = "acct_x";
   }
 
-  const deps = () => ({
+  const deps = (overrides?: { allowSelfConfirmation?: boolean }) => ({
     payments,
     orders,
     studios,
@@ -109,6 +112,7 @@ describe("pagamentos (mock)", () => {
     notifications,
     audit: new InMemoryAudit(),
     platformFeePercent: 10,
+    allowSelfConfirmation: overrides?.allowSelfConfirmation ?? true,
   });
 
   beforeEach(() => {
@@ -157,11 +161,54 @@ describe("pagamentos (mock)", () => {
     await studios.create({ slug: "alma", name: "Alma" });
     studios.studios[0]!.id = STUDIO;
     await new ConfirmSubscriptionUseCase(
-      { studios, subscriptions, audit: new InMemoryAudit() },
+      { studios, subscriptions, audit: new InMemoryAudit(), allowSelfConfirmation: true },
       () => new Date(0),
     ).execute(owner, STUDIO, "pro");
     const active = await subscriptions.getActiveForStudio(STUDIO);
     expect(active?.maxArtists).toBe(8);
+  });
+
+  it("com Stripe real (allowSelfConfirmation=false), o cliente NÃO consegue confirmar o próprio pagamento", async () => {
+    await deposit();
+    await new StartOrderPaymentUseCase(deps()).execute(client, orderId, "DEPOSIT");
+    await expect(
+      new ConfirmOrderPaymentUseCase(deps({ allowSelfConfirmation: false })).execute(client, orderId, "DEPOSIT"),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+    // o pedido continua pendente — nada foi liberado de graça.
+    expect(orders.orders.find((o) => o.id === orderId)!.status).toBe("DEPOSIT_PENDING");
+    expect(payments.payments[0]!.status).toBe("PENDING");
+  });
+
+  it("com Stripe real (allowSelfConfirmation=false), o dono NÃO consegue confirmar a própria assinatura", async () => {
+    await studios.create({ slug: "alma", name: "Alma" });
+    studios.studios[0]!.id = STUDIO;
+    await expect(
+      new ConfirmSubscriptionUseCase(
+        { studios, subscriptions, audit: new InMemoryAudit(), allowSelfConfirmation: false },
+        () => new Date(0),
+      ).execute(owner, STUDIO, "pro"),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+    expect(await subscriptions.getActiveForStudio(STUDIO)).toBeNull();
+  });
+
+  it("webhook do provedor confirma a assinatura sem depender do actor (ConfirmSubscriptionByReferenceUseCase)", async () => {
+    await studios.create({ slug: "alma", name: "Alma" });
+    studios.studios[0]!.id = STUDIO;
+    await new ConfirmSubscriptionByReferenceUseCase(
+      { studios, subscriptions, audit: new InMemoryAudit() },
+      () => new Date(0),
+    ).execute({ studioId: STUDIO, planSlug: "pro" });
+    const active = await subscriptions.getActiveForStudio(STUDIO);
+    expect(active?.maxArtists).toBe(8);
+  });
+
+  it("webhook com referência de estúdio desconhecida é ignorado com segurança", async () => {
+    await expect(
+      new ConfirmSubscriptionByReferenceUseCase({ studios, subscriptions, audit: new InMemoryAudit() }).execute({
+        studioId: "estudio_inexistente",
+        planSlug: "pro",
+      }),
+    ).resolves.toBeUndefined();
   });
 });
 

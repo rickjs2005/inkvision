@@ -71,6 +71,14 @@ export class ConfirmOrderPaymentUseCase {
 
   async execute(actor: Actor | null, orderId: string, kind: PaymentKind): Promise<Order> {
     assertAuthenticated(actor);
+    if (!this.deps.allowSelfConfirmation) {
+      // Stripe real está configurado: a única fonte confiável de confirmação é
+      // o webhook assinado. Aceitar a palavra do próprio cliente aqui seria dar
+      // acesso pago de graça.
+      throw new ValidationError(
+        "Este pagamento é confirmado automaticamente pelo provedor. Aguarde a confirmação.",
+      );
+    }
     const order = await this.deps.orders.findByIdForClient(orderId, actor.userId);
     if (!order) throw new NotFoundError("Pedido");
 

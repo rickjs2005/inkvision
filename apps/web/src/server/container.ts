@@ -49,6 +49,7 @@ import {
   ConfirmPaymentByReferenceUseCase,
   SubscribeStudioUseCase,
   ConfirmSubscriptionUseCase,
+  ConfirmSubscriptionByReferenceUseCase,
   // simulation
   SendDesignUseCase,
   ReviewDesignUseCase,
@@ -138,7 +139,6 @@ const schedule = new PrismaScheduleRepository();
 const reviews = new PrismaReviewRepository();
 const metrics = new PrismaMetricsRepository();
 const auditRead = new PrismaAuditReadRepository();
-const lgpd = new PrismaLgpdRepository();
 
 /** R2 real quando as credenciais estão no env; mock no dev. */
 export const storage =
@@ -146,12 +146,32 @@ export const storage =
     ? new R2StorageService()
     : new MockStorageService(process.env.APP_URL ?? "");
 
+// Precisa do storage para apagar de fato as fotos/artes do titular do bucket
+// na eliminação LGPD — sem isso, "excluir conta" desvincula o registro no
+// banco mas o objeto (ex.: foto do corpo) continua acessível pela URL pública.
+const lgpd = new PrismaLgpdRepository(storage);
+
 const studioDeps = { studios, users, audit };
 const artistDeps = { artists, styles, users, studios, subscriptions, audit };
 const portfolioDeps = { portfolio, artists, styles, audit };
 const orderDeps = { orders, artists, notifications, audit, users, email, appUrl };
 const chatDeps = { chat, orders, artists, notifications };
-const paymentDeps = { payments, orders, studios, artists, subscriptions, gateway, notifications, audit, platformFeePercent };
+// Sem Stripe real, o gateway é o mock — nesse caso (e só nesse caso) é seguro
+// deixar o próprio cliente/dono "confirmar" o pagamento, porque não há dinheiro
+// de verdade em jogo. Com Stripe configurado, só o webhook assinado confirma.
+const allowSelfConfirmation = !process.env.STRIPE_SECRET_KEY;
+const paymentDeps = {
+  payments,
+  orders,
+  studios,
+  artists,
+  subscriptions,
+  gateway,
+  notifications,
+  audit,
+  platformFeePercent,
+  allowSelfConfirmation,
+};
 
 /**
  * Fila de simulação in-process (fallback sem Redis): processa INLINE, na
@@ -246,6 +266,7 @@ export const useCases = {
   confirmPaymentByReference: new ConfirmPaymentByReferenceUseCase(paymentDeps),
   subscribeStudio: new SubscribeStudioUseCase(paymentDeps),
   confirmSubscription: new ConfirmSubscriptionUseCase(paymentDeps),
+  confirmSubscriptionByReference: new ConfirmSubscriptionByReferenceUseCase(paymentDeps),
   // simulation
   sendDesign: new SendDesignUseCase(simulationDeps),
   reviewDesign: new ReviewDesignUseCase(simulationDeps),

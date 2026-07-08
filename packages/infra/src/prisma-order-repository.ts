@@ -101,24 +101,35 @@ export class PrismaOrderRepository implements OrderRepository {
 
   async transition(orderId: string, studioId: string, input: TransitionInput): Promise<Order> {
     const updated = await withStudio(studioId, async (tx) => {
-      await tx.order.update({
-        where: { id: orderId },
+      // Compare-and-swap: só aplica a transição se o pedido AINDA estiver no
+      // estado `from` esperado. Sem isso, duas chamadas concorrentes vindas de
+      // webhooks reentrantes do Stripe (ex.: checkout.session.completed +
+      // payment_intent.succeeded quase simultâneos) liam o mesmo status antes
+      // de qualquer escrita e ambas criavam um OrderEvent duplicado na
+      // timeline. Com o CAS, só a que realmente muda o estado grava evento —
+      // a segunda vira no-op silencioso, que é o comportamento idempotente
+      // que os use cases de pagamento já assumem.
+      const result = await tx.order.updateMany({
+        where: { id: orderId, status: input.from },
         data: {
           status: input.to,
           ...(input.patch?.quoteAmountCents != null
             ? { quoteAmountCents: input.patch.quoteAmountCents }
             : {}),
           ...(input.patch?.depositCents != null ? { depositCents: input.patch.depositCents } : {}),
-          events: {
-            create: {
-              from: input.from,
-              to: input.to,
-              actorId: input.actorId,
-              metadata: (input.metadata as Prisma.InputJsonValue) ?? undefined,
-            },
-          },
         },
       });
+      if (result.count > 0) {
+        await tx.orderEvent.create({
+          data: {
+            orderId,
+            from: input.from,
+            to: input.to,
+            actorId: input.actorId,
+            metadata: (input.metadata as Prisma.InputJsonValue) ?? undefined,
+          },
+        });
+      }
       return tx.order.findFirst({ where: { id: orderId }, include: orderInclude });
     });
     return toDomain(updated!);

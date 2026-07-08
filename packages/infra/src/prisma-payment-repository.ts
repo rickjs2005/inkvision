@@ -62,9 +62,16 @@ export class PrismaPaymentRepository implements PaymentRepository {
   }
 
   async markSucceeded(studioId: string, paymentId: string): Promise<Payment> {
-    const p = await withStudio(studioId, (tx) =>
-      tx.payment.update({ where: { id: paymentId }, data: { status: "SUCCEEDED" } }),
-    );
+    // CAS: só marca SUCCEEDED se ainda estiver PENDING — evita dois webhooks
+    // reentrantes do Stripe para o mesmo pagamento disputando a mesma escrita
+    // (ver comentário equivalente em PrismaOrderRepository.transition).
+    const p = await withStudio(studioId, async (tx) => {
+      await tx.payment.updateMany({
+        where: { id: paymentId, status: "PENDING" },
+        data: { status: "SUCCEEDED" },
+      });
+      return tx.payment.findUniqueOrThrow({ where: { id: paymentId } });
+    });
     return toDomain(p);
   }
 

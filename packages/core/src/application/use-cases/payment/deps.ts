@@ -18,6 +18,15 @@ export interface PaymentUseCaseDeps {
   audit: AuditLogger;
   /** Percentual retido pela plataforma (application fee). */
   platformFeePercent: number;
+  /**
+   * Permite que o próprio cliente/dono confirme o pagamento/assinatura sem
+   * intermediação do provedor — só é seguro quando o gateway é o mock (sem
+   * Stripe real configurado). Com Stripe real, confirmar sem consultar o
+   * provedor é dar acesso de graça; a única fonte confiável passa a ser o
+   * webhook assinado (ConfirmPaymentByReferenceUseCase /
+   * ConfirmSubscriptionByReferenceUseCase).
+   */
+  allowSelfConfirmation: boolean;
 }
 
 export function feeFor(amountCents: number, percent: number): number {

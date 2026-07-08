@@ -26,7 +26,24 @@ export async function POST(req: Request) {
   }
 
   try {
-    if (event.type === "checkout.session.completed" || event.type === "payment_intent.succeeded") {
+    if (event.type === "checkout.session.completed") {
+      const obj = event.data.object as { mode?: string; metadata?: Record<string, string> | null };
+      const md = obj.metadata ?? {};
+      if (obj.mode === "subscription") {
+        const studioId = md.studioId;
+        const planSlug = md.planSlug;
+        if (studioId && planSlug) {
+          await useCases.confirmSubscriptionByReference.execute({ studioId, planSlug });
+        }
+      } else {
+        const orderId = md.orderId;
+        const studioId = md.studioId;
+        const kind = md.kind as PaymentKind | undefined;
+        if (orderId && studioId && (kind === "DEPOSIT" || kind === "FINAL")) {
+          await useCases.confirmPaymentByReference.execute({ orderId, studioId, kind });
+        }
+      }
+    } else if (event.type === "payment_intent.succeeded") {
       const obj = event.data.object as { metadata?: Record<string, string> | null };
       const md = obj.metadata ?? {};
       const orderId = md.orderId;
@@ -36,7 +53,6 @@ export async function POST(req: Request) {
         await useCases.confirmPaymentByReference.execute({ orderId, studioId, kind });
       }
     }
-    // TODO: checkout.session.completed (mode subscription) → confirmar assinatura.
     return NextResponse.json({ received: true });
   } catch (e) {
     logError(e, { scope: "stripe_webhook", stage: "process", type: event.type });
