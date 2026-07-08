@@ -22,8 +22,20 @@ describe("AI registry", () => {
     const p = getSimulationProvider("fal");
     expect(p.name).toBe("fal");
     await expect(
-      p.simulate({ bodyPhotoUrl: "x", designUrl: "y", placement: { x: 0, y: 0, scale: 1, rotation: 0 } }),
+      p.simulate({
+        bodyPhotoUrl: "x",
+        designUrl: "y",
+        composedImageUrl: "https://cdn/composed.jpg",
+        placement: { x: 0, y: 0, scale: 1, rotation: 0 },
+      }),
     ).rejects.toThrow(/FAL_API_KEY/);
+  });
+
+  it("provider real (fal) sem composedImageUrl falha explicitamente (a arte precisa estar composta na foto)", async () => {
+    const p = getSimulationProvider("fal");
+    await expect(
+      p.simulate({ bodyPhotoUrl: "x", designUrl: "y", placement: { x: 0, y: 0, scale: 1, rotation: 0 } }),
+    ).rejects.toThrow(/composedImageUrl/);
   });
 
   it("provider stub (replicate) sem chave falha explicitamente", async () => {

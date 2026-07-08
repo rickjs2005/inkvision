@@ -389,6 +389,10 @@ model Simulation {
   designVersionId String
   designUrl       String
   bodyPhotoUrl    String
+  /// Foto + arte já compostas num único bitmap (canvas), na posição escolhida
+  /// pelo cliente — é o que de fato vai para o provider de IA, para que o
+  /// modelo receba a arte real em vez de só uma referência textual no prompt.
+  composedImageUrl String?
   placement       Json
   variants        Json?
   provider        String

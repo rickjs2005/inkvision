@@ -36,6 +36,7 @@ export class RequestSimulationUseCase {
       designVersionId: design.id,
       designUrl: design.imageUrl,
       bodyPhotoUrl: input.bodyPhotoUrl,
+      composedImageUrl: input.composedImageUrl,
       placement: input.placement,
       provider: this.deps.provider.name,
     });
@@ -72,6 +73,7 @@ export class ProcessSimulationUseCase {
       const result = await this.deps.provider.simulate({
         bodyPhotoUrl: sim.bodyPhotoUrl,
         designUrl: sim.designUrl,
+        composedImageUrl: sim.composedImageUrl ?? undefined,
         placement: sim.placement,
       });
       await this.deps.simulations.markDone(simulationId, result.variants, result.provider);
@@ -115,6 +117,13 @@ export class ProcessSimulationUseCase {
           simulationId,
         });
       }
+      // Relança DEPOIS de já ter revertido o pedido e avisado o cliente: sem
+      // isso, o BullMQ via apps/worker nunca via essa falha — o job era
+      // reportado como "completed" mesmo quando a IA falhou de verdade, então
+      // `worker.on("failed", ...)` nunca disparava e não havia NENHUM sinal
+      // observável do lado da fila de que algo deu errado (achado de
+      // auditoria: silêncio total até um cliente reclamar).
+      throw e;
     }
   }
 }

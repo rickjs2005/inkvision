@@ -84,24 +84,42 @@ export async function falImageToImage(input: FalImageToImageInput): Promise<stri
   return imageUrl;
 }
 
+/**
+ * Transformação da imagem já composta — baixa o suficiente para não destruir o
+ * traço/posição que o cliente escolheu, alta o suficiente para a Fal reformular
+ * textura/luz/sombra por cima. Mesma faixa usada no /simular público.
+ */
+const COMPOSED_IMAGE_STRENGTH = 0.45;
+
 export class FalProvider implements TattooSimulationProvider {
   readonly name = "fal";
 
   async simulate(req: SimulationRequest): Promise<SimulationResult> {
-    const { x, y, scale, rotation } = req.placement;
+    if (!req.composedImageUrl) {
+      // Sem a composição pronta (chamada antiga/legado), não há como aplicar a
+      // arte real — falha alto em vez de gerar uma tatuagem genérica que não é
+      // a que o cliente aprovou.
+      throw new Error(
+        "composedImageUrl ausente — a arte precisa estar composta na foto antes de chamar o provider.",
+      );
+    }
 
-    // O prompt carrega a "intenção" do pipeline: aplicar a arte na pele de forma
-    // realista, respeitando o placement informado. Referenciamos a arte pela URL
-    // (o modelo/prompt evolui para receber a arte como segunda imagem/condição).
+    // A arte JÁ ESTÁ nos pixels da imagem enviada (composta no cliente, mesma
+    // técnica do /simular público) — o prompt só pede pra IA refinar o que já
+    // está lá, sem reformular texto de posição/escala que o modelo não segue.
     const prompt =
-      "Apply the given tattoo design realistically onto the person's skin in the photo. " +
-      `Reference tattoo design: ${req.designUrl}. ` +
-      `Place it at relative position x=${x.toFixed(2)}, y=${y.toFixed(2)} of the photo, ` +
-      `scaled by ${scale} and rotated ${rotation} degrees. ` +
-      "Follow the body's curvature and perspective, match the skin tone, lighting, shadows and pores, " +
-      "and blend the ink naturally so it looks like a real tattoo on the skin.";
+      "This photo already shows a tattoo design composited onto the person's skin, in the exact " +
+      "position, scale and rotation intended. Refine it into a photorealistic, healed tattoo: " +
+      "keep the design's exact shape and position unchanged, follow the body's curvature and " +
+      "perspective, match the real skin tone, lighting, shadows and pores, and blend the ink " +
+      "naturally so it looks like a real tattoo on the skin — not a sticker. " +
+      "Do not add, remove or move anything else in the image.";
 
-    const imageUrl = await falImageToImage({ imageUrl: req.bodyPhotoUrl, prompt });
+    const imageUrl = await falImageToImage({
+      imageUrl: req.composedImageUrl,
+      prompt,
+      strength: COMPOSED_IMAGE_STRENGTH,
+    });
 
     // Hoje as 3 variantes apontam para a mesma imagem gerada. P/M/G podem, no
     // futuro, variar por parâmetro (ex.: reexecutar o modelo alterando o `scale`

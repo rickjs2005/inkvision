@@ -17,6 +17,13 @@ export interface TattooPlacement {
 export interface SimulationRequest {
   bodyPhotoUrl: string;
   designUrl: string;
+  /**
+   * Foto do corpo + arte já compostas (canvas) na posição/escala/rotação
+   * escolhidas pelo cliente. Quando presente, é ISSO que deve ir ao modelo de
+   * image-to-image — a arte já está nos pixels, não precisa (e não deve) ser
+   * referenciada só por texto no prompt.
+   */
+  composedImageUrl?: string;
   placement: TattooPlacement;
 }
 

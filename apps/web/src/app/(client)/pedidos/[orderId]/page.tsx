@@ -174,6 +174,7 @@ export default async function ClientOrderDetailPage({
                         placement: latestSim.placement,
                         status: latestSim.status,
                         errorMessage: latestSim.errorMessage,
+                        variants: latestSim.variants,
                       }
                     : null
                 }

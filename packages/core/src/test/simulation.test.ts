@@ -61,6 +61,7 @@ class InMemorySimulationRepo implements SimulationRepository {
     const s: Simulation = {
       id: `s_${this.sims.length + 1}`,
       ...data,
+      composedImageUrl: data.composedImageUrl ?? null,
       variants: null,
       status: "QUEUED",
       errorMessage: null,
@@ -170,6 +171,25 @@ describe("fluxo de arte + simulação", () => {
 
     await new ApproveSimulationUseCase(deps()).execute(client, orderId);
     expect(orders.orders[0]!.status).toBe("SIMULATION_APPROVED");
+  });
+
+  it("quando o provider falha, marca FAILED, reverte o pedido e RELANÇA (BullMQ precisa ver a falha)", async () => {
+    await new SendDesignUseCase(deps()).execute(artistActor, STUDIO, orderId, { imageUrl: "https://cdn/art.png" });
+    await new ReviewDesignUseCase(deps()).execute(client, orderId, { approve: true });
+    const { simulationId } = await new RequestSimulationUseCase(deps()).execute(client, orderId, {
+      bodyPhotoUrl: "https://cdn/body.jpg",
+      placement: { x: 0.5, y: 0.5, scale: 1, rotation: 0 },
+    });
+
+    const failingProvider = { name: "fal", simulate: () => Promise.reject(new Error("Fal fora do ar")) };
+    await expect(
+      new ProcessSimulationUseCase({ ...deps(), provider: failingProvider }).execute(simulationId),
+    ).rejects.toThrow("Fal fora do ar");
+
+    expect(sims.sims[0]!.status).toBe("FAILED");
+    expect(sims.sims[0]!.errorMessage).toBe("Fal fora do ar");
+    expect(orders.orders[0]!.status).toBe("AWAITING_BODY_PHOTO");
+    expect(realtimeEvents).toContain("simulation:failed");
   });
 
   it("processamento é idempotente", async () => {

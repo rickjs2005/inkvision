@@ -12,6 +12,7 @@ import {
 } from "@/server/actions/simulation";
 import { Camera, Check, ImageUp, Loader2, Sparkles } from "lucide-react";
 import { uploadFile } from "@/lib/upload";
+import { composeTattooImage } from "@/lib/compose-tattoo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SimulationEditor } from "./simulation-editor";
@@ -30,6 +31,7 @@ interface SimInfo {
   placement: SimulationPlacement;
   status: string;
   errorMessage: string | null;
+  variants: { small: string; medium: string; large: string } | null;
 }
 
 export function ClientSimulationSection({
@@ -104,12 +106,26 @@ export function ClientSimulationSection({
     setError(null);
     setBusy(true);
     startTransition(async () => {
-      const res = await requestSimulationAction(orderId, { bodyPhotoUrl, placement });
-      setBusy(false);
-      if (res.ok) {
-        setRedo(false);
-        router.refresh();
-      } else setError(res.error);
+      try {
+        // Compõe a arte real sobre a foto ANTES de enviar — sem isso, a IA só
+        // recebe a foto crua e nunca vê o desenho de verdade (ver auditoria).
+        const blob = await composeTattooImage(bodyPhotoUrl, designUrl, placement);
+        const file = new File([blob], "composicao.jpg", { type: "image/jpeg" });
+        const composed = await uploadFile(file, "body-photo", studioId);
+        const res = await requestSimulationAction(orderId, {
+          bodyPhotoUrl,
+          placement,
+          composedImageUrl: composed.publicUrl,
+        });
+        setBusy(false);
+        if (res.ok) {
+          setRedo(false);
+          router.refresh();
+        } else setError(res.error);
+      } catch {
+        setBusy(false);
+        setError("Não foi possível preparar a imagem para a IA. Tente de novo.");
+      }
     });
   }
 
@@ -280,6 +296,7 @@ export function ClientSimulationSection({
           bodyPhotoUrl={simulation.bodyPhotoUrl}
           designUrl={simulation.designUrl}
           placement={simulation.placement}
+          variants={simulation.variants}
         />
         {status === "SIMULATION_REVIEW" && (
           <div className="flex flex-wrap gap-3 border-t border-border pt-5">

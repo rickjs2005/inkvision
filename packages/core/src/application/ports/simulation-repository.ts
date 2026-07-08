@@ -20,6 +20,8 @@ export interface Simulation {
   designVersionId: string;
   designUrl: string;
   bodyPhotoUrl: string;
+  /** Foto + arte já compostas (canvas) na posição escolhida — o que vai para a IA. */
+  composedImageUrl: string | null;
   placement: SimulationPlacement;
   variants: SimulationVariants | null;
   provider: string;
@@ -34,6 +36,7 @@ export interface CreateSimulationData {
   designVersionId: string;
   designUrl: string;
   bodyPhotoUrl: string;
+  composedImageUrl?: string;
   placement: SimulationPlacement;
   provider: string;
 }
