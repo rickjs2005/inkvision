@@ -25,6 +25,7 @@ import {
   // order
   CreateOrderUseCase,
   SendQuoteUseCase,
+  MarkSessionDoneUseCase,
   AcceptQuoteUseCase,
   CancelOrderUseCase,
   GetOrderForClientUseCase,
@@ -242,6 +243,7 @@ export const useCases = {
   // order
   createOrder: new CreateOrderUseCase(orderDeps),
   sendQuote: new SendQuoteUseCase(orderDeps),
+  markSessionDone: new MarkSessionDoneUseCase(orderDeps),
   acceptQuote: new AcceptQuoteUseCase(orderDeps),
   cancelOrder: new CancelOrderUseCase(orderDeps),
   getOrderForClient: new GetOrderForClientUseCase(orderDeps),

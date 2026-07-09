@@ -17,7 +17,7 @@ export function BookingSection({
   appointmentStartsAt,
 }: {
   orderId: string;
-  status: "SIMULATION_APPROVED" | "SCHEDULED";
+  status: "SIMULATION_APPROVED" | "SCHEDULED" | "SESSION_DONE";
   slots: string[]; // ISO
   appointmentStartsAt: string | null;
 }) {
@@ -50,11 +50,11 @@ export function BookingSection({
     });
   }
 
-  if (status === "SCHEDULED" && appointmentStartsAt && !rescheduling) {
+  if ((status === "SCHEDULED" || status === "SESSION_DONE") && appointmentStartsAt && !rescheduling) {
     const d = new Date(appointmentStartsAt);
     return (
       <div className="flex flex-col gap-5">
-        <span className="eyebrow">Sessão confirmada</span>
+        <span className="eyebrow">{status === "SESSION_DONE" ? "Sessão realizada" : "Sessão confirmada"}</span>
         <div className="flex items-start gap-4 rounded-lg border border-border bg-card p-5 shadow-[var(--shadow-ink)]">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
             <CalendarCheck className="size-5" />
@@ -67,13 +67,17 @@ export function BookingSection({
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          Falta o pagamento final para concluir — o botão aparece acima.
+          {status === "SESSION_DONE"
+            ? "O tatuador confirmou a sessão — falta o pagamento final para concluir."
+            : "Falta o pagamento final para concluir — o botão aparece acima."}
         </p>
-        <div className="border-t border-border pt-4">
-          <Button size="sm" variant="outline" onClick={() => setRescheduling(true)}>
-            Reagendar
-          </Button>
-        </div>
+        {status === "SCHEDULED" && (
+          <div className="border-t border-border pt-4">
+            <Button size="sm" variant="outline" onClick={() => setRescheduling(true)}>
+              Reagendar
+            </Button>
+          </div>
+        )}
       </div>
     );
   }

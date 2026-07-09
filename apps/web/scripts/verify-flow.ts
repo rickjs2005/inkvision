@@ -72,6 +72,9 @@ async function main() {
   await useCases.scheduleSession.execute(clientActor, orderId, { startsAt: slots[0]!.startsAt });
   assert((await statusOf(orderId)) === "SCHEDULED", "sessão agendada → SCHEDULED");
 
+  await useCases.markSessionDone.execute(artistActor, studioId, orderId);
+  assert((await statusOf(orderId)) === "SESSION_DONE", "tatuador marcou sessão → SESSION_DONE");
+
   await useCases.startOrderPayment.execute(clientActor, orderId, "FINAL");
   await useCases.confirmOrderPayment.execute(clientActor, orderId, "FINAL");
   assert((await statusOf(orderId)) === "COMPLETED", "pagamento final → COMPLETED");

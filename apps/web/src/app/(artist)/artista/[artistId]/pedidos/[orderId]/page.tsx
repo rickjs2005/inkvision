@@ -9,6 +9,7 @@ import { OrderTimeline } from "@/components/order/order-timeline";
 import { StudioChat } from "@/components/chat/studio-chat";
 import { QuoteForm } from "./quote-form";
 import { SendDesignPanel } from "./send-design-panel";
+import { SessionDoneButton } from "./session-done-button";
 
 const DESIGNABLE = ["DEPOSIT_PAID", "IN_DESIGN", "DESIGN_REVIEW", "CHANGES_REQUESTED"];
 
@@ -99,6 +100,15 @@ export default async function ArtistOrderDetailPage({
               )}
             </div>
           </section>
+
+          {order.status === "SCHEDULED" && (
+            <section className="mt-10 border-t border-border pt-8">
+              <span className="eyebrow">Sessão</span>
+              <div className="mt-4">
+                <SessionDoneButton studioId={artist.studioId} orderId={order.id} artistId={artistId} />
+              </div>
+            </section>
+          )}
 
           {canDesign && (
             <section className="mt-10 border-t border-border pt-8">

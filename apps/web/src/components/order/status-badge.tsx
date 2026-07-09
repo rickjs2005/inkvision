@@ -27,6 +27,7 @@ const VARIANT: Record<OrderStatus, "default" | "neutral" | "success" | "warning"
   SIMULATION_APPROVED: "success",
   // Sessão
   SCHEDULED: "default",
+  SESSION_DONE: "warning",
   COMPLETED: "success",
   REVIEWED: "success",
   // Encerramento

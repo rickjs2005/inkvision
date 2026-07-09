@@ -1,6 +1,7 @@
 export * from "./deps";
 export * from "./create-order";
 export * from "./send-quote";
+export * from "./session-done";
 export * from "./client-actions";
 export * from "./studio-reads";
 export * from "./get-client-order-detail";

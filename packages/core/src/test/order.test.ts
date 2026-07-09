@@ -4,6 +4,7 @@ import { assertTransition, canTransition } from "../domain/order-state-machine";
 import { CreateOrderUseCase } from "../application/use-cases/order/create-order";
 import { SendQuoteUseCase } from "../application/use-cases/order/send-quote";
 import { AcceptQuoteUseCase } from "../application/use-cases/order/client-actions";
+import { MarkSessionDoneUseCase } from "../application/use-cases/order/session-done";
 import { InMemoryAudit, InMemoryEmailService, InMemoryUserRepo } from "./fakes";
 import { InMemoryArtistRepo } from "./fakes-artist";
 import { InMemoryNotificationRepo, InMemoryOrderRepo } from "./fakes-order";
@@ -110,6 +111,32 @@ describe("fluxo de pedido", () => {
     const order = await submit();
     await expect(new AcceptQuoteUseCase(deps()).execute(client, order.id)).rejects.toMatchObject({
       code: "VALIDATION",
+    });
+  });
+
+  it("tatuador marca sessão como realizada → SESSION_DONE e notifica cliente", async () => {
+    const order = await submit();
+    orders.orders[0]!.status = "SCHEDULED";
+    const uc = new MarkSessionDoneUseCase(deps());
+    const done = await uc.execute(artistActor, STUDIO, order.id);
+    expect(done.status).toBe("SESSION_DONE");
+    expect(await notifications.countUnread("u_client")).toBe(1);
+  });
+
+  it("não marca sessão como realizada antes de SCHEDULED", async () => {
+    const order = await submit();
+    const uc = new MarkSessionDoneUseCase(deps());
+    await expect(uc.execute(artistActor, STUDIO, order.id)).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+  });
+
+  it("estranho não pode marcar sessão como realizada", async () => {
+    const order = await submit();
+    orders.orders[0]!.status = "SCHEDULED";
+    const uc = new MarkSessionDoneUseCase(deps());
+    await expect(uc.execute(stranger, STUDIO, order.id)).rejects.toMatchObject({
+      code: "FORBIDDEN",
     });
   });
 });

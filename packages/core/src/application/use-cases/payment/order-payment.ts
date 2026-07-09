@@ -8,7 +8,9 @@ import { feeFor, type PaymentUseCaseDeps } from "./deps";
 /** Estado exigido e destino da transição por tipo de pagamento. */
 const RULES: Record<PaymentKind, { requires: OrderStatus; to: OrderStatus }> = {
   DEPOSIT: { requires: "DEPOSIT_PENDING", to: "DEPOSIT_PAID" },
-  FINAL: { requires: "SCHEDULED", to: "COMPLETED" },
+  // Exige SESSION_DONE (marcado pelo tatuador) — o cliente só paga o valor
+  // final depois que a sessão de fato aconteceu, não só porque foi agendada.
+  FINAL: { requires: "SESSION_DONE", to: "COMPLETED" },
 };
 
 function amountFor(kind: PaymentKind, order: Order): number {

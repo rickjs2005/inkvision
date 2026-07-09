@@ -10,6 +10,7 @@ import { ClientChat } from "@/components/chat/client-chat";
 import { ClientSimulationSection } from "@/components/simulation/client-simulation-section";
 import { BookingSection } from "@/components/schedule/booking-section";
 import { ReviewSection } from "@/components/review/review-section";
+import { formatBRL } from "@/lib/format-currency";
 import { OrderClientActions } from "./client-actions";
 import { PayButton } from "./pay-button";
 
@@ -50,7 +51,10 @@ export default async function ClientOrderDetailPage({
   const roomToken = await signRoomToken(actor.userId, conversation.id);
 
   const inFlow = (FLOW_STATUSES as readonly string[]).includes(order.status);
-  const canBook = order.status === "SIMULATION_APPROVED" || order.status === "SCHEDULED";
+  const canBook =
+    order.status === "SIMULATION_APPROVED" ||
+    order.status === "SCHEDULED" ||
+    order.status === "SESSION_DONE";
   const slots = detail.slots.map((s) => s.toISOString());
   const canReview = order.status === "COMPLETED" || order.status === "REVIEWED";
 
@@ -109,13 +113,13 @@ export default async function ClientOrderDetailPage({
             <section className="border-t border-border pt-6">
               <p className="eyebrow mb-4">Orçamento</p>
               <p className="font-mono text-4xl font-light tracking-tight text-foreground">
-                R$ {(order.quoteAmountCents / 100).toFixed(2)}
+                {formatBRL(order.quoteAmountCents)}
               </p>
               {order.depositCents != null && (
                 <p className="mt-2 text-sm text-muted-foreground">
                   Sinal para iniciar:{" "}
                   <span className="font-mono text-foreground">
-                    R$ {(order.depositCents / 100).toFixed(2)}
+                    {formatBRL(order.depositCents)}
                   </span>
                 </p>
               )}
@@ -131,7 +135,7 @@ export default async function ClientOrderDetailPage({
           {order.status === "DEPOSIT_PENDING" && (
             <PayButton orderId={order.id} kind="DEPOSIT" label="Pagar sinal" />
           )}
-          {order.status === "SCHEDULED" && (
+          {order.status === "SESSION_DONE" && (
             <PayButton orderId={order.id} kind="FINAL" label="Pagar valor final" />
           )}
 
@@ -140,7 +144,7 @@ export default async function ClientOrderDetailPage({
               <p className="eyebrow mb-4">Agendamento</p>
               <BookingSection
                 orderId={order.id}
-                status={order.status as "SIMULATION_APPROVED" | "SCHEDULED"}
+                status={order.status as "SIMULATION_APPROVED" | "SCHEDULED" | "SESSION_DONE"}
                 slots={slots}
                 appointmentStartsAt={appointment ? appointment.startsAt.toISOString() : null}
               />

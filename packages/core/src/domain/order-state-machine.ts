@@ -14,6 +14,7 @@ export type OrderStatus =
   | "SIMULATION_REVIEW"
   | "SIMULATION_APPROVED"
   | "SCHEDULED"
+  | "SESSION_DONE"
   | "COMPLETED"
   | "REVIEWED"
   | "CANCELLED"
@@ -37,7 +38,11 @@ export const ORDER_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   SIMULATING: ["SIMULATION_REVIEW", "AWAITING_BODY_PHOTO"],
   SIMULATION_REVIEW: ["SIMULATION_APPROVED", "AWAITING_BODY_PHOTO"],
   SIMULATION_APPROVED: ["SCHEDULED"],
-  SCHEDULED: ["COMPLETED", "CANCELLED"],
+  // O tatuador marca a sessão como realizada (independente do pagamento final
+  // do cliente) — sem isso, um cliente que esquece de pagar deixa o pedido
+  // travado em SCHEDULED para sempre, sem nenhuma ação do lado do estúdio.
+  SCHEDULED: ["SESSION_DONE", "CANCELLED"],
+  SESSION_DONE: ["COMPLETED"],
   COMPLETED: ["REVIEWED"],
   REVIEWED: [],
   CANCELLED: [],
@@ -75,6 +80,7 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   SIMULATION_REVIEW: "Simulação em aprovação",
   SIMULATION_APPROVED: "Simulação aprovada",
   SCHEDULED: "Agendado",
+  SESSION_DONE: "Sessão realizada",
   COMPLETED: "Concluído",
   REVIEWED: "Avaliado",
   CANCELLED: "Cancelado",

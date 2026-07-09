@@ -34,6 +34,20 @@ export async function sendQuoteAction(
   return res.ok ? { ok: true, data: undefined } : res;
 }
 
+export async function markSessionDoneAction(
+  studioId: string,
+  orderId: string,
+  artistId: string,
+): Promise<ActionResult> {
+  const actor = await requireActor();
+  const res = await run(() => useCases.markSessionDone.execute(actor, studioId, orderId));
+  if (res.ok) {
+    revalidatePath(`/artista/${artistId}/pedidos/${orderId}`);
+    revalidatePath(`/pedidos/${orderId}`);
+  }
+  return res.ok ? { ok: true, data: undefined } : res;
+}
+
 export async function acceptQuoteAction(orderId: string): Promise<ActionResult> {
   const actor = await getActor();
   const res = await run(() => useCases.acceptQuote.execute(actor, orderId));
