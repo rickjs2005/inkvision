@@ -39,10 +39,10 @@ export class PrismaChatRepository implements ChatRepository {
     clientId: string;
     artistId: string;
   }): Promise<Conversation> {
-    return withStudio(order.studioId, async (tx) => {
-      const existing = await tx.conversation.findFirst({ where: { orderId: order.id } });
-      if (existing) return convToDomain(existing);
-      try {
+    try {
+      return await withStudio(order.studioId, async (tx) => {
+        const existing = await tx.conversation.findFirst({ where: { orderId: order.id } });
+        if (existing) return convToDomain(existing);
         const created = await tx.conversation.create({
           data: {
             studioId: order.studioId,
@@ -52,15 +52,22 @@ export class PrismaChatRepository implements ChatRepository {
           },
         });
         return convToDomain(created);
-      } catch (e) {
-        // Corrida: outra transação já criou — relê.
-        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-          const again = await tx.conversation.findFirst({ where: { orderId: order.id } });
-          if (again) return convToDomain(again);
-        }
-        throw e;
+      });
+    } catch (e) {
+      // Corrida: duas chamadas concorrentes (cliente e tatuador abrindo o
+      // pedido quase ao mesmo tempo, por exemplo) tentaram criar a mesma
+      // conversa. A transação que perdeu a corrida já foi ABORTADA pelo
+      // Postgres nesse ponto — reler dentro dela (tx) sempre falha com
+      // "current transaction is aborted" (25P02), mesmo pra um SELECT. Só
+      // uma transação NOVA e limpa consegue reler o que a outra criou.
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+        const existing = await withStudio(order.studioId, (tx) =>
+          tx.conversation.findFirst({ where: { orderId: order.id } }),
+        );
+        if (existing) return convToDomain(existing);
       }
-    });
+      throw e;
+    }
   }
 
   async listMessages(
