@@ -2,8 +2,20 @@ import { NextResponse } from "next/server";
 import { UPLOAD_LIMITS, isPlatformAdmin, membershipIn, type Actor, type UploadPurpose } from "@inkvision/core";
 import { withUser } from "@inkvision/db";
 import { getActor } from "@/server/auth-context";
-import { storage } from "@/server/container";
+import { storage, usingMockStorage } from "@/server/container";
 import { rateLimit, sameOrigin } from "@/server/rate-limit";
+
+/**
+ * Sem R2 real, o PUT do upload passa pelo sink mock (uma function da
+ * Vercel) em vez de ir direto pro storage — e funções da Vercel têm um
+ * limite FIXO de 4,5 MB de corpo de requisição (não é configurável por
+ * código). Sem esse teto extra aqui, o cliente recebia um ticket "válido"
+ * pra um arquivo de, digamos, 12 MB (dentro do limite de `reference`) e só
+ * descobria que não dava depois de escolher o arquivo e esperar o PUT
+ * falhar com um erro genérico. Com R2 configurado, o PUT vai direto pro
+ * bucket e esse teto deixa de se aplicar.
+ */
+const MOCK_STORAGE_SAFE_MAX_BYTES = 4 * 1024 * 1024;
 
 /**
  * O actor tem uma relação legítima com este estúdio — como membro da equipe
@@ -71,6 +83,15 @@ export async function POST(req: Request) {
   }
   if (sizeBytes <= 0 || sizeBytes > limit.maxBytes) {
     return NextResponse.json({ error: "Arquivo excede o tamanho máximo" }, { status: 413 });
+  }
+  if (usingMockStorage && sizeBytes > MOCK_STORAGE_SAFE_MAX_BYTES) {
+    return NextResponse.json(
+      {
+        error:
+          "Arquivo grande demais para o ambiente de teste atual (máx. 4 MB sem armazenamento real configurado).",
+      },
+      { status: 413 },
+    );
   }
 
   const ticket = await storage.createUploadUrl({

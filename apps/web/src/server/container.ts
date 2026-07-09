@@ -142,10 +142,10 @@ const metrics = new PrismaMetricsRepository();
 const auditRead = new PrismaAuditReadRepository();
 
 /** R2 real quando as credenciais estão no env; mock no dev. */
-export const storage =
-  process.env.R2_ACCOUNT_ID && process.env.R2_ACCESS_KEY_ID
-    ? new R2StorageService()
-    : new MockStorageService(process.env.APP_URL ?? "");
+export const usingMockStorage = !(process.env.R2_ACCOUNT_ID && process.env.R2_ACCESS_KEY_ID);
+export const storage = usingMockStorage
+  ? new MockStorageService(process.env.APP_URL ?? "")
+  : new R2StorageService();
 
 // Precisa do storage para apagar de fato as fotos/artes do titular do bucket
 // na eliminação LGPD — sem isso, "excluir conta" desvincula o registro no
