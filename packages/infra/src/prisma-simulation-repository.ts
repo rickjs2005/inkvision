@@ -16,6 +16,7 @@ function toDomain(s: {
   designUrl: string;
   bodyPhotoUrl: string;
   composedImageUrl: string | null;
+  composedMaskUrl: string | null;
   placement: Prisma.JsonValue;
   variants: Prisma.JsonValue;
   provider: string;
@@ -31,6 +32,7 @@ function toDomain(s: {
     designUrl: s.designUrl,
     bodyPhotoUrl: s.bodyPhotoUrl,
     composedImageUrl: s.composedImageUrl,
+    composedMaskUrl: s.composedMaskUrl,
     placement: s.placement as unknown as SimulationPlacement,
     variants: (s.variants as unknown as SimulationVariants | null) ?? null,
     provider: s.provider,
@@ -51,6 +53,7 @@ export class PrismaSimulationRepository implements SimulationRepository {
         designUrl: data.designUrl,
         bodyPhotoUrl: data.bodyPhotoUrl,
         composedImageUrl: data.composedImageUrl ?? null,
+        composedMaskUrl: data.composedMaskUrl ?? null,
         placement: data.placement as unknown as Prisma.InputJsonValue,
         provider: data.provider,
         status: "QUEUED",

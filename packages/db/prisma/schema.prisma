@@ -393,6 +393,10 @@ model Simulation {
   /// pelo cliente — é o que de fato vai para o provider de IA, para que o
   /// modelo receba a arte real em vez de só uma referência textual no prompt.
   composedImageUrl String?
+  /// Máscara binária (branco = área a repintar, preto = preservar), mesma
+  /// posição/escala/rotação da arte — restringe a IA a só alterar pixels
+  /// dentro do desenho colado, em vez de reformular a foto inteira.
+  composedMaskUrl  String?
   placement       Json
   variants        Json?
   provider        String

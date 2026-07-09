@@ -22,6 +22,8 @@ export interface Simulation {
   bodyPhotoUrl: string;
   /** Foto + arte já compostas (canvas) na posição escolhida — o que vai para a IA. */
   composedImageUrl: string | null;
+  /** Máscara (branco = área a repintar) na mesma posição — restringe a IA à área da arte. */
+  composedMaskUrl: string | null;
   placement: SimulationPlacement;
   variants: SimulationVariants | null;
   provider: string;
@@ -37,6 +39,7 @@ export interface CreateSimulationData {
   designUrl: string;
   bodyPhotoUrl: string;
   composedImageUrl?: string;
+  composedMaskUrl?: string;
   placement: SimulationPlacement;
   provider: string;
 }

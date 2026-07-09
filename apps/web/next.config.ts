@@ -19,7 +19,7 @@ const csp = [
   "object-src 'none'",
   `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://images.unsplash.com https://*.r2.dev https://*.cloudflarestorage.com",
+  "img-src 'self' data: blob: https://images.unsplash.com https://*.r2.dev https://*.cloudflarestorage.com https://*.fal.media",
   "font-src 'self' data:",
   "media-src 'self' https: blob:",
   `connect-src 'self' ${realtime} ${realtimeWs}`,
@@ -76,6 +76,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.r2.dev" },
       { protocol: "https", hostname: "**.cloudflarestorage.com" },
       { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "**.fal.media" },
     ],
   },
 };

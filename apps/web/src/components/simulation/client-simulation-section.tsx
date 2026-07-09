@@ -12,7 +12,7 @@ import {
 } from "@/server/actions/simulation";
 import { Camera, Check, ImageUp, Loader2, Sparkles } from "lucide-react";
 import { uploadFile } from "@/lib/upload";
-import { composeTattooImage } from "@/lib/compose-tattoo";
+import { composeTattooImage, composeTattooMask } from "@/lib/compose-tattoo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SimulationEditor } from "./simulation-editor";
@@ -109,13 +109,23 @@ export function ClientSimulationSection({
       try {
         // Compõe a arte real sobre a foto ANTES de enviar — sem isso, a IA só
         // recebe a foto crua e nunca vê o desenho de verdade (ver auditoria).
-        const blob = await composeTattooImage(bodyPhotoUrl, designUrl, placement);
-        const file = new File([blob], "composicao.jpg", { type: "image/jpeg" });
-        const composed = await uploadFile(file, "body-photo", studioId);
+        // A máscara (mesma posição) restringe a IA a só repintar a área do
+        // desenho — sem ela, um img2img puro pode reformular a foto inteira.
+        const [imageBlob, maskBlob] = await Promise.all([
+          composeTattooImage(bodyPhotoUrl, designUrl, placement),
+          composeTattooMask(bodyPhotoUrl, designUrl, placement),
+        ]);
+        const imageFile = new File([imageBlob], "composicao.jpg", { type: "image/jpeg" });
+        const maskFile = new File([maskBlob], "mascara.png", { type: "image/png" });
+        const [composed, mask] = await Promise.all([
+          uploadFile(imageFile, "body-photo", studioId),
+          uploadFile(maskFile, "body-photo", studioId),
+        ]);
         const res = await requestSimulationAction(orderId, {
           bodyPhotoUrl,
           placement,
           composedImageUrl: composed.publicUrl,
+          composedMaskUrl: mask.publicUrl,
         });
         setBusy(false);
         if (res.ok) {

@@ -24,6 +24,14 @@ export interface SimulationRequest {
    * referenciada só por texto no prompt.
    */
   composedImageUrl?: string;
+  /**
+   * Máscara binária (branco = área a repintar, preto = preservar) na mesma
+   * posição/escala/rotação da arte. Com ela, um provider de inpainting só
+   * pode alterar pixels dentro do desenho colado — o resto da foto (roupa,
+   * rosto, outras tatuagens) fica preservado por arquitetura, não só por
+   * instrução de prompt.
+   */
+  composedMaskUrl?: string;
   placement: TattooPlacement;
 }
 

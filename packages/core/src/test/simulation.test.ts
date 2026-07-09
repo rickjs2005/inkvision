@@ -62,6 +62,7 @@ class InMemorySimulationRepo implements SimulationRepository {
       id: `s_${this.sims.length + 1}`,
       ...data,
       composedImageUrl: data.composedImageUrl ?? null,
+      composedMaskUrl: data.composedMaskUrl ?? null,
       variants: null,
       status: "QUEUED",
       errorMessage: null,

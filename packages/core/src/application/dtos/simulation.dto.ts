@@ -29,6 +29,8 @@ export const requestSimulationSchema = z.object({
   bodyPhotoUrl: z.string().url(),
   /** Foto + arte já compostas (canvas), na posição escolhida — vai para a IA. */
   composedImageUrl: z.string().url().optional(),
+  /** Máscara (branco = área a repintar), mesma posição — restringe a IA à área da arte. */
+  composedMaskUrl: z.string().url().optional(),
   placement: placementSchema.default({ x: 0.5, y: 0.5, scale: 1, rotation: 0 }),
 });
 export type RequestSimulationInput = z.infer<typeof requestSimulationSchema>;

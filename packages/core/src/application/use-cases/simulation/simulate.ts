@@ -37,6 +37,7 @@ export class RequestSimulationUseCase {
       designUrl: design.imageUrl,
       bodyPhotoUrl: input.bodyPhotoUrl,
       composedImageUrl: input.composedImageUrl,
+      composedMaskUrl: input.composedMaskUrl,
       placement: input.placement,
       provider: this.deps.provider.name,
     });
@@ -74,6 +75,7 @@ export class ProcessSimulationUseCase {
         bodyPhotoUrl: sim.bodyPhotoUrl,
         designUrl: sim.designUrl,
         composedImageUrl: sim.composedImageUrl ?? undefined,
+        composedMaskUrl: sim.composedMaskUrl ?? undefined,
         placement: sim.placement,
       });
       await this.deps.simulations.markDone(simulationId, result.variants, result.provider);
