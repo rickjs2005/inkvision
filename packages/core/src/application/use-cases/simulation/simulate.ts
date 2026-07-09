@@ -153,7 +153,7 @@ export class ApproveSimulationUseCase {
       await this.deps.notifications.create({
         userId: artist.userId,
         type: "simulation.approved",
-        payload: { orderId },
+        payload: { orderId, artistId: artist.id },
       });
   }
 }

@@ -120,12 +120,14 @@ export default async function PainelPage() {
         ) : (
           <ul>
             {notifications.map((n) => {
-              const orderId = (n.payload as { orderId?: string }).orderId;
+              const payload = n.payload as { orderId?: string; artistId?: string };
+              const { orderId, artistId } = payload;
               const text = NOTIF_TEXT[n.type] ?? n.type;
               const unread = n.readAt === null;
-              // Só a notificação do cliente (orçamento) leva à rota do cliente;
-              // as do lado do estúdio são navegadas pelo painel do tatuador.
-              const href = n.type === "order.quoted" && orderId ? `/pedidos/${orderId}` : null;
+              // Notificação do lado do estúdio (tem artistId no payload) leva
+              // direto pro pedido na visão do tatuador; do contrário, é uma
+              // notificação do cliente e leva pro pedido na visão dele.
+              const href = !orderId ? null : artistId ? `/artista/${artistId}/pedidos/${orderId}` : `/pedidos/${orderId}`;
               const body = (
                 <>
                   <span className="flex w-4 shrink-0 justify-center pt-1.5">
@@ -213,9 +215,14 @@ export default async function PainelPage() {
                       </Button>
                     )}
                     {artistIdByStudio.has(s.id) && (
-                      <Button size="sm" variant="outline" asChild>
-                        <Link href={`/artista/${artistIdByStudio.get(s.id)}`}>Meu perfil</Link>
-                      </Button>
+                      <>
+                        <Button size="sm" asChild>
+                          <Link href={`/artista/${artistIdByStudio.get(s.id)}/pedidos`}>Pedidos</Link>
+                        </Button>
+                        <Button size="sm" variant="outline" asChild>
+                          <Link href={`/artista/${artistIdByStudio.get(s.id)}`}>Meu perfil</Link>
+                        </Button>
+                      </>
                     )}
                     <Button size="sm" variant="ghost" asChild>
                       {/* Estúdio não publicado só aparece na prévia (a página pública é estática, só ACTIVE). */}

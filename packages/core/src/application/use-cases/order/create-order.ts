@@ -34,7 +34,7 @@ export class CreateOrderUseCase {
     await this.deps.notifications.create({
       userId: artist.userId,
       type: "order.submitted",
-      payload: { orderId: order.id, clientId: actor.userId },
+      payload: { orderId: order.id, clientId: actor.userId, artistId: artist.id },
     });
     await this.deps.audit.log({
       studioId: artist.studioId,

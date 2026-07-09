@@ -67,7 +67,7 @@ export class ScheduleSessionUseCase {
       await this.deps.notifications.create({
         userId: artist.userId,
         type: "session.scheduled",
-        payload: { orderId, startsAt: startsAt.toISOString() },
+        payload: { orderId, startsAt: startsAt.toISOString(), artistId: artist.id },
       });
     }
     const client = await this.deps.users.findById(actor.userId);
@@ -117,7 +117,7 @@ export class RescheduleSessionUseCase {
       await this.deps.notifications.create({
         userId: artist.userId,
         type: "session.rescheduled",
-        payload: { orderId, startsAt: startsAt.toISOString() },
+        payload: { orderId, startsAt: startsAt.toISOString(), artistId: artist.id },
       });
     }
     const client = await this.deps.users.findById(actor.userId);

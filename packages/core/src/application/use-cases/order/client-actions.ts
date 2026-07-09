@@ -28,7 +28,7 @@ export class AcceptQuoteUseCase {
       await this.deps.notifications.create({
         userId: artist.userId,
         type: "order.accepted",
-        payload: { orderId },
+        payload: { orderId, artistId: artist.id },
       });
     }
     return updated;
@@ -57,7 +57,7 @@ export class CancelOrderUseCase {
       await this.deps.notifications.create({
         userId: artist.userId,
         type: "order.cancelled",
-        payload: { orderId },
+        payload: { orderId, artistId: artist.id },
       });
     }
     return updated;

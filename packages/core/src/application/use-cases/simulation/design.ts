@@ -99,7 +99,11 @@ export class ReviewDesignUseCase {
         actorId: actor.userId,
       });
       if (artist)
-        await this.deps.notifications.create({ userId: artist.userId, type: "design.approved", payload: { orderId } });
+        await this.deps.notifications.create({
+          userId: artist.userId,
+          type: "design.approved",
+          payload: { orderId, artistId: artist.id },
+        });
     } else {
       await this.deps.designs.setStatus(latest.id, "CHANGES_REQUESTED", input.feedback ?? null);
       await this.deps.orders.transition(orderId, order.studioId, {
@@ -109,7 +113,11 @@ export class ReviewDesignUseCase {
         metadata: { feedback: input.feedback },
       });
       if (artist)
-        await this.deps.notifications.create({ userId: artist.userId, type: "design.changes", payload: { orderId } });
+        await this.deps.notifications.create({
+          userId: artist.userId,
+          type: "design.changes",
+          payload: { orderId, artistId: artist.id },
+        });
     }
   }
 }

@@ -106,7 +106,7 @@ export class ConfirmOrderPaymentUseCase {
       await this.deps.notifications.create({
         userId: artist.userId,
         type: kind === "DEPOSIT" ? "payment.deposit_paid" : "payment.final_paid",
-        payload: { orderId },
+        payload: { orderId, artistId: artist.id },
       });
     }
     await this.deps.audit.log({
@@ -153,7 +153,7 @@ export class ConfirmPaymentByReferenceUseCase {
       await this.deps.notifications.create({
         userId: artist.userId,
         type: kind === "DEPOSIT" ? "payment.deposit_paid" : "payment.final_paid",
-        payload: { orderId },
+        payload: { orderId, artistId: artist.id },
       });
     }
     await this.deps.audit.log({

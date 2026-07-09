@@ -50,7 +50,7 @@ export class ReviewOrderUseCase {
       await this.deps.notifications.create({
         userId: artist.userId,
         type: "order.reviewed",
-        payload: { orderId, rating: input.rating },
+        payload: { orderId, rating: input.rating, artistId: artist.id },
       });
     }
     return review;

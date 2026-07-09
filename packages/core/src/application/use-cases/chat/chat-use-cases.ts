@@ -91,7 +91,7 @@ export class SendClientMessageUseCase {
       await this.deps.notifications.create({
         userId: recipientUserId,
         type: "chat.message",
-        payload: { orderId, conversationId: conversation.id },
+        payload: { orderId, conversationId: conversation.id, artistId: artist!.id },
       });
     }
     return { message, conversationId: conversation.id, recipientUserId };
