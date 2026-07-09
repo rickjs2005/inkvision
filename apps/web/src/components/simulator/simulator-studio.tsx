@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Camera, Download, ImageUp, Move, RotateCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AuthAwareCta } from "@/components/marketing/auth-aware-cta";
 import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import { DESIGNS } from "./designs";
@@ -444,13 +445,16 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
             Isto é uma prévia. Com um artista da InkVision, a IA aplica o desenho com perspectiva, luz
             e sombra reais — e você agenda a sessão.
           </p>
-          <Button asChild size="lg" className="group/cta mt-4 w-full">
-            <Link href="/cadastro">
-              <Sparkles className="transition-transform group-hover/cta:rotate-12" />
-              Fazer com um artista
-              <ArrowRight className="transition-transform group-hover/cta:translate-x-0.5" />
-            </Link>
-          </Button>
+          <AuthAwareCta
+            size="lg"
+            className="group/cta mt-4 w-full"
+            anonHref="/cadastro"
+            authedHref="/tatuadores"
+          >
+            <Sparkles className="transition-transform group-hover/cta:rotate-12" />
+            Fazer com um artista
+            <ArrowRight className="transition-transform group-hover/cta:translate-x-0.5" />
+          </AuthAwareCta>
           <p className="mt-2 text-center font-mono text-xs text-muted-foreground">
             Grátis <span className="text-primary">·</span> sem cartão
           </p>

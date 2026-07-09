@@ -8,6 +8,7 @@ import {
   getPublicArtistReviews,
 } from "@/server/public-cache";
 import { Button } from "@/components/ui/button";
+import { AuthAwareCta } from "@/components/marketing/auth-aware-cta";
 import { PersonJsonLd } from "@/components/seo/json-ld";
 import { PortfolioGallery } from "./portfolio-gallery";
 
@@ -174,13 +175,16 @@ export default async function ArtistPublicPage({
 
         {/* CTA dominante — simular na própria pele */}
         <div className="mt-9 flex flex-wrap items-center gap-3">
-          <Button size="lg" asChild className="group/cta">
-            <Link href="/cadastro">
-              <Sparkles className="transition-transform group-hover/cta:rotate-12" />
-              Simular tatuagem com {firstName}
-              <ArrowRight className="transition-transform group-hover/cta:translate-x-0.5" />
-            </Link>
-          </Button>
+          <AuthAwareCta
+            size="lg"
+            className="group/cta"
+            anonHref="/cadastro"
+            authedHref={`/pedidos/novo/${artist.id}`}
+          >
+            <Sparkles className="transition-transform group-hover/cta:rotate-12" />
+            Simular tatuagem com {firstName}
+            <ArrowRight className="transition-transform group-hover/cta:translate-x-0.5" />
+          </AuthAwareCta>
           <Button size="lg" variant="outline" asChild>
             <Link href={`/pedidos/novo/${artist.id}`}>
               Iniciar um projeto

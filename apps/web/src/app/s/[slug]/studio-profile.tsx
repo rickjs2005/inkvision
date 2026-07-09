@@ -3,6 +3,7 @@ import { ArrowRight, MapPin, Phone, Sparkles, Users } from "lucide-react";
 import type { Artist, Studio } from "@inkvision/core";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AuthAwareCta } from "@/components/marketing/auth-aware-cta";
 import { LocalBusinessJsonLd } from "@/components/seo/json-ld";
 import type { StudioPortfolioItem } from "@/server/public-cache";
 import { StudioTeam } from "./studio-team";
@@ -68,13 +69,16 @@ export function StudioProfile({
 
         {/* CTA dominante — começar projeto / conhecer os artistas */}
         <div className="mt-9 flex flex-wrap items-center gap-3">
-          <Button size="lg" asChild className="group/cta">
-            <Link href="/cadastro">
-              <Sparkles className="transition-transform group-hover/cta:rotate-12" />
-              Começar projeto
-              <ArrowRight className="transition-transform group-hover/cta:translate-x-0.5" />
-            </Link>
-          </Button>
+          <AuthAwareCta
+            size="lg"
+            className="group/cta"
+            anonHref="/cadastro"
+            authedHref={`/tatuadores?studio=${encodeURIComponent(studio.name)}`}
+          >
+            <Sparkles className="transition-transform group-hover/cta:rotate-12" />
+            Começar projeto
+            <ArrowRight className="transition-transform group-hover/cta:translate-x-0.5" />
+          </AuthAwareCta>
           <Button size="lg" variant="outline" asChild>
             <Link href="/tatuadores">
               <Users />
