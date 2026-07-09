@@ -79,7 +79,14 @@ export function Hero({ stats, artists }: { stats: PublicStats | null; artists: A
   function search(e: React.FormEvent) {
     e.preventDefault();
     const query = q.trim();
-    router.push(query ? `/tatuadores?q=${encodeURIComponent(query)}` : "/tatuadores");
+    if (!query) {
+      router.push("/tatuadores");
+      return;
+    }
+    // "Tatuador"/"Estilo" seguem filtrando pelo nome do tatuador (?q=);
+    // "Cidade" e "Estúdio" usam parâmetros dedicados no backend.
+    const param = mode === "cidade" ? "city" : mode === "estudio" ? "studio" : "q";
+    router.push(`/tatuadores?${param}=${encodeURIComponent(query)}`);
   }
 
   const rise = {

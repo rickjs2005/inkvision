@@ -10,7 +10,7 @@ const DEMO_IMAGES = [
   "https://images.unsplash.com/photo-1565058379802-bbe93b2f703a",
   "https://images.unsplash.com/photo-1611501275019-9b5cda994e8d",
   "https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28",
-  "https://images.unsplash.com/photo-1590246814883-57c511e76523",
+  "https://images.unsplash.com/photo-1513078094721-e7b6e0394a6a",
   "https://images.unsplash.com/photo-1543059080-f9b1272213d5",
   "https://images.unsplash.com/photo-1562962230-16e4623d36e6",
 ];

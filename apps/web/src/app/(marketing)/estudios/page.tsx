@@ -5,6 +5,7 @@ import { ArrowUpRight, MapPin } from "lucide-react";
 import { prisma } from "@inkvision/db";
 import { getPublicStats } from "@/server/queries/home";
 import { ProofStrip } from "@/components/marketing/proof-strip";
+import { logError } from "@/lib/logger";
 
 export const metadata: Metadata = {
   title: "Estúdios",
@@ -13,25 +14,35 @@ export const metadata: Metadata = {
 
 export const revalidate = 300;
 
+// IMPORTANTE: não engolir exceções aqui dentro — se a query falhar, o erro deve
+// propagar para fora de unstable_cache. Se fosse capturado e convertido em `[]`
+// aqui, o Next cachearia esse `[]` por `revalidate` segundos e mascararia uma
+// falha real de banco como "nenhum estúdio publicado" pelo período do cache.
 const getStudios = unstable_cache(
   async () => {
-    try {
-      return await prisma.studio.findMany({
-        where: { status: "ACTIVE" },
-        select: { slug: true, name: true, description: true, addressCity: true, addressState: true },
-        orderBy: { createdAt: "desc" },
-        take: 48,
-      });
-    } catch {
-      return [];
-    }
+    return prisma.studio.findMany({
+      where: { status: "ACTIVE" },
+      select: { slug: true, name: true, description: true, addressCity: true, addressState: true },
+      orderBy: { createdAt: "desc" },
+      take: 48,
+    });
   },
   ["public-studios"],
   { revalidate: 300, tags: ["public-studios"] },
 );
 
 export default async function StudiosPage() {
-  const [studios, stats] = await Promise.all([getStudios(), getPublicStats()]);
+  // Dispara as duas buscas em paralelo, mas trata a falha da listagem de
+  // estúdios isoladamente — um erro aqui não deve derrubar as estatísticas
+  // (que usam outra query) nem ser confundido com "lista vazia" genuína.
+  const studiosPromise = getStudios().catch((err) => {
+    logError(err, { scope: "estudios-page", query: "public-studios" });
+    return null;
+  });
+  const stats = await getPublicStats();
+  const studiosResult = await studiosPromise;
+  const loadFailed = studiosResult === null;
+  const studios = studiosResult ?? [];
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-16">
@@ -45,15 +56,20 @@ export default async function StudiosPage() {
           Estúdios
         </h1>
         <p className="font-mono text-sm text-muted-foreground">
-          {String(studios.length).padStart(2, "0")}{" "}
-          {studios.length === 1 ? "estúdio" : "estúdios"}
+          {loadFailed
+            ? "— indisponível"
+            : `${String(studios.length).padStart(2, "0")} ${studios.length === 1 ? "estúdio" : "estúdios"}`}
         </p>
       </div>
 
       {/* Faixa de prova social — números reais da rede */}
       <ProofStrip stats={stats} show={["rating", "simulations", "reviews"]} />
 
-      {studios.length === 0 ? (
+      {loadFailed ? (
+        <p className="mt-16 font-display text-2xl text-destructive" role="alert">
+          Não foi possível carregar os estúdios agora. Tente novamente em alguns instantes.
+        </p>
+      ) : studios.length === 0 ? (
         <p className="mt-16 font-display text-2xl text-muted-foreground">
           Nenhum estúdio publicado ainda.
         </p>

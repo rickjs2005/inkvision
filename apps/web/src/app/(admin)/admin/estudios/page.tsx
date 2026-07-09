@@ -55,6 +55,7 @@ export default async function AdminStudiosPage({
               <tr className="border-b border-border">
                 <th className="eyebrow px-6 py-4 text-left">Estúdio</th>
                 <th className="eyebrow px-6 py-4 text-left">Slug</th>
+                <th className="eyebrow px-6 py-4 text-left">Dono</th>
                 <th className="eyebrow px-6 py-4 text-left">Status</th>
                 <th className="eyebrow px-6 py-4 text-right">Ações</th>
               </tr>
@@ -62,7 +63,7 @@ export default async function AdminStudiosPage({
             <tbody>
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-16 text-center text-muted-foreground">
+                  <td colSpan={5} className="px-6 py-16 text-center text-muted-foreground">
                     Nenhum estúdio ainda. Cadastre o primeiro acima.
                   </td>
                 </tr>
@@ -76,6 +77,7 @@ export default async function AdminStudiosPage({
                   >
                     <td className="px-6 py-4 font-medium">{s.name}</td>
                     <td className="px-6 py-4 font-mono text-muted-foreground">/{s.slug}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{s.ownerEmail ?? "—"}</td>
                     <td className="px-6 py-4">
                       <Badge variant={badge.variant}>{badge.text}</Badge>
                     </td>

@@ -60,19 +60,28 @@ function Moth() {
   );
 }
 
+// Raios do sol: 12 posições fixas ao redor do círculo — não dependem de props
+// nem de estado, então são pré-computados uma única vez em module scope.
+// Arredondados para evitar mismatch de hidratação (SSR x cliente serializam
+// o mesmo float com precisão diferente no último dígito).
+const SUN_RAYS = Array.from({ length: 12 }).map((_, i) => {
+  const a = (i * Math.PI) / 6;
+  return {
+    x1: Number((50 + Math.cos(a) * 26).toFixed(4)),
+    y1: Number((52 + Math.sin(a) * 26).toFixed(4)),
+    x2: Number((50 + Math.cos(a) * 32).toFixed(4)),
+    y2: Number((52 + Math.sin(a) * 32).toFixed(4)),
+  };
+});
+
 function SunMoon() {
   return (
     <svg viewBox="0 0 100 130" {...stroke}>
       <circle cx="50" cy="52" r="20" />
       <path d="M50 20 C58 30 58 74 50 84 C64 80 72 67 72 52 C72 37 64 24 50 20 Z" fill="currentColor" opacity={0.9} />
-      {Array.from({ length: 12 }).map((_, i) => {
-        const a = (i * Math.PI) / 6;
-        const x1 = 50 + Math.cos(a) * 26;
-        const y1 = 52 + Math.sin(a) * 26;
-        const x2 = 50 + Math.cos(a) * 32;
-        const y2 = 52 + Math.sin(a) * 32;
-        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} strokeWidth={1.4} />;
-      })}
+      {SUN_RAYS.map((ray, i) => (
+        <line key={i} x1={ray.x1} y1={ray.y1} x2={ray.x2} y2={ray.y2} strokeWidth={1.4} />
+      ))}
       <path d="M50 96 L50 118" strokeWidth={1.2} />
       <circle cx="50" cy="118" r="1.6" fill="currentColor" stroke="none" />
     </svg>

@@ -1,6 +1,7 @@
 import type { StudioRole } from "@inkvision/shared";
 import {
   prisma,
+  withAdmin,
   withStudio,
   type Prisma,
   type Studio as PrismaStudio,
@@ -14,7 +15,7 @@ import type {
   UpdateStudioData,
 } from "@inkvision/core";
 
-function toDomain(s: PrismaStudio): Studio {
+function toDomain(s: PrismaStudio, ownerEmail?: string | null): Studio {
   return {
     id: s.id,
     slug: s.slug,
@@ -33,6 +34,7 @@ function toDomain(s: PrismaStudio): Studio {
     status: s.status as StudioStatus,
     stripeAccountId: s.stripeAccountId,
     createdAt: s.createdAt,
+    ownerEmail: ownerEmail ?? null,
   };
 }
 
@@ -99,7 +101,19 @@ export class PrismaStudioRepository implements StudioRepository {
       }),
       prisma.studio.count({ where }),
     ]);
-    return { items: rows.map(toDomain), total };
+    if (rows.length === 0) return { items: [], total };
+
+    // StudioMember está sob RLS (isolamento por tenant) — leitura cross-tenant
+    // do e-mail do dono (para a tabela de admin) exige contexto de admin.
+    const owners = await withAdmin((tx) =>
+      tx.studioMember.findMany({
+        where: { studioId: { in: rows.map((r) => r.id) }, role: "OWNER" },
+        include: { user: { select: { email: true } } },
+      }),
+    );
+    const emailByStudioId = new Map(owners.map((m) => [m.studioId, m.user.email]));
+
+    return { items: rows.map((r) => toDomain(r, emailByStudioId.get(r.id))), total };
   }
 
   async setStatus(id: string, status: StudioStatus): Promise<Studio> {
@@ -122,5 +136,18 @@ export class PrismaStudioRepository implements StudioRepository {
     await withStudio(studioId, (tx) =>
       tx.studioMember.create({ data: { studioId, userId, role } }),
     );
+  }
+
+  async findPendingByOwner(userId: string): Promise<Studio | null> {
+    // StudioMember está sob RLS — leitura cross-tenant exige contexto de admin
+    // (usado só para o aviso não-bloqueante de "dono já tem estúdio pendente").
+    const member = await withAdmin((tx) =>
+      tx.studioMember.findFirst({
+        where: { userId, role: "OWNER", studio: { status: "PENDING" } },
+        include: { studio: true },
+        orderBy: { createdAt: "desc" },
+      }),
+    );
+    return member ? toDomain(member.studio) : null;
   }
 }

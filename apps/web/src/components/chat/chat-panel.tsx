@@ -61,10 +61,11 @@ export function ChatPanel({
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const socketRef = useRef<Socket | null>(null);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
   const flowRef = useRef<HTMLDivElement | null>(null);
   // Ao PREPENDER histórico, o auto-scroll pro fim deve ficar quieto.
   const skipAutoScroll = useRef(false);
+  // Primeira rolagem (montagem com histórico existente) é instantânea; as seguintes, suaves.
+  const didMountScroll = useRef(false);
   const seen = useRef(new Set(initialMessages.map((m) => m.id)));
 
   function append(m: ChatMessage) {
@@ -121,7 +122,13 @@ export function ChatPanel({
       skipAutoScroll.current = false;
       return;
     }
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const flow = flowRef.current;
+    if (!flow) return;
+    // Rola apenas o contêiner do chat — nunca a janela. Na montagem (histórico já
+    // existente) o salto é instantâneo; mensagens novas depois disso animam suavemente.
+    const behavior: ScrollBehavior = didMountScroll.current ? "smooth" : "auto";
+    didMountScroll.current = true;
+    flow.scrollTo({ top: flow.scrollHeight, behavior });
   }, [messages.length, peerTyping]);
 
   async function submit(input: SendMessageInput) {
@@ -276,7 +283,6 @@ export function ChatPanel({
             </div>
           </div>
         )}
-        <div ref={bottomRef} />
       </div>
 
       {/* Barra de composição */}

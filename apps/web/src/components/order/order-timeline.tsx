@@ -19,6 +19,22 @@ export function OrderTimeline({ events }: { events: OrderEvent[] }) {
     return <p className="text-sm text-muted-foreground">Sem histórico ainda.</p>;
   }
 
+  // QUOTED->QUOTED é uma re-orçamento (ver order-state-machine.ts). Para não
+  // exibir "Orçado" duas vezes de forma ambígua, distinguimos o primeiro envio
+  // de uma revisão contando a ordem cronológica dos eventos QUOTED.
+  const quotedChronological = [...events]
+    .filter((e) => e.to === "QUOTED")
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  const quotedRevisionIndexById = new Map(quotedChronological.map((e, i) => [e.id, i]));
+
+  function labelFor(e: OrderEvent): string {
+    if (e.to === "QUOTED") {
+      const revisionIndex = quotedRevisionIndexById.get(e.id) ?? 0;
+      return revisionIndex === 0 ? "Orçamento enviado" : "Orçamento revisado";
+    }
+    return ORDER_STATUS_LABEL[e.to as OrderStatus];
+  }
+
   return (
     <ol className="relative ml-1 border-l border-border pl-5">
       {events.map((e, i) => {
@@ -33,7 +49,7 @@ export function OrderTimeline({ events }: { events: OrderEvent[] }) {
               }
             />
             <p className={isLatest ? "text-sm font-medium text-foreground" : "text-sm text-foreground"}>
-              {ORDER_STATUS_LABEL[e.to as OrderStatus]}
+              {labelFor(e)}
             </p>
             <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
               {fmt.format(new Date(e.createdAt))}

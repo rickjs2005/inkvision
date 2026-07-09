@@ -18,6 +18,8 @@ const id = (p: string) => `${p}_${(++seq).toString(36)}`;
 
 export class InMemoryArtistRepo implements ArtistRepository {
   artists: Artist[] = [];
+  /** Simula o StudioMember (role ARTIST) criado junto do ArtistProfile na mesma transação. */
+  memberships: { studioId: string; userId: string; role: "ARTIST" }[] = [];
 
   seed(a: Partial<Artist> & Pick<Artist, "userId" | "studioId">): Artist {
     const artist: Artist = {
@@ -42,8 +44,15 @@ export class InMemoryArtistRepo implements ArtistRepository {
   async addArtist(studioId: string, userId: string) {
     return this.seed({ studioId, userId });
   }
+  async addArtistWithMembership(studioId: string, userId: string) {
+    this.memberships.push({ studioId, userId, role: "ARTIST" });
+    return this.seed({ studioId, userId });
+  }
   async findById(idv: string) {
     return this.artists.find((a) => a.id === idv) ?? null;
+  }
+  async findByUserId(userId: string) {
+    return this.artists.find((a) => a.userId === userId) ?? null;
   }
   async findByUserAndStudio(userId: string, studioId: string) {
     return this.artists.find((a) => a.userId === userId && a.studioId === studioId) ?? null;

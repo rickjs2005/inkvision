@@ -43,8 +43,28 @@ export class PrismaArtistRepository implements ArtistRepository {
     return this.mustFindById(created.id);
   }
 
+  /**
+   * Cria o StudioMember (role ARTIST) e o ArtistProfile na mesma transação
+   * `withStudio`, para que uma falha em qualquer uma das duas escritas (ex.:
+   * violação do @unique global de ArtistProfile.userId) desfaça a outra —
+   * sem isso, um StudioMember órfão fica gravado.
+   */
+  async addArtistWithMembership(studioId: string, userId: string): Promise<Artist> {
+    const created = await withStudio(studioId, async (tx) => {
+      await tx.studioMember.create({ data: { studioId, userId, role: "ARTIST" } });
+      return tx.artistProfile.create({ data: { studioId, userId } });
+    });
+    return this.mustFindById(created.id);
+  }
+
   async findById(id: string): Promise<Artist | null> {
     const a = await prisma.artistProfile.findUnique({ where: { id }, include: artistInclude });
+    return a ? toDomain(a) : null;
+  }
+
+  /** ArtistProfile.userId é @unique globalmente — no máximo um por usuário. */
+  async findByUserId(userId: string): Promise<Artist | null> {
+    const a = await prisma.artistProfile.findUnique({ where: { userId }, include: artistInclude });
     return a ? toDomain(a) : null;
   }
 
@@ -98,7 +118,11 @@ export class PrismaArtistRepository implements ArtistRepository {
   async listPublic(params: ListPublicArtistsParams): Promise<{ items: Artist[]; total: number }> {
     const where: Prisma.ArtistProfileWhereInput = {
       isActive: true,
-      studio: { status: "ACTIVE" },
+      studio: {
+        status: "ACTIVE",
+        ...(params.city ? { addressCity: { contains: params.city, mode: "insensitive" } } : {}),
+        ...(params.studioName ? { name: { contains: params.studioName, mode: "insensitive" } } : {}),
+      },
       ...(params.styleSlug ? { styles: { some: { style: { slug: params.styleSlug } } } } : {}),
       ...(params.query ? { user: { name: { contains: params.query, mode: "insensitive" } } } : {}),
     };

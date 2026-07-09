@@ -40,7 +40,26 @@ describe("Artistas + Portfólio", () => {
 
     const artist = await uc.execute(owner, STUDIO, { email: "novo@t.com" });
     expect(artist.userId).toBe("u_new");
-    expect(studios.members).toContainEqual({ studioId: STUDIO, userId: "u_new", role: "ARTIST" });
+    expect(artists.memberships).toContainEqual({ studioId: STUDIO, userId: "u_new", role: "ARTIST" });
+  });
+
+  it("rejeita usuário que já é tatuador em outro estúdio, sem criar StudioMember órfão", async () => {
+    await studios.create({ slug: "alma", name: "Alma" });
+    studios.studios[0]!.id = STUDIO;
+    const OUTRO_STUDIO = "studio_outro";
+    const users = new InMemoryUserRepo([{ id: "u_ja_tatuador", name: "Já Tatuador", email: "ja@t.com" }]);
+    // Usuário já tem ArtistProfile em outro estúdio (ArtistProfile.userId é @unique globalmente).
+    artists.seed({ userId: "u_ja_tatuador", studioId: OUTRO_STUDIO });
+
+    const uc = new AddArtistUseCase({ artists, styles, users, studios, audit, subscriptions: new InMemorySubscriptionRepo() });
+
+    await expect(uc.execute(owner, STUDIO, { email: "ja@t.com" })).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+    // Nenhum StudioMember novo (para o estúdio que tentou adicionar) foi criado.
+    expect(artists.memberships.find((m) => m.studioId === STUDIO)).toBeUndefined();
+    // E o ArtistProfile continua único — nenhum novo perfil foi criado para este estúdio.
+    expect(artists.artists.filter((a) => a.studioId === STUDIO)).toHaveLength(0);
   });
 
   it("estranho não pode adicionar tatuador", async () => {

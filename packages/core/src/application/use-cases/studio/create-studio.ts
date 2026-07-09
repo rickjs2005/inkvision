@@ -6,6 +6,13 @@ import { createStudioSchema, type CreateStudioInput } from "../../dtos/studio.dt
 import type { Studio } from "../../ports/studio-repository";
 import type { StudioUseCaseDeps } from "./deps";
 
+/** Resultado da criação — `ownerHasPendingStudio` é um aviso não-bloqueante, não um erro. */
+export interface CreateStudioResult {
+  studio: Studio;
+  /** O dono já era OWNER de outro estúdio ainda em PENDING (onboarding não concluído). */
+  ownerHasPendingStudio: boolean;
+}
+
 /**
  * Admin da plataforma cria um estúdio (status PENDING) e vincula o dono
  * (usuário existente) como OWNER. O dono completa o onboarding depois.
@@ -13,7 +20,7 @@ import type { StudioUseCaseDeps } from "./deps";
 export class CreateStudioUseCase {
   constructor(private readonly deps: StudioUseCaseDeps) {}
 
-  async execute(actor: Actor, rawInput: CreateStudioInput): Promise<Studio> {
+  async execute(actor: Actor, rawInput: CreateStudioInput): Promise<CreateStudioResult> {
     assertPlatformAdmin(actor);
     const input = parseInput(createStudioSchema, rawInput);
 
@@ -23,6 +30,10 @@ export class CreateStudioUseCase {
         "O dono precisa ter uma conta InkVision antes de receber um estúdio.",
       );
     }
+
+    // Não bloqueia a criação (pode ser intencional), só sinaliza para o admin
+    // revisar — evita duplicar estúdios "esquecidos" em onboarding.
+    const pendingStudio = await this.deps.studios.findPendingByOwner(owner.id);
 
     const slug = await this.resolveSlug(input.slug ?? slugify(input.name));
 
@@ -42,7 +53,7 @@ export class CreateStudioUseCase {
       metadata: { slug, ownerId: owner.id },
     });
 
-    return studio;
+    return { studio, ownerHasPendingStudio: pendingStudio !== null };
   }
 
   /** Garante slug válido e único. Slug explícito em conflito falha; derivado recebe sufixo. */

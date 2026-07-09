@@ -5,6 +5,7 @@ import { prisma } from "@inkvision/db";
 import { repositories } from "@/server/container";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { MarkReadButton } from "./mark-read-button";
 
 const ROLE_LABEL: Record<string, string> = { OWNER: "Dono", MANAGER: "Gerente", ARTIST: "Tatuador" };
@@ -89,6 +90,7 @@ export default async function PainelPage() {
           <Button variant="outline" size="sm" asChild>
             <Link href="/conta">Conta</Link>
           </Button>
+          <SignOutButton />
         </div>
       </div>
 

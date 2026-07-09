@@ -16,11 +16,16 @@ export const metadata: Metadata = {
   alternates: { canonical: `${APP_URL}/tatuadores` },
 };
 
-/** Monta a querystring preservando estilo/q e trocando a página. */
-function pageHref(sp: { estilo?: string; q?: string }, page: number): string {
+/** Monta a querystring preservando os filtros ativos e trocando a página. */
+function pageHref(
+  sp: { estilo?: string; q?: string; city?: string; studio?: string },
+  page: number,
+): string {
   const qs = new URLSearchParams();
   if (sp.estilo) qs.set("estilo", sp.estilo);
   if (sp.q) qs.set("q", sp.q);
+  if (sp.city) qs.set("city", sp.city);
+  if (sp.studio) qs.set("studio", sp.studio);
   if (page > 1) qs.set("page", String(page));
   const s = qs.toString();
   return s ? `/tatuadores?${s}` : "/tatuadores";
@@ -29,15 +34,17 @@ function pageHref(sp: { estilo?: string; q?: string }, page: number): string {
 export default async function ArtistsDiscoveryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ estilo?: string; q?: string; page?: string }>;
+  searchParams: Promise<{ estilo?: string; q?: string; city?: string; studio?: string; page?: string }>;
 }) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
-  const [styles, { items, total }, stats] = await Promise.all([
-    repositories.styles.listAll(),
+  const [styles, { items, total, failed }, stats] = await Promise.all([
+    repositories.styles.listAll().catch(() => []),
     getDiscoveryArtists({
       styleSlug: sp.estilo,
       query: sp.q,
+      city: sp.city,
+      studioName: sp.studio,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
@@ -91,7 +98,11 @@ export default async function ArtistsDiscoveryPage({
         ))}
       </div>
 
-      {items.length === 0 ? (
+      {failed ? (
+        <p className="mt-16 font-display text-2xl text-muted-foreground">
+          Não foi possível carregar os tatuadores agora. Tente novamente em instantes.
+        </p>
+      ) : items.length === 0 ? (
         <p className="mt-16 font-display text-2xl text-muted-foreground">
           Nenhum tatuador para este filtro.
         </p>

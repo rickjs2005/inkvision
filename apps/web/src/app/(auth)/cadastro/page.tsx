@@ -7,6 +7,7 @@ import { User, Mail } from "lucide-react";
 import { signUp } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Field, PasswordField, SocialButtons, AuthDivider, Benefits, AuthProof } from "@/components/auth/auth-ui";
+import { mapAuthError } from "@/components/auth/auth-errors";
 
 const isEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 
@@ -31,7 +32,7 @@ export default function CadastroPage() {
       password: String(form.get("password")),
     });
     setLoading(false);
-    if (error) return setError(error.message ?? "Não foi possível cadastrar.");
+    if (error) return setError(mapAuthError(error, "Não foi possível cadastrar. Tente novamente."));
     router.push("/painel");
     router.refresh();
   }

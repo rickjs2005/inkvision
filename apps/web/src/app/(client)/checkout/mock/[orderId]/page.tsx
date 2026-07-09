@@ -3,6 +3,7 @@ import { DomainError } from "@inkvision/core";
 import { requireActor } from "@/server/auth-context";
 import { useCases } from "@/server/container";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { formatBRL } from "@/lib/format-currency";
 import { ConfirmButton } from "./confirm-button";
 
 export default async function MockCheckoutPage({
@@ -43,7 +44,7 @@ export default async function MockCheckoutPage({
         <CardContent className="flex flex-col gap-6">
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Valor</p>
-            <p className="text-4xl font-bold">R$ {(amountCents / 100).toFixed(2)}</p>
+            <p className="text-4xl font-bold">{formatBRL(amountCents)}</p>
           </div>
           <ConfirmButton orderId={orderId} kind={kind} />
         </CardContent>

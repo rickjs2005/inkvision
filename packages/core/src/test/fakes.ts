@@ -68,6 +68,10 @@ export class InMemoryStudioRepo implements StudioRepository {
   async addMember(studioId: string, userId: string, role: StudioRole) {
     this.members.push({ studioId, userId, role });
   }
+  async findPendingByOwner(userId: string) {
+    const ownedIds = this.members.filter((m) => m.userId === userId && m.role === "OWNER").map((m) => m.studioId);
+    return this.studios.find((s) => ownedIds.includes(s.id) && s.status === "PENDING") ?? null;
+  }
 }
 
 export class InMemoryUserRepo implements UserRepository {

@@ -5,7 +5,11 @@ import { useCases } from "@/server/container";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-const brl = (cents: number) => `R$ ${(cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0 })}`;
+// `null` = a query dessa métrica falhou (ver PrismaMetricsRepository) — mostra
+// "—" em vez de tratar como zero, que seria um dado real e diferente.
+const brl = (cents: number | null) =>
+  cents == null ? "—" : `R$ ${(cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0 })}`;
+const fmt = (n: number | null) => (n == null ? "—" : String(n));
 const monthLabel = (ym: string) => {
   const [y, m] = ym.split("-");
   return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "short" });
@@ -61,7 +65,10 @@ function PanelHead({ eyebrow, title }: { eyebrow: string; title: string }) {
   );
 }
 
-function BarList({ data }: { data: { key: string; count: number }[] }) {
+function BarList({ data }: { data: { key: string; count: number }[] | null }) {
+  if (data === null) {
+    return <p className="text-sm text-destructive">Indisponível agora — tente recarregar a página.</p>;
+  }
   const max = Math.max(1, ...data.map((d) => d.count));
   if (data.length === 0) return <p className="text-sm text-muted-foreground">Sem dados ainda.</p>;
   return (
@@ -83,7 +90,7 @@ export default async function AdminDashboardPage() {
   const actor = await requirePlatformAdmin();
   const m = await useCases.getPlatformMetrics.execute(actor);
 
-  const maxRev = Math.max(1, ...m.monthlyRevenueCents.map((x) => x.cents));
+  const maxRev = Math.max(1, ...(m.monthlyRevenueCents ?? []).map((x) => x.cents));
 
   return (
     <div className="flex flex-col gap-10">
@@ -110,7 +117,7 @@ export default async function AdminDashboardPage() {
           className="lg:col-span-3"
           eyebrow="MRR · Receita recorrente"
           value={brl(m.mrrCents)}
-          hint={`${m.subscriptions.active} assinaturas ativas`}
+          hint={`${fmt(m.subscriptions.active)} assinaturas ativas`}
         />
         <HeroMetric
           className="lg:col-span-2"
@@ -124,21 +131,23 @@ export default async function AdminDashboardPage() {
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3">
         <Kpi
           label="Estúdios"
-          value={String(m.studios.total)}
-          hint={`${m.studios.active} ativos · ${m.studios.pending} onboarding`}
+          value={fmt(m.studios.total)}
+          hint={`${fmt(m.studios.active)} ativos · ${fmt(m.studios.pending)} onboarding`}
         />
-        <Kpi label="Clientes" value={String(m.users)} hint={`${m.artists} tatuadores`} />
-        <Kpi label="Pedidos" value={String(m.orders.total)} hint={`${m.orders.completed} concluídos`} />
-        <Kpi label="Imagens de IA" value={String(m.aiImages)} hint="geradas na plataforma" />
-        <Kpi label="Estúdios suspensos" value={String(m.studios.suspended)} />
-        <Kpi label="Assinaturas ativas" value={String(m.subscriptions.active)} />
+        <Kpi label="Clientes" value={fmt(m.users)} hint={`${fmt(m.artists)} tatuadores`} />
+        <Kpi label="Pedidos" value={fmt(m.orders.total)} hint={`${fmt(m.orders.completed)} concluídos`} />
+        <Kpi label="Imagens de IA" value={fmt(m.aiImages)} hint="geradas na plataforma" />
+        <Kpi label="Estúdios suspensos" value={fmt(m.studios.suspended)} />
+        <Kpi label="Assinaturas ativas" value={fmt(m.subscriptions.active)} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="overflow-hidden p-0">
           <PanelHead eyebrow="Financeiro" title="Receita — últimos 6 meses" />
           <div className="p-6">
-            {m.monthlyRevenueCents.length === 0 ? (
+            {m.monthlyRevenueCents === null ? (
+              <p className="text-sm text-destructive">Indisponível agora — tente recarregar a página.</p>
+            ) : m.monthlyRevenueCents.length === 0 ? (
               <p className="text-sm text-muted-foreground">Sem pagamentos ainda.</p>
             ) : (
               <div className="flex h-44 items-end gap-3">

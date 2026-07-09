@@ -26,6 +26,14 @@ export class AddArtistUseCase {
     const existing = await this.deps.artists.findByUserAndStudio(user.id, studioId);
     if (existing) throw new ConflictError("Este usuário já é tatuador do estúdio.");
 
+    // ArtistProfile é único por usuário em toda a plataforma (não por estúdio):
+    // se o usuário já é tatuador em OUTRO estúdio, falha aqui, antes de
+    // qualquer escrita — evita StudioMember órfão.
+    const existingElsewhere = await this.deps.artists.findByUserId(user.id);
+    if (existingElsewhere) {
+      throw new ValidationError("Este usuário já é tatuador em outro estúdio.");
+    }
+
     // Gate do plano: respeita o limite de tatuadores da assinatura (ou trial).
     const sub = await this.deps.subscriptions.getActiveForStudio(studioId);
     const maxArtists = sub?.maxArtists ?? FREE_TIER_MAX_ARTISTS;
@@ -36,8 +44,7 @@ export class AddArtistUseCase {
       );
     }
 
-    await this.deps.studios.addMember(studioId, user.id, "ARTIST");
-    const artist = await this.deps.artists.addArtist(studioId, user.id);
+    const artist = await this.deps.artists.addArtistWithMembership(studioId, user.id);
 
     await this.deps.audit.log({
       studioId,

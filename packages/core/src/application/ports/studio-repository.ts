@@ -22,6 +22,8 @@ export interface Studio {
   status: StudioStatus;
   stripeAccountId?: string | null;
   createdAt: Date;
+  /** E-mail do membro OWNER — populado apenas por `list()`, para a tabela de admin. */
+  ownerEmail?: string | null;
 }
 
 export interface CreateStudioData {
@@ -58,4 +60,6 @@ export interface StudioRepository {
   setStripeAccount(id: string, accountId: string): Promise<Studio>;
   delete(id: string): Promise<void>;
   addMember(studioId: string, userId: string, role: StudioRole): Promise<void>;
+  /** Estúdio PENDING (onboarding não concluído) do qual `userId` é OWNER, se houver. */
+  findPendingByOwner(userId: string): Promise<Studio | null>;
 }

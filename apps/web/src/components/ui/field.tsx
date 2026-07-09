@@ -57,6 +57,10 @@ export function FloatingInput({
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         className={cn(baseInput, "h-14 px-3.5 pt-4", Icon && "pl-10", valid && "pr-10", className)}
+        // Extensões de navegador (gerenciadores de senha, autofill) costumam
+        // injetar atributos/estilos no <input> antes da hidratação do React,
+        // gerando um warning de mismatch que não tem relação com nosso código.
+        suppressHydrationWarning
         {...rest}
       />
       <label htmlFor={id} className={cn(floatLabel(active), Icon ? "left-10" : "left-3.5")}>
@@ -99,6 +103,9 @@ export function FloatingTextarea({
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         className={cn(baseInput, "resize-none px-3.5 pb-3 pt-6", className)}
+        // Ver comentário em FloatingInput: evita warning de hidratação vindo
+        // de atributos/estilos injetados por extensões do navegador.
+        suppressHydrationWarning
         {...rest}
       />
       <label htmlFor={id} className={cn("pointer-events-none absolute left-3.5 transition-all", active ? "top-2 text-[11px] font-medium text-muted-foreground" : "top-4 text-sm text-muted-foreground/70")}>

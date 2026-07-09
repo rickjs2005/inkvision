@@ -134,22 +134,51 @@ export function getStudioPortfolio(studioId: string): Promise<StudioPortfolioIte
 export interface DiscoveryParams {
   styleSlug?: string;
   query?: string;
+  city?: string;
+  studioName?: string;
   skip?: number;
   take?: number;
+}
+
+export interface DiscoveryResult {
+  items: Artist[];
+  total: number;
+  /** true quando a leitura falhou (ex.: banco indisponível) — nunca cacheado. */
+  failed?: boolean;
 }
 
 /**
  * Vitrine pública de tatuadores (mesma leitura da página /tatuadores).
  * Os filtros entram nas keyParts para manter a chave estável por combinação.
+ *
+ * A função cacheada lança em caso de falha (nunca fazemos catch→[] aqui
+ * dentro): isso garante que o unstable_cache nunca grava uma falha
+ * transitória como se fosse um resultado válido de "zero tatuadores". O
+ * try/catch fica só neste wrapper externo, então a PRÓXIMA requisição tenta
+ * de novo, sem esperar a janela de revalidação.
  */
-export function getDiscoveryArtists(params: DiscoveryParams) {
+export async function getDiscoveryArtists(params: DiscoveryParams): Promise<DiscoveryResult> {
   const styleSlug = params.styleSlug;
   const query = params.query;
+  const city = params.city;
+  const studioName = params.studioName;
   const skip = params.skip ?? 0;
   const take = params.take ?? 12;
-  return unstable_cache(
-    async () => useCases.listPublicArtists.execute({ styleSlug, query, skip, take }),
-    ["discovery-artists", styleSlug ?? "", query ?? "", String(skip), String(take)],
-    { tags: ["artists-discovery"], revalidate: DISCOVERY_TTL },
-  )();
+  try {
+    return await unstable_cache(
+      async () => useCases.listPublicArtists.execute({ styleSlug, query, city, studioName, skip, take }),
+      [
+        "discovery-artists",
+        styleSlug ?? "",
+        query ?? "",
+        city ?? "",
+        studioName ?? "",
+        String(skip),
+        String(take),
+      ],
+      { tags: ["artists-discovery"], revalidate: DISCOVERY_TTL },
+    )();
+  } catch {
+    return { items: [], total: 0, failed: true };
+  }
 }

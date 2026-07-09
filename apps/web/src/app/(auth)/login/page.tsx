@@ -7,6 +7,7 @@ import { Mail } from "lucide-react";
 import { signIn } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Field, PasswordField, SocialButtons, AuthDivider, AuthProof } from "@/components/auth/auth-ui";
+import { mapAuthError } from "@/components/auth/auth-errors";
 
 const isEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 
@@ -25,7 +26,7 @@ export default function LoginPage() {
       password: String(form.get("password")),
     });
     setLoading(false);
-    if (error) return setError(error.message ?? "Não foi possível entrar.");
+    if (error) return setError(mapAuthError(error, "Erro no servidor. Tente novamente em instantes."));
     router.push("/painel");
     router.refresh();
   }
@@ -46,6 +47,10 @@ export default function LoginPage() {
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <Field id="email" name="email" type="email" label="E-mail" icon={Mail} autoComplete="email" validate={isEmail} />
         <PasswordField autoComplete="current-password" />
+
+        <Link href="/esqueci-senha" className="ink-link -mt-1 self-end text-sm text-muted-foreground">
+          Esqueceu sua senha?
+        </Link>
 
         {error && (
           <p role="alert" className="text-sm text-destructive">

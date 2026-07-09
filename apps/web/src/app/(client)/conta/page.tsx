@@ -1,6 +1,7 @@
 import { requireActor } from "@/server/auth-context";
 import { getCurrentUser } from "@/server/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { LgpdPanel } from "./lgpd-panel";
 
 export default async function AccountPage() {
@@ -9,12 +10,17 @@ export default async function AccountPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      <h1 className="text-2xl font-bold">Conta & privacidade</h1>
-      {user && (
-        <p className="mt-1 text-sm text-muted-foreground">
-          {user.name} · {user.email}
-        </p>
-      )}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Conta & privacidade</h1>
+          {user && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {user.name} · {user.email}
+            </p>
+          )}
+        </div>
+        <SignOutButton />
+      </div>
 
       <Card className="mt-6">
         <CardHeader>

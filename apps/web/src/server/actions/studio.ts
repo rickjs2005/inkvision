@@ -8,22 +8,27 @@ import { useCases } from "@/server/container";
 import { enforceRateLimit } from "@/server/rate-limit";
 
 export async function createStudioAction(
-  _prev: ActionResult<{ slug: string }> | null,
+  _prev: ActionResult<{ slug: string; warning?: string }> | null,
   formData: FormData,
-): Promise<ActionResult<{ slug: string }>> {
+): Promise<ActionResult<{ slug: string; warning?: string }>> {
   const actor = await requirePlatformAdmin();
   return run(async () => {
     // requirePlatformAdmin() já restringe a um conjunto pequeno e confiável;
     // defesa em profundidade mesmo assim.
     await enforceRateLimit(`studio-admin:${actor.userId}`, 30, 60_000);
-    const studio = await useCases.createStudio.execute(actor, {
+    const { studio, ownerHasPendingStudio } = await useCases.createStudio.execute(actor, {
       name: String(formData.get("name") ?? ""),
       slug: (formData.get("slug") as string) || undefined,
       description: (formData.get("description") as string) || undefined,
       ownerEmail: String(formData.get("ownerEmail") ?? ""),
     });
     revalidatePath("/admin/estudios");
-    return { slug: studio.slug };
+    return {
+      slug: studio.slug,
+      warning: ownerHasPendingStudio
+        ? "Este e-mail já é dono de outro estúdio que ainda está em onboarding (PENDING). Verifique se não é uma duplicata."
+        : undefined,
+    };
   });
 }
 
@@ -43,6 +48,9 @@ export async function setStudioStatusAction(
     revalidateTag(`studio:${res.data.slug}`);
     // Mudar o status (ex.: SUSPENDED) pode esconder/mostrar artistas na vitrine.
     revalidateTag("artists-discovery");
+    // Qualquer mudança de status pode incluir/remover o estúdio do diretório
+    // público (/estudios), que só lista ACTIVE — invalida sempre, é barato.
+    revalidateTag("public-studios");
   }
   return res.ok ? { ok: true, data: undefined } : res;
 }
@@ -82,6 +90,9 @@ export async function completeOnboardingAction(
   if (res.ok) {
     revalidatePath("/estudio");
     revalidateTag(`studio:${res.data.slug}`);
+    // Onboarding concluído pode ter promovido o estúdio de PENDING para ACTIVE
+    // — precisa aparecer no diretório público (/estudios) sem esperar o TTL.
+    if (res.data.status === "ACTIVE") revalidateTag("public-studios");
   }
   return res.ok ? { ok: true, data: undefined } : res;
 }
