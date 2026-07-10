@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Compass, Inbox } from "lucide-react";
 import { requireActor } from "@/server/auth-context";
-import { prisma } from "@inkvision/db";
+import { prisma, withUser } from "@inkvision/db";
 import { repositories } from "@/server/container";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -69,7 +69,9 @@ export default async function PainelPage() {
     // Um tatuador/dono também pode ter pedidos como cliente em outro estúdio —
     // só escondemos "Meus pedidos" quando de fato não há nenhum, pra não
     // levar ninguém pra uma lista vazia que duplica o botão "Pedidos" do estúdio.
-    prisma.order.count({ where: { clientId: actor.userId } }),
+    // Order tem RLS (tenant OU cliente dono): sem o contexto de withUser, a
+    // política filtra tudo e o count volta 0 — o link sumia em produção.
+    withUser(actor.userId, (tx) => tx.order.count({ where: { clientId: actor.userId } })),
   ]);
   const hasUnread = notifications.some((n) => n.readAt === null);
   const hasClientOrders = clientOrdersCount > 0;
