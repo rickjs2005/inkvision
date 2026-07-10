@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { PwaRegister } from "@/components/pwa-register";
 import { Toaster } from "@/components/ui/toaster";
 import { InkBackdrop } from "@/components/brand/ink-backdrop";
+import { OfflineBanner } from "@/components/system/offline-banner";
 import "./globals.css";
 
 // Serifa de display editorial (opsz alto p/ títulos com contraste).
@@ -46,6 +47,7 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: dark)", color: "#14110e" },
     { media: "(prefers-color-scheme: light)", color: "#f4f1ea" },
   ],
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -57,7 +59,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="font-sans antialiased">
         <InkBackdrop />
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <OfflineBanner />
+          {children}
+        </ThemeProvider>
         <Toaster />
         <PwaRegister />
       </body>

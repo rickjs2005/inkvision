@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AuthAwareCta } from "@/components/marketing/auth-aware-cta";
 import { LocalBusinessJsonLd } from "@/components/seo/json-ld";
+import { WhatsAppLink } from "@/lib/whatsapp";
 import type { StudioPortfolioItem } from "@/server/public-cache";
 import { StudioTeam } from "./studio-team";
 import { StudioPortfolio } from "./studio-portfolio";
@@ -99,7 +100,9 @@ export function StudioProfile({
               <Phone className="size-3.5" />
               Telefone
             </dt>
-            <dd className="mt-2 font-mono text-base">{studio.phone}</dd>
+            <dd className="mt-2 font-mono text-base">
+              <WhatsAppLink phone={studio.phone} label={studio.phone} />
+            </dd>
           </div>
         )}
         {location && (

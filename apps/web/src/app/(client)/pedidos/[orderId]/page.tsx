@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { canTransition, DomainError } from "@inkvision/core";
 import { requireActor } from "@/server/auth-context";
-import { useCases } from "@/server/container";
+import { repositories, useCases } from "@/server/container";
 import { signRoomToken } from "@/server/realtime";
 import { StatusBadge } from "@/components/order/status-badge";
 import { OrderTimeline } from "@/components/order/order-timeline";
@@ -11,6 +11,7 @@ import { ClientSimulationSection } from "@/components/simulation/client-simulati
 import { BookingSection } from "@/components/schedule/booking-section";
 import { ReviewSection } from "@/components/review/review-section";
 import { formatBRL } from "@/lib/format-currency";
+import { WhatsAppLink } from "@/lib/whatsapp";
 import { OrderClientActions } from "./client-actions";
 import { PayButton } from "./pay-button";
 
@@ -49,6 +50,7 @@ export default async function ClientOrderDetailPage({
     review,
   } = detail;
   const roomToken = await signRoomToken(actor.userId, conversation.id);
+  const studio = await repositories.studios.findById(order.studioId);
 
   const inFlow = (FLOW_STATUSES as readonly string[]).includes(order.status);
   const canBook =
@@ -73,6 +75,13 @@ export default async function ClientOrderDetailPage({
         </h1>
         <StatusBadge status={order.status} />
       </div>
+      {studio?.phone && (
+        <WhatsAppLink
+          phone={studio.phone}
+          label="Falar com o tatuador no WhatsApp"
+          className="mt-3 inline-block text-sm"
+        />
+      )}
 
       <div className="mt-12 grid gap-x-10 gap-y-12 md:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-12">
@@ -193,6 +202,7 @@ export default async function ClientOrderDetailPage({
               studioId={order.studioId}
               currentUserId={actor.userId}
               roomToken={roomToken}
+              studioPhone={studio?.phone}
               initialMessages={messages}
               initialHasMore={hasMoreMessages}
             />

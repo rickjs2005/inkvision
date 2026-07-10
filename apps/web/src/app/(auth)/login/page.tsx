@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Mail } from "lucide-react";
 import { signIn } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,25 @@ import { mapAuthError } from "@/components/auth/auth-errors";
 
 const isEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 
+/** Só aceita destino interno relativo — nunca `//host` (protocol-relative) nem URL absoluta. */
+function sanitizeNext(next: string | null): string {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return "/painel";
+  return next;
+}
+
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginPageInner />
+    </Suspense>
+  );
+}
+
+function LoginPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = sanitizeNext(searchParams.get("next"));
+  const sessionExpired = searchParams.get("reason") === "expired";
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -27,7 +44,7 @@ export default function LoginPage() {
     });
     setLoading(false);
     if (error) return setError(mapAuthError(error, "Erro no servidor. Tente novamente em instantes."));
-    router.push("/painel");
+    router.push(next);
     router.refresh();
   }
 
@@ -36,6 +53,12 @@ export default function LoginPage() {
       <span className="eyebrow">Ateliê digital · Acesso</span>
       <h1 className="mt-3 font-display text-4xl font-light tracking-[-0.02em]">Bem-vindo de volta</h1>
       <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">Acesse sua conta InkVision.</p>
+
+      {sessionExpired && (
+        <p role="alert" className="mt-4 rounded-md border border-amber-600/30 bg-amber-500/10 px-3.5 py-2.5 text-sm text-amber-700 dark:text-amber-400">
+          Sua sessão expirou. Entre novamente para continuar.
+        </p>
+      )}
 
       <div className="mt-8">
         <SocialButtons />

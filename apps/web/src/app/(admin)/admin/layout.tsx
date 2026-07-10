@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requirePlatformAdmin } from "@/server/auth-context";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SignOutButton } from "@/components/auth/sign-out-button";
+import { Button } from "@/components/ui/button";
 
 const NAV = [
   { href: "/admin", label: "Dashboard" },
@@ -34,7 +36,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               ))}
             </nav>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/painel">Voltar ao painel</Link>
+            </Button>
+            <ThemeToggle />
+            <SignOutButton />
+          </div>
         </div>
         <nav className="flex items-center gap-6 border-t border-border px-6 py-3 sm:hidden">
           {NAV.map((n) => (

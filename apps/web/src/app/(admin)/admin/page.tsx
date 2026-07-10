@@ -15,6 +15,10 @@ const monthLabel = (ym: string) => {
   return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "short" });
 };
 
+// Com 1 mês só, a barra ocupa a largura toda e não comunica tendência
+// nenhuma — melhor um estado vazio explícito do que um gráfico enganoso.
+const MIN_MONTHS_FOR_CHART = 2;
+
 // Métrica de destaque — numeral display grande, para a hierarquia primária.
 function HeroMetric({
   eyebrow,
@@ -148,7 +152,12 @@ export default async function AdminDashboardPage() {
             {m.monthlyRevenueCents === null ? (
               <p className="text-sm text-destructive">Indisponível agora — tente recarregar a página.</p>
             ) : m.monthlyRevenueCents.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Sem pagamentos ainda.</p>
+              <p className="text-sm text-muted-foreground">Sem pagamentos nos últimos 6 meses.</p>
+            ) : m.monthlyRevenueCents.length < MIN_MONTHS_FOR_CHART ? (
+              <p className="text-sm text-muted-foreground">
+                Ainda não há dados suficientes para o gráfico — volte quando tiver pelo menos{" "}
+                {MIN_MONTHS_FOR_CHART} meses de histórico.
+              </p>
             ) : (
               <div className="flex h-44 items-end gap-3">
                 {m.monthlyRevenueCents.map((x) => (

@@ -71,12 +71,40 @@ export default async function ArtistsDiscoveryPage({
       {/* Faixa de prova social — números reais do marketplace */}
       <ProofStrip stats={stats} show={["rating", "simulations", "studios"]} />
 
+      {/* Busca por texto e cidade — GET pra própria rota, preserva os demais filtros */}
+      <form action="/tatuadores" method="GET" className="mt-8 flex flex-wrap gap-3">
+        {sp.estilo && <input type="hidden" name="estilo" value={sp.estilo} />}
+        {sp.studio && <input type="hidden" name="studio" value={sp.studio} />}
+        <input
+          type="text"
+          name="q"
+          defaultValue={sp.q ?? ""}
+          placeholder="Buscar por nome ou estúdio"
+          aria-label="Buscar por nome ou estúdio"
+          className="min-w-[200px] flex-1 border border-border bg-transparent px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+        <input
+          type="text"
+          name="city"
+          defaultValue={sp.city ?? ""}
+          placeholder="Cidade"
+          aria-label="Cidade"
+          className="w-full border border-border bg-transparent px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary sm:w-48"
+        />
+        <button
+          type="submit"
+          className="border border-border px-5 py-2.5 text-sm font-medium transition-colors hover:border-primary hover:text-primary"
+        >
+          Buscar
+        </button>
+      </form>
+
       {/* Filtros — ticks editoriais, não pílulas */}
-      <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 border-y border-border py-4">
+      <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-y border-border py-4">
         <Link
           href="/tatuadores"
           className={cn(
-            "text-sm transition-colors",
+            "inline-flex items-center py-3 text-sm transition-colors sm:py-0",
             !sp.estilo ? "font-medium text-primary" : "text-muted-foreground hover:text-foreground",
           )}
         >
@@ -87,7 +115,7 @@ export default async function ArtistsDiscoveryPage({
             key={s.id}
             href={`/tatuadores?estilo=${s.slug}`}
             className={cn(
-              "text-sm transition-colors",
+              "inline-flex items-center py-3 text-sm transition-colors sm:py-0",
               sp.estilo === s.slug
                 ? "font-medium text-primary"
                 : "text-muted-foreground hover:text-foreground",

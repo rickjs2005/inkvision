@@ -36,10 +36,19 @@ export const getActor = cache(async (): Promise<Actor | null> => {
   };
 });
 
-/** Exige sessão; redireciona para /login caso contrário. */
+/** Exige sessão; redireciona para /login (com motivo + destino original) caso contrário. */
 export async function requireActor(): Promise<Actor> {
   const actor = await getActor();
-  if (!actor) redirect("/login");
+  if (!actor) {
+    // x-pathname é injetado pelo middleware (não dá pra ler a URL atual a
+    // partir de um Server Component/layout sem esse header de request).
+    const rawPath = (await headers()).get("x-pathname");
+    const params = new URLSearchParams({ reason: "expired" });
+    if (rawPath && rawPath.startsWith("/") && !rawPath.startsWith("//")) {
+      params.set("next", rawPath);
+    }
+    redirect(`/login?${params.toString()}`);
+  }
   return actor;
 }
 

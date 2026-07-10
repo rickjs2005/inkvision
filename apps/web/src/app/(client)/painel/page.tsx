@@ -5,7 +5,6 @@ import { prisma } from "@inkvision/db";
 import { repositories } from "@/server/container";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SignOutButton } from "@/components/auth/sign-out-button";
 import { MarkReadButton } from "./mark-read-button";
 
 const ROLE_LABEL: Record<string, string> = { OWNER: "Dono", MANAGER: "Gerente", ARTIST: "Tatuador" };
@@ -26,6 +25,7 @@ const NOTIF_TEXT: Record<string, string> = {
   "session.scheduled": "Uma sessão foi agendada.",
   "session.rescheduled": "Uma sessão foi reagendada.",
   "order.reviewed": "Você recebeu uma avaliação.",
+  "order.session_done": "O tatuador marcou a sessão como realizada.",
 };
 
 const dtFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
@@ -49,7 +49,7 @@ const HEADER_BY_ROLE: Record<ReturnType<typeof primaryRole>, { eyebrow: string; 
 export default async function PainelPage() {
   const actor = await requireActor();
 
-  const [studios, notifications, ownArtistProfiles] = await Promise.all([
+  const [studios, notifications, ownArtistProfiles, clientOrdersCount] = await Promise.all([
     actor.memberships.length
       ? prisma.studio.findMany({
           where: { id: { in: actor.memberships.map((m) => m.studioId) } },
@@ -65,8 +65,13 @@ export default async function PainelPage() {
           select: { id: true, studioId: true },
         })
       : Promise.resolve([]),
+    // Um tatuador/dono também pode ter pedidos como cliente em outro estúdio —
+    // só escondemos "Meus pedidos" quando de fato não há nenhum, pra não
+    // levar ninguém pra uma lista vazia que duplica o botão "Pedidos" do estúdio.
+    prisma.order.count({ where: { clientId: actor.userId } }),
   ]);
   const hasUnread = notifications.some((n) => n.readAt === null);
+  const hasClientOrders = clientOrdersCount > 0;
   const header = HEADER_BY_ROLE[primaryRole(actor)];
   const artistIdByStudio = new Map(ownArtistProfiles.map((a) => [a.studioId, a.id]));
 
@@ -83,15 +88,11 @@ export default async function PainelPage() {
             {header.title}
           </h1>
         </div>
-        <div className="flex gap-2">
+        {hasClientOrders && (
           <Button variant="outline" size="sm" asChild>
             <Link href="/pedidos">Meus pedidos</Link>
           </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/conta">Conta</Link>
-          </Button>
-          <SignOutButton />
-        </div>
+        )}
       </div>
 
       {/* Notificações — lista com hairlines */}
@@ -207,6 +208,11 @@ export default async function PainelPage() {
                     {(role === "OWNER" || role === "MANAGER") && (
                       <Button size="sm" variant="outline" asChild>
                         <Link href={`/estudio/${s.id}/tatuadores`}>Tatuadores</Link>
+                      </Button>
+                    )}
+                    {(role === "OWNER" || role === "MANAGER") && (
+                      <Button size="sm" variant="outline" asChild>
+                        <Link href={`/estudio/${s.id}/pedidos`}>Todos os pedidos</Link>
                       </Button>
                     )}
                     {role === "OWNER" && (

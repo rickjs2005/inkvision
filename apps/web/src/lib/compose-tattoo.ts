@@ -13,7 +13,14 @@ export interface TattooPlacement {
   rotation: number;
 }
 
-/** Largura base da arte, em % da largura da foto — casa com o editor de posicionamento. */
+/**
+ * Largura base da arte, em % da largura da foto — casa com `SimulationEditor`
+ * e `SimulationView` (fluxo real de pedido, arte enviada pelo tatuador).
+ * Não confundir com `DEMO_BASE_WIDTH_PERCENT` do simulador público
+ * (`simulator-studio.tsx`): lá as artes são ícones SVG pré-definidos, não a
+ * arte real do pedido, então as duas constantes podem — e devem — variar
+ * independentemente.
+ */
 const BASE_WIDTH_PERCENT = 28;
 
 /**
@@ -23,7 +30,12 @@ const BASE_WIDTH_PERCENT = 28;
  */
 const MASK_PADDING = 1.3;
 
-function loadImage(src: string): Promise<HTMLImageElement> {
+/**
+ * Carrega uma imagem (URL ou data URI) num `HTMLImageElement`, pronta para
+ * `drawImage`. Compartilhada entre o simulador público e o editor real —
+ * não duplique: qualquer correção aqui (CORS, erro de rede) vale para os dois.
+ */
+export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -33,7 +45,8 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, w: number, h: number) {
+/** Desenha `img` cobrindo todo o retângulo `w`×`h` (crop central), tipo `object-fit: cover`. */
+export function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, w: number, h: number) {
   const r = Math.max(w / img.width, h / img.height);
   const dw = img.width * r;
   const dh = img.height * r;

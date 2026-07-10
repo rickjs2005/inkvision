@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { io, type Socket } from "socket.io-client";
-import { Check, CheckCheck, Paperclip, Send } from "lucide-react";
+import { AlertCircle, Check, CheckCheck, Paperclip, Send } from "lucide-react";
 import type { ChatMessage, SendMessageInput } from "@inkvision/core";
 import { RT } from "@inkvision/shared";
 import { uploadFile } from "@/lib/upload";
 import { cn } from "@/lib/utils";
+import { WhatsAppLink } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ActionResult } from "@/server/action-result";
@@ -31,10 +32,14 @@ function initial(name: string): string {
   return name.trim().slice(0, 1).toUpperCase() || "?";
 }
 
+/** Eco local de uma mensagem ainda não confirmada pelo servidor (ou que falhou). */
+type LocalMessage = ChatMessage & { pending?: boolean; failed?: boolean };
+
 export function ChatPanel({
   currentUserId,
   studioId,
   roomToken,
+  studioPhone,
   initialMessages,
   initialHasMore = false,
   onSend,
@@ -44,6 +49,8 @@ export function ChatPanel({
   currentUserId: string;
   studioId: string;
   roomToken: string;
+  /** Telefone do estúdio — habilita o link de fallback pro WhatsApp. */
+  studioPhone?: string | null;
   initialMessages: ChatMessage[];
   /** Há mensagens mais antigas que a primeira página. */
   initialHasMore?: boolean;
@@ -54,7 +61,7 @@ export function ChatPanel({
     beforeId: string,
   ) => Promise<ActionResult<{ items: ChatMessage[]; hasMore: boolean }>>;
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  const [messages, setMessages] = useState<LocalMessage[]>(initialMessages);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [peerTyping, setPeerTyping] = useState(false);
@@ -131,11 +138,46 @@ export function ChatPanel({
     flow.scrollTo({ top: flow.scrollHeight, behavior });
   }, [messages.length, peerTyping]);
 
+  /**
+   * Ecoa a mensagem na hora (sem esperar a ida e volta do servidor) e depois
+   * reconcilia com a versão persistida — ou marca como falha. Antes disso, a
+   * bolha só aparecia após o `await onSend(...)` resolver, então qualquer
+   * lentidão (rede, rate limit, etc.) dava a impressão de que a mensagem
+   * tinha se perdido, mesmo já persistida no banco.
+   */
   async function submit(input: SendMessageInput) {
+    const tempId = `temp-${crypto.randomUUID()}`;
+    const optimistic: LocalMessage = {
+      id: tempId,
+      conversationId: "",
+      senderId: currentUserId,
+      senderName: "",
+      kind: input.kind,
+      body: input.body ?? null,
+      attachmentUrl: input.attachmentUrl ?? null,
+      attachmentMeta: input.attachmentMeta ?? null,
+      deliveredAt: null,
+      readAt: null,
+      createdAt: new Date(),
+      pending: true,
+    };
+    seen.current.add(tempId);
+    setMessages((prev) => [...prev, optimistic]);
     setBusy(true);
     try {
       const res = await onSend(input);
-      if (res.ok) append(res.data);
+      if (res.ok) {
+        seen.current.add(res.data.id);
+        setMessages((prev) => prev.map((m) => (m.id === tempId ? res.data : m)));
+      } else {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempId ? { ...m, pending: false, failed: true } : m)),
+        );
+      }
+    } catch {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempId ? { ...m, pending: false, failed: true } : m)),
+      );
     } finally {
       setBusy(false);
     }
@@ -170,17 +212,26 @@ export function ChatPanel({
 
   return (
     <div className="flex h-[min(60vh,32rem)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-ink)]">
-      {/* Cabeçalho — carimbo de tempo real */}
+      {/* Cabeçalho — identificação da conversa + fallback de WhatsApp */}
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5">
         <span className="inline-flex items-center gap-2 eyebrow">
           <span className="size-1.5 animate-pulse rounded-full bg-primary" aria-hidden />
-          Conversa em tempo real
+          Conversa do pedido
         </span>
-        {peerTyping && (
-          <span className="font-mono text-[11px] text-primary" role="status">
-            digitando…
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {peerTyping && (
+            <span className="font-mono text-[11px] text-primary" role="status">
+              digitando…
+            </span>
+          )}
+          {studioPhone && (
+            <WhatsAppLink
+              phone={studioPhone}
+              label="Prefere falar por WhatsApp?"
+              className="text-[11px]"
+            />
+          )}
+        </div>
       </div>
 
       {/* Fluxo de mensagens */}
@@ -219,6 +270,8 @@ export function ChatPanel({
                     mine
                       ? "rounded-2xl rounded-br-sm bg-primary text-primary-foreground"
                       : "rounded-2xl rounded-bl-sm bg-muted text-foreground",
+                    m.pending && "opacity-60",
+                    m.failed && "opacity-80 ring-1 ring-destructive",
                   )}
                 >
                   {m.kind === "TEXT" && <p className="whitespace-pre-wrap">{m.body}</p>}
@@ -257,12 +310,19 @@ export function ChatPanel({
                   )}
                 >
                   <span>{formatTime(m.createdAt)}</span>
-                  {mine &&
-                    (m.readAt ? (
+                  {mine && m.failed && (
+                    <span className="inline-flex items-center gap-1 text-destructive">
+                      <AlertCircle className="size-3.5" aria-hidden />
+                      Falha ao enviar
+                    </span>
+                  )}
+                  {mine && !m.failed && !m.pending && (
+                    m.readAt ? (
                       <CheckCheck className="size-3.5 text-primary" aria-label="Lido" />
                     ) : (
                       <Check className="size-3.5" aria-label="Enviado" />
-                    ))}
+                    )
+                  )}
                 </div>
               </div>
             </div>

@@ -46,6 +46,10 @@ export async function updateArtistAction(
   if (res.ok) {
     revalidatePath(`/artista/${artistId}`);
     revalidateTag(`artist:${artistId}`);
+    // isActive pode ter mudado: a equipe e a galeria públicas do estúdio (/s/[slug])
+    // filtram por artista ativo, então precisam ser invalidadas junto.
+    revalidateTag(`studio-artists:${res.data.studioId}`);
+    revalidateTag(`studio-portfolio:${res.data.studioId}`);
     revalidateTag("artists-discovery");
   }
   return res.ok ? { ok: true, data: undefined } : res;

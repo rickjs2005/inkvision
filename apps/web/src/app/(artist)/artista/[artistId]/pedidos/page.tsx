@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowUpRight } from "lucide-react";
+import type { ComponentType } from "react";
+import { ArrowUpRight, CalendarClock, Star, Users, Wallet } from "lucide-react";
 import { DomainError } from "@inkvision/core";
+import { withStudio } from "@inkvision/db";
 import { requireActor } from "@/server/auth-context";
 import { useCases } from "@/server/container";
 import { StatusBadge } from "@/components/order/status-badge";
@@ -11,6 +13,37 @@ const dateFmt = new Intl.DateTimeFormat("pt-BR", {
   month: "short",
   year: "numeric",
 });
+
+const dateTimeFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
+
+const brl = (cents: number) =>
+  `R$ ${(cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0 })}`;
+
+// Agendamentos "ativos" — RESCHEDULED substitui CONFIRMED, os dois contam como sessão marcada.
+const UPCOMING_APPOINTMENT_STATUSES = ["CONFIRMED", "RESCHEDULED"] as const;
+
+function StatTile({
+  icon: Icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <div className="border border-border p-5">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Icon className="size-4" strokeWidth={1.5} />
+        <span className="eyebrow">{label}</span>
+      </div>
+      <p className="mt-3 font-display text-3xl font-light tabular-nums leading-tight">{value}</p>
+      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
 
 export default async function ArtistOrdersPage({
   params,
@@ -36,6 +69,26 @@ export default async function ArtistOrdersPage({
     throw e;
   }
 
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const [upcomingAppointments, monthlyRevenueCents] = await withStudio(artist.studioId, async (tx) => {
+    const appointments = await tx.appointment.findMany({
+      where: { artistId, status: { in: [...UPCOMING_APPOINTMENT_STATUSES] }, startsAt: { gte: now } },
+      orderBy: { startsAt: "asc" },
+      take: 5,
+      include: { order: { select: { bodyPart: true, client: { select: { name: true } } } } },
+    });
+    // Receita reconhecida no mês corrente: só pagamentos já confirmados (sinal + final).
+    const revenue = await tx.payment.aggregate({
+      where: { status: "SUCCEEDED", createdAt: { gte: startOfMonth }, order: { artistId } },
+      _sum: { amountCents: true },
+    });
+    return [appointments, revenue._sum.amountCents ?? 0] as const;
+  });
+
+  const distinctClients = new Set(orders.map((o) => o.clientId)).size;
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-16">
       {/* Cabeçalho editorial */}
@@ -53,8 +106,61 @@ export default async function ArtistOrdersPage({
         </p>
       </div>
 
+      {/* Resumo — agendamentos e métricas do tatuador */}
+      <section className="mt-10 border-t border-border pt-10">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <StatTile
+            icon={Star}
+            label="Nota média"
+            value={artist.ratingAvg != null ? artist.ratingAvg.toFixed(1) : "—"}
+            hint={`${artist.ratingCount} ${artist.ratingCount === 1 ? "avaliação" : "avaliações"}`}
+          />
+          <StatTile
+            icon={Wallet}
+            label="Receita do mês"
+            value={brl(monthlyRevenueCents)}
+            hint="Pagamentos confirmados"
+          />
+          <StatTile
+            icon={Users}
+            label="Clientes atendidos"
+            value={String(distinctClients)}
+            hint="Total nesse estúdio"
+          />
+        </div>
+
+        <div className="mt-8">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <CalendarClock className="size-4" strokeWidth={1.5} />
+            <span className="eyebrow">Próximos agendamentos</span>
+          </div>
+          {upcomingAppointments.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">Nenhuma sessão agendada.</p>
+          ) : (
+            <ul className="mt-3">
+              {upcomingAppointments.map((a) => (
+                <li
+                  key={a.id}
+                  className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-3"
+                >
+                  <div>
+                    <p className="text-sm">{a.order.client.name}</p>
+                    <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                      {a.order.bodyPart}
+                    </p>
+                  </div>
+                  <time className="font-mono text-xs text-muted-foreground">
+                    {dateTimeFmt.format(a.startsAt)}
+                  </time>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+
       {orders.length === 0 ? (
-        <div className="mt-14 border-t border-border pt-10">
+        <div className="mt-10 border-t border-border pt-10">
           <p className="font-display text-2xl text-muted-foreground">Nenhum pedido ainda.</p>
         </div>
       ) : (

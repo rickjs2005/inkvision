@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AuthAwareCta } from "@/components/marketing/auth-aware-cta";
 import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
+import { drawCover, loadImage } from "@/lib/compose-tattoo";
 import { DESIGNS } from "./designs";
 
 const INK = "#17120e";
@@ -19,7 +20,13 @@ const SKINS: Skin[] = [
 ];
 
 const DEFAULT_T = { x: 0.5, y: 0.46, scale: 1, rotation: 0 };
-const BASE_WIDTH = 30; // % da largura do palco
+/**
+ * Largura base da arte, em % da largura do palco. Independente do
+ * `BASE_WIDTH_PERCENT` de `compose-tattoo.ts` (28%): ali é a arte real do
+ * pedido sobre a foto do cliente; aqui são os ícones SVG de demonstração
+ * deste simulador público — os dois podem variar sem gerar inconsistência.
+ */
+const DEMO_BASE_WIDTH_PERCENT = 30;
 
 export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) {
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -176,7 +183,7 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
     clone.setAttribute("height", "130");
     const dataUrl = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(new XMLSerializer().serializeToString(clone))));
     const art = await loadImage(dataUrl);
-    const dW = (BASE_WIDTH / 100) * W * t.scale;
+    const dW = (DEMO_BASE_WIDTH_PERCENT / 100) * W * t.scale;
     const dH = (dW * art.height) / art.width;
     ctx.globalCompositeOperation = "multiply";
     ctx.save();
@@ -288,7 +295,7 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
             style={{
               left: `${t.x * 100}%`,
               top: `${t.y * 100}%`,
-              width: `${BASE_WIDTH * t.scale}%`,
+              width: `${DEMO_BASE_WIDTH_PERCENT * t.scale}%`,
               color: INK,
               transform: `translate(-50%, -50%) rotate(${t.rotation}deg)`,
             }}
@@ -503,21 +510,4 @@ function Slider({
       />
     </label>
   );
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
-  });
-}
-
-function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, W: number, H: number) {
-  const r = Math.max(W / img.width, H / img.height);
-  const w = img.width * r;
-  const h = img.height * r;
-  ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
 }

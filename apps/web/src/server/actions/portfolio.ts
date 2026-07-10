@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import type { CreatePortfolioItemInput, UpdatePortfolioItemInput } from "@inkvision/core";
 import { getActor, requireActor } from "@/server/auth-context";
 import { run, type ActionResult } from "@/server/action-result";
-import { useCases } from "@/server/container";
+import { repositories, useCases } from "@/server/container";
 import { enforceRateLimit } from "@/server/rate-limit";
 
 export async function createPortfolioItemAction(
@@ -12,14 +12,19 @@ export async function createPortfolioItemAction(
   input: CreatePortfolioItemInput,
 ): Promise<ActionResult<{ id: string }>> {
   const actor = await requireActor();
+  let studioId: string | undefined;
   const res = await run(async () => {
     const item = await useCases.createPortfolioItem.execute(actor, artistId, input);
+    studioId = item.studioId;
     return { id: item.id };
   });
   if (res.ok) {
     revalidatePath(`/artista/${artistId}`);
     revalidatePath(`/t/${artistId}`);
     revalidateTag(`artist:${artistId}`);
+    // A galeria pública do estúdio (/s/[slug]) mostra as peças recentes — precisa
+    // ser invalidada junto quando uma peça nova entra no portfólio.
+    if (studioId) revalidateTag(`studio-portfolio:${studioId}`);
     revalidateTag("artists-discovery");
   }
   return res;
@@ -31,10 +36,16 @@ export async function updatePortfolioItemAction(
   input: UpdatePortfolioItemInput,
 ): Promise<ActionResult> {
   const actor = await requireActor();
-  const res = await run(() => useCases.updatePortfolioItem.execute(actor, itemId, input));
+  let studioId: string | undefined;
+  const res = await run(async () => {
+    const item = await useCases.updatePortfolioItem.execute(actor, itemId, input);
+    studioId = item.studioId;
+    return item;
+  });
   if (res.ok) {
     revalidatePath(`/artista/${artistId}`);
     revalidateTag(`artist:${artistId}`);
+    if (studioId) revalidateTag(`studio-portfolio:${studioId}`);
   }
   return res.ok ? { ok: true, data: undefined } : res;
 }
@@ -50,6 +61,10 @@ export async function deletePortfolioItemAction(
     revalidatePath(`/t/${artistId}`);
     revalidateTag(`artist:${artistId}`);
     revalidateTag("artists-discovery");
+    // A peça já foi removida — busca o estúdio pelo artista pra invalidar a
+    // galeria pública, já que o caso de uso não retorna o item apagado.
+    const artist = await repositories.artists.findById(artistId);
+    if (artist) revalidateTag(`studio-portfolio:${artist.studioId}`);
   }
   return res;
 }

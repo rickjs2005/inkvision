@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Wordmark } from "@/components/brand/wordmark";
+import { useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { AuthNav } from "./auth-nav";
 
@@ -16,6 +17,7 @@ const NAV = [
 
 /** Header com estado de scroll — a moldura se firma ao rolar. */
 export function SiteHeader() {
+  const { data } = useSession();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -106,6 +108,30 @@ export function SiteHeader() {
                 </Link>
               </li>
             ))}
+            {/* AuthNav esconde Entrar/Criar conta abaixo de sm pra evitar overflow —
+                esses links precisam ficar acessíveis aqui no menu mobile. */}
+            {!data?.user && (
+              <>
+                <li className="border-b border-border/60 last:border-b-0">
+                  <Link
+                    href="/login"
+                    onClick={() => setMenuOpen(false)}
+                    className="block py-3 text-sm text-muted-foreground transition-colors hover:text-foreground sm:hidden"
+                  >
+                    Entrar
+                  </Link>
+                </li>
+                <li className="border-b border-border/60 last:border-b-0">
+                  <Link
+                    href="/cadastro"
+                    onClick={() => setMenuOpen(false)}
+                    className="block py-3 text-sm font-medium text-foreground sm:hidden"
+                  >
+                    Criar conta
+                  </Link>
+                </li>
+              </>
+            )}
           </ul>
         </nav>
       )}

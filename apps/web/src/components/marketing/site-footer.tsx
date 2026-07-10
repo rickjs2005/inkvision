@@ -1,33 +1,42 @@
+"use client";
+
 import Link from "next/link";
 import { TATTOO_STYLES } from "@inkvision/shared";
 import { Wordmark } from "@/components/brand/wordmark";
+import { useSession } from "@/lib/auth-client";
 
-const COLUMNS = [
-  {
-    label: "Plataforma",
-    links: [
-      { href: "/tatuadores", label: "Tatuadores" },
-      { href: "/estudios", label: "Estúdios" },
-      { href: "/cadastro", label: "Criar conta" },
-    ],
-  },
-  {
-    label: "Estilos",
-    links: TATTOO_STYLES.slice(0, 5).map((s) => ({
-      href: `/tatuadores?estilo=${s.slug}`,
-      label: s.name,
-    })),
-  },
-  {
-    label: "Para estúdios",
-    links: [
-      { href: "/cadastro", label: "Comece grátis" },
-      { href: "/login", label: "Entrar" },
-    ],
-  },
-];
+const STYLE_LINKS = TATTOO_STYLES.slice(0, 5).map((s) => ({
+  href: `/tatuadores?estilo=${s.slug}`,
+  label: s.name,
+}));
+
+// Não existe autocadastro de estúdio/tatuador (só admin cria estúdios) — o CTA
+// aqui é um convite de contato, não um link pra tela de cadastro de cliente.
+const CONTACT_HREF = "mailto:contato@inkvision.app?subject=Quero%20cadastrar%20meu%20est%C3%BAdio";
 
 export function SiteFooter() {
+  const { data } = useSession();
+  const loggedIn = Boolean(data?.user);
+
+  const columns = [
+    {
+      label: "Plataforma",
+      links: [
+        { href: "/tatuadores", label: "Tatuadores" },
+        { href: "/estudios", label: "Estúdios" },
+        loggedIn ? { href: "/painel", label: "Painel" } : { href: "/cadastro", label: "Criar conta" },
+      ],
+    },
+    { label: "Estilos", links: STYLE_LINKS },
+    {
+      label: "Para estúdios",
+      links: [
+        { href: CONTACT_HREF, label: "Fale com a gente" },
+        ...(loggedIn ? [] : [{ href: "/login", label: "Entrar" }]),
+      ],
+    },
+  ];
+
   return (
     <footer className="mt-24 border-t border-border">
       {/* Declaração editorial em display, sobreposta à régua. */}
@@ -45,7 +54,7 @@ export function SiteFooter() {
             Encontre artistas, aprove a arte no chat e veja o resultado na sua própria pele.
           </p>
         </div>
-        {COLUMNS.map((col) => (
+        {columns.map((col) => (
           <div key={col.label}>
             <p className="eyebrow mb-4">{col.label}</p>
             <ul className="flex flex-col gap-2.5 text-sm text-muted-foreground">

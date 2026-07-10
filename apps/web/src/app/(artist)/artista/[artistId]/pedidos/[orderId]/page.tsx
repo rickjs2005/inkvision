@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/order/status-badge";
 import { OrderTimeline } from "@/components/order/order-timeline";
 import { StudioChat } from "@/components/chat/studio-chat";
+import { WhatsAppLink } from "@/lib/whatsapp";
 import { QuoteForm } from "./quote-form";
 import { SendDesignPanel } from "./send-design-panel";
 import { SessionDoneButton } from "./session-done-button";
@@ -38,6 +39,7 @@ export default async function ArtistOrderDetailPage({
   }
   const { order, conversation, messages, hasMoreMessages } = conv;
   const roomToken = await signRoomToken(actor.userId, conversation.id);
+  const studio = await repositories.studios.findById(artist.studioId);
   const canQuote = canTransition(order.status, "QUOTED");
   const canDesign = DESIGNABLE.includes(order.status);
   const latestDesign = canDesign ? await repositories.designs.getLatest(order.id) : null;
@@ -55,6 +57,13 @@ export default async function ArtistOrderDetailPage({
         </h1>
         <StatusBadge status={order.status} />
       </div>
+      {studio?.phone && (
+        <WhatsAppLink
+          phone={studio.phone}
+          label="Falar com o cliente no WhatsApp"
+          className="mt-3 inline-block text-sm"
+        />
+      )}
 
       <div className="mt-10 grid gap-x-12 gap-y-12 md:grid-cols-[1.7fr_1fr]">
         <div className="flex flex-col">
@@ -159,6 +168,7 @@ export default async function ArtistOrderDetailPage({
                 studioId={artist.studioId}
                 currentUserId={actor.userId}
                 roomToken={roomToken}
+                studioPhone={studio?.phone}
                 initialMessages={messages}
                 initialHasMore={hasMoreMessages}
               />

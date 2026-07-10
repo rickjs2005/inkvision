@@ -42,7 +42,7 @@ export function CTA() {
             {/* Ações à direita */}
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row lg:flex-col lg:items-stretch">
               <Button size="lg" asChild>
-                <Link href="/cadastro">Criar conta grátis</Link>
+                <Link href="/cadastro">Criar conta</Link>
               </Button>
               <Button
                 size="lg"

@@ -295,6 +295,7 @@ export const useCases = {
 } as const;
 
 export const repositories = {
+  studios,
   styles,
   notifications,
   subscriptions,

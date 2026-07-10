@@ -60,7 +60,7 @@ export function LgpdPanel() {
         </p>
         <div>
           <Button variant="destructive" onClick={deleteAccount} disabled={pending}>
-            Excluir conta
+            {pending ? "Excluindo…" : "Excluir conta"}
           </Button>
         </div>
       </div>

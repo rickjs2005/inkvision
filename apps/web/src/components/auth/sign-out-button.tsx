@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { signOut } from "@/lib/auth-client";
 import { Button, type ButtonProps } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /** Ação de logout — usada em toda página autenticada (painel, conta). */
 export function SignOutButton({
@@ -23,7 +24,16 @@ export function SignOutButton({
   }
 
   return (
-    <Button variant={variant} size={size} className={className} onClick={handleSignOut} disabled={loading}>
+    <Button
+      variant={variant}
+      size={size}
+      // "sm" tem 36px de altura — abaixo do mínimo de 44pt recomendado pra uma
+      // ação crítica (logout) em touch. Fixamos o piso só no mobile; do sm+
+      // pra cima o tamanho passado pelo caller continua valendo como hoje.
+      className={cn("min-h-11 sm:min-h-0", className)}
+      onClick={handleSignOut}
+      disabled={loading}
+    >
       <LogOut />
       {loading ? "Saindo…" : "Sair"}
     </Button>

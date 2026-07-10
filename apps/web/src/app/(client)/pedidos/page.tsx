@@ -52,7 +52,7 @@ export default async function ClientOrdersPage() {
             <li key={o.id}>
               <Link
                 href={`/pedidos/${o.id}`}
-                className="group grid grid-cols-[2rem_1fr_auto] items-center gap-4 rounded-sm border-b border-border py-5 transition-colors hover:bg-muted/40 sm:gap-6 sm:px-2"
+                className="group grid grid-cols-[2rem_1fr_auto] items-start gap-4 rounded-sm border-b border-border py-5 transition-colors hover:bg-muted/40 sm:gap-6 sm:px-2"
               >
                 <span className="font-mono text-xs text-muted-foreground">
                   {String(i + 1).padStart(2, "0")}

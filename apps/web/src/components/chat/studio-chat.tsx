@@ -13,6 +13,7 @@ export function StudioChat({
   studioId,
   currentUserId,
   roomToken,
+  studioPhone,
   initialMessages,
   initialHasMore = false,
 }: {
@@ -20,6 +21,8 @@ export function StudioChat({
   studioId: string;
   currentUserId: string;
   roomToken: string;
+  /** Telefone do estúdio — habilita o fallback pro WhatsApp no cabeçalho do chat. */
+  studioPhone?: string | null;
   initialMessages: ChatMessage[];
   initialHasMore?: boolean;
 }) {
@@ -28,6 +31,7 @@ export function StudioChat({
       currentUserId={currentUserId}
       studioId={studioId}
       roomToken={roomToken}
+      studioPhone={studioPhone}
       initialMessages={initialMessages}
       initialHasMore={initialHasMore}
       onSend={(input: SendMessageInput) => sendStudioMessageAction(studioId, orderId, input)}

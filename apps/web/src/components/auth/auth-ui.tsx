@@ -79,8 +79,13 @@ export function PasswordField({
   const [v, setV] = useState("");
   const [focused, setFocused] = useState(false);
   const [show, setShow] = useState(false);
+  const [touched, setTouched] = useState(false);
   const active = focused || v.length > 0;
   const s = score(v);
+  // Mesma regra do `minLength` nativo, mas com mensagem estilizada — o balão
+  // de validação do navegador (não estilizado) só apareceria se a gente
+  // deixasse o evento `invalid` seguir seu curso.
+  const tooShort = v.length > 0 && v.length < 8;
 
   return (
     <div>
@@ -95,9 +100,20 @@ export function PasswordField({
           autoComplete={autoComplete}
           placeholder=" "
           value={v}
-          onChange={(e) => setV(e.target.value)}
+          onChange={(e) => {
+            setV(e.target.value);
+            if (e.target.value.length >= 8) setTouched(false);
+          }}
           onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onBlur={() => {
+            setFocused(false);
+            if (v.length > 0) setTouched(true);
+          }}
+          onInvalid={(e) => {
+            e.preventDefault();
+            setTouched(true);
+          }}
+          aria-invalid={tooShort && touched}
           className="peer h-14 w-full rounded-md border border-input bg-background/40 px-3.5 pl-10 pr-11 pt-4 text-sm outline-none transition-[border-color,box-shadow,background-color] hover:border-foreground/25 focus:border-primary/60 focus:bg-background focus:ring-4 focus:ring-primary/12"
         />
         <label htmlFor="password" className={cn("pointer-events-none absolute left-10 origin-left transition-all", active ? "top-2 text-[11px] font-medium text-muted-foreground" : "top-1/2 -translate-y-1/2 text-sm text-muted-foreground/70")}>
@@ -112,6 +128,12 @@ export function PasswordField({
           {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
         </button>
       </div>
+
+      {tooShort && touched && (
+        <p role="alert" className="mt-2 text-sm text-destructive">
+          A senha precisa ter pelo menos 8 caracteres.
+        </p>
+      )}
 
       {withStrength && v.length > 0 && (
         <div className="mt-2 flex items-center gap-2">
