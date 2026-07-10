@@ -13,10 +13,62 @@ import {
 import { Camera, Check, ImageUp, Loader2, Sparkles } from "lucide-react";
 import { uploadFile } from "@/lib/upload";
 import { composeTattooImage, composeTattooMask } from "@/lib/compose-tattoo";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SimulationEditor } from "./simulation-editor";
 import { SimulationView } from "./simulation-view";
+
+const SIM_STEPS = ["Arte", "Foto", "Posição", "Prévia"] as const;
+
+/**
+ * Barra de etapas da simulação — o fluxo tem 4 passos espalhados por vários
+ * status do pedido; sem isto cada tela aparecia solta e o cliente não sabia
+ * onde estava nem quanto faltava.
+ */
+function SimSteps({ current }: { current: number }) {
+  return (
+    <ol aria-label="Etapas da simulação" className="flex flex-wrap items-center gap-y-2">
+      {SIM_STEPS.map((label, i) => {
+        const n = i + 1;
+        const done = n < current;
+        const active = n === current;
+        return (
+          <li key={label} className="flex items-center">
+            {i > 0 && (
+              <span
+                aria-hidden
+                className={cn("mx-2 h-px w-4 sm:w-6", done || active ? "bg-primary/50" : "bg-border")}
+              />
+            )}
+            <span
+              aria-current={active ? "step" : undefined}
+              className={cn(
+                "flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider",
+                active ? "text-primary" : done ? "text-foreground/70" : "text-muted-foreground/60",
+              )}
+            >
+              <span
+                className={cn(
+                  "flex size-5 items-center justify-center rounded-full border text-[10px]",
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : done
+                      ? "border-primary/50 text-primary"
+                      : "border-border",
+                )}
+              >
+                {done ? <Check className="size-3" strokeWidth={3} /> : n}
+              </span>
+              {/* No mobile, só a etapa atual mostra o rótulo — cabe na linha. */}
+              <span className={cn(!active && "hidden sm:inline")}>{label}</span>
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 const REALTIME_URL = process.env.NEXT_PUBLIC_REALTIME_URL ?? "http://localhost:4000";
 const CENTER: SimulationPlacement = { x: 0.5, y: 0.5, scale: 1, rotation: 0 };
@@ -54,6 +106,8 @@ export function ClientSimulationSection({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [redo, setRedo] = useState(false);
+  const [adjusting, setAdjusting] = useState(false);
+  const [feedback, setFeedback] = useState("");
   const [bodyPhotoUrl, setBodyPhotoUrl] = useState<string | null>(null);
   const [placement, setPlacement] = useState<SimulationPlacement>(CENTER);
 
@@ -80,14 +134,18 @@ export function ClientSimulationSection({
     };
   }, [status, roomToken, router]);
 
-  function reviewDesign(approve: boolean) {
+  function reviewDesign(approve: boolean, fb?: string) {
     setError(null);
-    const feedback = approve ? undefined : prompt("O que ajustar na arte?") ?? "";
-    if (!approve && !feedback) return;
     startTransition(async () => {
-      const res = await reviewDesignAction(orderId, { approve, feedback });
-      if (res.ok) router.refresh();
-      else setError(res.error);
+      const res = await reviewDesignAction(orderId, {
+        approve,
+        feedback: approve ? undefined : fb,
+      });
+      if (res.ok) {
+        setAdjusting(false);
+        setFeedback("");
+        router.refresh();
+      } else setError(res.error);
     });
   }
 
@@ -165,24 +223,64 @@ export function ClientSimulationSection({
   if (status === "DESIGN_REVIEW" && design) {
     return (
       <div className="flex flex-col gap-5">
+        <SimSteps current={1} />
         <div>
-          <span className="eyebrow">A arte proposta</span>
+          <span className="eyebrow">A arte proposta · aprove o traço</span>
           <h3 className="mt-1 font-display text-2xl font-light leading-tight tracking-[-0.02em]">
-            Aprove o traço
+            Aprove a arte
           </h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Aprovando, o próximo passo é enviar uma foto para ver a arte na sua pele antes da
+            agulha.
+          </p>
         </div>
         <div className="mx-auto w-full max-w-sm overflow-hidden rounded-lg border border-border bg-card p-1.5 shadow-[var(--shadow-ink)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={design.imageUrl} alt="Arte proposta" className="w-full rounded-md" />
         </div>
-        <div className="flex flex-wrap gap-3 border-t border-border pt-5">
-          <Button onClick={() => reviewDesign(true)} disabled={pending}>
-            <Check /> Aprovar arte
-          </Button>
-          <Button variant="outline" onClick={() => reviewDesign(false)} disabled={pending}>
-            Solicitar ajustes
-          </Button>
-        </div>
+        {adjusting ? (
+          <div className="flex flex-col gap-3 border-t border-border pt-5">
+            <label htmlFor="design-feedback" className="eyebrow">
+              O que ajustar na arte?
+            </label>
+            <textarea
+              id="design-feedback"
+              rows={3}
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="Ex.: afinar o traço, diminuir o sombreado, trocar a flor…"
+              autoFocus
+              className="w-full resize-none rounded-md border border-input bg-background/40 px-3.5 py-2.5 text-sm outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground/70 focus:border-primary/60 focus:ring-4 focus:ring-primary/12"
+            />
+            <div className="flex flex-wrap gap-3">
+              <Button
+                onClick={() => reviewDesign(false, feedback.trim())}
+                disabled={pending || !feedback.trim()}
+              >
+                Enviar pedido de ajustes
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setAdjusting(false);
+                  setFeedback("");
+                }}
+                disabled={pending}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-3 border-t border-border pt-5">
+            <Button onClick={() => reviewDesign(true)} disabled={pending}>
+              <Check /> Aprovar arte
+            </Button>
+            <Button variant="outline" onClick={() => setAdjusting(true)} disabled={pending}>
+              Solicitar ajustes
+            </Button>
+          </div>
+        )}
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
     );
@@ -201,17 +299,22 @@ export function ClientSimulationSection({
     if (!bodyPhotoUrl) {
       return (
         <div className="flex flex-col gap-5">
+          <SimSteps current={2} />
           <div>
-            <span className="eyebrow">Enviar foto</span>
+            <span className="eyebrow">A tela do corpo</span>
             <h3 className="mt-1 font-display text-2xl font-light leading-tight tracking-[-0.02em]">
-              A tela do corpo
+              Envie uma foto do local
             </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Uma foto nítida da parte do corpo onde a tatuagem vai ficar — depois você posiciona a
+              arte sobre ela.
+            </p>
           </div>
           {failedBanner}
           <label className="group flex cursor-pointer flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-muted/30 px-6 py-10 text-center transition-colors hover:border-primary/50 hover:bg-muted/50">
             <ImageUp className="size-7 text-muted-foreground transition-colors group-hover:text-primary" />
             <span className="text-sm text-muted-foreground">
-              Envie uma foto da parte do corpo para posicionar a tatuagem e ver o resultado com IA.
+              Toque para escolher uma imagem do aparelho.
             </span>
             <Input
               type="file"
@@ -246,10 +349,11 @@ export function ClientSimulationSection({
     }
     return (
       <div className="flex flex-col gap-5">
+        <SimSteps current={3} />
         <div>
-          <span className="eyebrow">O ateliê · posicionar</span>
+          <span className="eyebrow">O ateliê</span>
           <h3 className="mt-1 font-display text-2xl font-light leading-tight tracking-[-0.02em]">
-            Componha a tatuagem
+            Posicione a tatuagem
           </h3>
         </div>
         {failedBanner}
@@ -277,11 +381,16 @@ export function ClientSimulationSection({
   if (status === "SIMULATING") {
     return (
       <div className="flex flex-col gap-5">
+        <SimSteps current={4} />
         <div>
-          <span className="eyebrow">Processando</span>
+          <span className="eyebrow">A tinta assenta</span>
           <h3 className="mt-1 font-display text-2xl font-light leading-tight tracking-[-0.02em]">
-            A tinta assenta
+            Gerando a simulação…
           </h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Costuma levar menos de um minuto. Pode continuar navegando — a tela atualiza sozinha
+            quando ficar pronta.
+          </p>
         </div>
         <div className="mx-auto w-full max-w-md overflow-hidden rounded-lg border border-border bg-card p-1.5 shadow-[var(--shadow-ink)]">
           <div className="relative aspect-[3/4] overflow-hidden rounded-md bg-muted">
@@ -303,11 +412,18 @@ export function ClientSimulationSection({
   if ((status === "SIMULATION_REVIEW" || status === "SIMULATION_APPROVED") && simulation) {
     return (
       <div className="flex flex-col gap-5">
+        <SimSteps current={status === "SIMULATION_APPROVED" ? 5 : 4} />
         <div>
           <span className="eyebrow">A prévia</span>
           <h3 className="mt-1 font-display text-2xl font-light leading-tight tracking-[-0.02em]">
             {status === "SIMULATION_APPROVED" ? "Simulação aprovada" : "Revise o resultado"}
           </h3>
+          {status === "SIMULATION_REVIEW" && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              É assim que a tatuagem fica na sua pele. Aprove para liberar o agendamento, ou volte
+              e ajuste a posição.
+            </p>
+          )}
         </div>
         <SimulationView
           bodyPhotoUrl={simulation.bodyPhotoUrl}

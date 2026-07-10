@@ -56,12 +56,41 @@ export default async function ClientOrderDetailPage({
   ]);
 
   const inFlow = (FLOW_STATUSES as readonly string[]).includes(order.status);
+  // Enquanto a simulação é o passo ativo, a seção vai pro TOPO da página — o
+  // cliente não deve rolar por briefing/orçamento para achar o que fazer.
+  // Em SIMULATION_APPROVED o passo ativo passa a ser o agendamento.
+  const simulationIsActiveStep = inFlow && order.status !== "SIMULATION_APPROVED";
   const canBook =
     order.status === "SIMULATION_APPROVED" ||
     order.status === "SCHEDULED" ||
     order.status === "SESSION_DONE";
   const slots = detail.slots.map((s) => s.toISOString());
   const canReview = order.status === "COMPLETED" || order.status === "REVIEWED";
+
+  const simulationSection = inFlow && (
+    <section className="border-t border-border pt-6">
+      <p className="eyebrow mb-4">Arte & simulação</p>
+      <ClientSimulationSection
+        orderId={order.id}
+        studioId={order.studioId}
+        status={order.status}
+        roomToken={roomToken}
+        design={latestDesign ? { imageUrl: latestDesign.imageUrl, feedback: latestDesign.feedback } : null}
+        simulation={
+          latestSim
+            ? {
+                bodyPhotoUrl: latestSim.bodyPhotoUrl,
+                designUrl: latestSim.designUrl,
+                placement: latestSim.placement,
+                status: latestSim.status,
+                errorMessage: latestSim.errorMessage,
+                variants: latestSim.variants,
+              }
+            : null
+        }
+      />
+    </section>
+  );
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-16">
@@ -96,6 +125,8 @@ export default async function ClientOrderDetailPage({
 
       <div className="mt-12 grid gap-x-10 gap-y-12 md:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-12">
+          {simulationIsActiveStep && simulationSection}
+
           <section className="border-t border-border pt-6">
             <p className="eyebrow mb-4">Briefing</p>
             <div className="flex flex-col gap-3 text-sm">
@@ -181,30 +212,7 @@ export default async function ClientOrderDetailPage({
             </section>
           )}
 
-          {inFlow && (
-            <section className="border-t border-border pt-6">
-              <p className="eyebrow mb-4">Arte & simulação</p>
-              <ClientSimulationSection
-                orderId={order.id}
-                studioId={order.studioId}
-                status={order.status}
-                roomToken={roomToken}
-                design={latestDesign ? { imageUrl: latestDesign.imageUrl, feedback: latestDesign.feedback } : null}
-                simulation={
-                  latestSim
-                    ? {
-                        bodyPhotoUrl: latestSim.bodyPhotoUrl,
-                        designUrl: latestSim.designUrl,
-                        placement: latestSim.placement,
-                        status: latestSim.status,
-                        errorMessage: latestSim.errorMessage,
-                        variants: latestSim.variants,
-                      }
-                    : null
-                }
-              />
-            </section>
-          )}
+          {!simulationIsActiveStep && simulationSection}
 
           <section className="border-t border-border pt-6">
             <p className="eyebrow mb-4">Conversa com {order.artistName}</p>

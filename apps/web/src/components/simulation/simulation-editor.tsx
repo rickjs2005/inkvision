@@ -91,11 +91,11 @@ export function SimulationEditor({
     <div className="flex flex-col gap-5">
       {/* Palco — superfície de papel com hairline e sombra de tinta */}
       <div className="mx-auto w-full max-w-md">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="eyebrow">O palco · posicionamento</span>
+        {/* Só a dica de gesto — o título da seção acima já diz o que fazer. */}
+        <div className="mb-2 flex items-center justify-end">
           <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
             <Move className="size-3" />
-            <span className="sm:hidden">toque e arraste · pince</span>
+            <span className="sm:hidden">toque e arraste · pince p/ tamanho e giro</span>
             <span className="hidden sm:inline">clique e arraste a arte</span>
           </span>
         </div>
@@ -168,10 +168,6 @@ export function SimulationEditor({
             className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted accent-[var(--primary)]"
           />
         </label>
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          Toque onde quer a tatuagem e arraste para ajustar. No celular, use dois dedos (pinça)
-          para tamanho e giro.
-        </p>
       </div>
     </div>
   );
