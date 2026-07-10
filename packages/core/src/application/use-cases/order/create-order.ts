@@ -19,6 +19,11 @@ export class CreateOrderUseCase {
     const artist = await this.deps.artists.findById(input.artistId);
     if (!artist) throw new NotFoundError("Tatuador");
     if (!artist.isActive) throw new ValidationError("Este tatuador não está aceitando pedidos.");
+    // Um tatuador logado consegue chegar ao formulário pela própria página
+    // pública — sem esta guarda, ele abre um pedido consigo mesmo.
+    if (artist.userId === actor.userId) {
+      throw new ValidationError("Você não pode abrir um pedido com você mesmo.");
+    }
 
     const order = await this.deps.orders.create({
       studioId: artist.studioId,

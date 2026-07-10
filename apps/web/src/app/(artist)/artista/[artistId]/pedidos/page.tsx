@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import { ArrowUpRight, CalendarClock, Star, Users, Wallet } from "lucide-react";
 import { DomainError } from "@inkvision/core";
-import { withStudio } from "@inkvision/db";
+import { withStudio, withUser } from "@inkvision/db";
 import { requireActor } from "@/server/auth-context";
-import { useCases } from "@/server/container";
+import { repositories, useCases } from "@/server/container";
 import { StatusBadge } from "@/components/order/status-badge";
+import { NotificationsSection } from "@/components/order/notifications-section";
 
 const dateFmt = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
@@ -65,9 +66,9 @@ export default async function ArtistOrdersPage({
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
   // A fila e o resumo só dependem do artist já carregado — rodam em paralelo.
-  let orders, upcomingAppointments, monthlyRevenueCents;
+  let orders, upcomingAppointments, monthlyRevenueCents, notifications, clientOrdersCount;
   try {
-    [orders, [upcomingAppointments, monthlyRevenueCents]] = await Promise.all([
+    [orders, [upcomingAppointments, monthlyRevenueCents], notifications, clientOrdersCount] = await Promise.all([
       useCases.listArtistOrders.execute(actor, artist.studioId, artistId),
       // Dentro da transação interativa as queries continuam sequenciais
       // (uma conexão só); o paralelismo é entre a tx e a fila de pedidos.
@@ -89,6 +90,11 @@ export default async function ArtistOrdersPage({
         });
         return [appointments, revenue._sum.amountCents ?? 0] as const;
       }),
+      // O tatuador puro nunca passa pelo /painel (redirect pra cá) — a caixa
+      // de notificações dele mora aqui.
+      repositories.notifications.listForUser(actor.userId, { take: 10 }),
+      // Tatuador também pode ser cliente em outro estúdio.
+      withUser(actor.userId, (tx) => tx.order.count({ where: { clientId: actor.userId } })),
     ]);
   } catch (e) {
     if (e instanceof DomainError && e.code === "FORBIDDEN") notFound();
@@ -134,6 +140,14 @@ export default async function ArtistOrdersPage({
         >
           Página pública
         </Link>
+        {clientOrdersCount > 0 && (
+          <Link
+            href="/pedidos"
+            className="ink-link font-mono text-xs uppercase tracking-widest text-muted-foreground hover:text-primary"
+          >
+            Pedidos que fiz como cliente
+          </Link>
+        )}
       </nav>
 
       {/* Resumo — agendamentos e métricas do tatuador */}
@@ -188,6 +202,8 @@ export default async function ArtistOrdersPage({
           )}
         </div>
       </section>
+
+      <NotificationsSection notifications={notifications} />
 
       {orders.length === 0 ? (
         <div className="mt-10 flex flex-col items-start gap-4 border-t border-border pt-10">

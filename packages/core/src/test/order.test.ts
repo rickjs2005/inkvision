@@ -68,6 +68,18 @@ describe("fluxo de pedido", () => {
     ).rejects.toMatchObject({ code: "UNAUTHENTICATED" });
   });
 
+  it("tatuador não abre pedido consigo mesmo (chegando pela própria página pública)", async () => {
+    const uc = new CreateOrderUseCase(deps());
+    await expect(
+      uc.execute(artistActor, {
+        artistId,
+        bodyPart: "braço",
+        briefing: "Quero tatuar a mim mesmo com a minha arte.",
+        references: [],
+      }),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+  });
+
   it("tatuador envia orçamento → QUOTED e notifica cliente", async () => {
     const order = await submit();
     const uc = new SendQuoteUseCase(deps());
