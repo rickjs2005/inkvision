@@ -153,7 +153,7 @@ export const storage = usingMockStorage
 const lgpd = new PrismaLgpdRepository(storage);
 
 const studioDeps = { studios, users, audit };
-const artistDeps = { artists, styles, users, studios, subscriptions, audit };
+const artistDeps = { artists, styles, users, studios, subscriptions, audit, notifications };
 const portfolioDeps = { portfolio, artists, styles, audit };
 const orderDeps = { orders, artists, notifications, audit, users, email, appUrl };
 const chatDeps = { chat, orders, artists, notifications };

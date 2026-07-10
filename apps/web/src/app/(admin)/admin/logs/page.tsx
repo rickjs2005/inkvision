@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { requirePlatformAdmin } from "@/server/auth-context";
 import { useCases } from "@/server/container";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 const fmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "medium" });
 
@@ -16,6 +18,9 @@ export default async function AdminLogsPage({
     page: Number(sp.page) || 1,
     action: sp.q,
   });
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const pageHref = (p: number) =>
+    `/admin/logs?page=${p}${sp.q ? `&q=${encodeURIComponent(sp.q)}` : ""}`;
 
   return (
     <div className="flex flex-col gap-10">
@@ -70,9 +75,25 @@ export default async function AdminLogsPage({
         </div>
       </Card>
 
-      <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-        Página {String(page).padStart(2, "0")} · {perPage} por página
-      </p>
+      <div className="flex items-center justify-between gap-4">
+        <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+          Página {String(page).padStart(2, "0")} de {String(totalPages).padStart(2, "0")} ·{" "}
+          {perPage} por página
+        </p>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" disabled={page <= 1} asChild={page > 1}>
+            {page > 1 ? <Link href={pageHref(page - 1)}>← Anterior</Link> : <>← Anterior</>}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            asChild={page < totalPages}
+          >
+            {page < totalPages ? <Link href={pageHref(page + 1)}>Próxima →</Link> : <>Próxima →</>}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

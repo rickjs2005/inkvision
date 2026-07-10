@@ -5,17 +5,12 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Mail } from "lucide-react";
 import { signIn } from "@/lib/auth-client";
+import { sanitizeNext, withNext } from "@/lib/sanitize-next";
 import { Button } from "@/components/ui/button";
 import { Field, PasswordField, SocialButtons, AuthDivider, AuthProof } from "@/components/auth/auth-ui";
 import { mapAuthError } from "@/components/auth/auth-errors";
 
 const isEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
-
-/** Só aceita destino interno relativo — nunca `//host` (protocol-relative) nem URL absoluta. */
-function sanitizeNext(next: string | null): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//")) return "/painel";
-  return next;
-}
 
 export default function LoginPage() {
   return (
@@ -88,7 +83,7 @@ function LoginPageInner() {
 
       <p className="mt-7 text-sm text-muted-foreground">
         Não tem conta?{" "}
-        <Link href="/cadastro" className="ink-link font-medium text-foreground">
+        <Link href={withNext("/cadastro", next)} className="ink-link font-medium text-foreground">
           Cadastre-se grátis
         </Link>
       </p>

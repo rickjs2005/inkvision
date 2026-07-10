@@ -5,6 +5,7 @@ import { requireActor } from "@/server/auth-context";
 import { repositories, useCases } from "@/server/container";
 import { signRoomToken } from "@/server/realtime";
 import { StatusBadge } from "@/components/order/status-badge";
+import { NextStepHint } from "@/components/order/next-step-hint";
 import { OrderTimeline } from "@/components/order/order-timeline";
 import { ClientChat } from "@/components/chat/client-chat";
 import { ClientSimulationSection } from "@/components/simulation/client-simulation-section";
@@ -49,8 +50,10 @@ export default async function ClientOrderDetailPage({
     appointment,
     review,
   } = detail;
-  const roomToken = await signRoomToken(actor.userId, conversation.id);
-  const studio = await repositories.studios.findById(order.studioId);
+  const [roomToken, studio] = await Promise.all([
+    signRoomToken(actor.userId, conversation.id),
+    repositories.studios.findById(order.studioId),
+  ]);
 
   const inFlow = (FLOW_STATUSES as readonly string[]).includes(order.status);
   const canBook =
@@ -62,6 +65,13 @@ export default async function ClientOrderDetailPage({
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-16">
+      <Link
+        href="/pedidos"
+        className="ink-link mb-6 inline-block font-mono text-xs uppercase tracking-widest text-muted-foreground hover:text-primary"
+      >
+        ← Meus pedidos
+      </Link>
+
       {/* Cabeçalho editorial */}
       <div className="flex items-center gap-3">
         <span className="h-px w-8 bg-primary" />
@@ -82,6 +92,7 @@ export default async function ClientOrderDetailPage({
           className="mt-3 inline-block text-sm"
         />
       )}
+      <NextStepHint status={order.status} perspective="client" />
 
       <div className="mt-12 grid gap-x-10 gap-y-12 md:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-12">

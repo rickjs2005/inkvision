@@ -31,6 +31,7 @@ export function OnboardingForm({ studioId, defaultName }: { studioId: string; de
           icon={Building2}
           defaultValue={defaultName}
           validate={(v) => v.trim().length >= 2}
+          errorMessage="O nome precisa de pelo menos 2 letras."
           required
         />
       </fieldset>
@@ -47,6 +48,7 @@ export function OnboardingForm({ studioId, defaultName }: { studioId: string; de
           type="tel"
           icon={Phone}
           validate={hasDigits(10)}
+          errorMessage="Informe DDD + número (mínimo 10 dígitos)."
           required
         />
       </fieldset>
@@ -57,11 +59,11 @@ export function OnboardingForm({ studioId, defaultName }: { studioId: string; de
       <fieldset className="grid gap-6 sm:grid-cols-[10rem_1fr]">
         <span className="eyebrow pt-4 text-muted-foreground">Endereço</span>
         <div className="grid gap-4 sm:grid-cols-2">
-          <FloatingInput id="city" name="city" label="Cidade" icon={MapPin} validate={(v) => v.trim().length >= 2} />
-          <FloatingInput id="state" name="state" label="Estado (UF)" icon={Map} validate={(v) => /^[A-Za-z]{2}$/.test(v.trim())} />
-          <FloatingInput id="zip" name="zip" label="CEP" icon={Hash} validate={hasDigits(8)} />
+          <FloatingInput id="city" name="city" label="Cidade" icon={MapPin} validate={(v) => v.trim().length >= 2} errorMessage="Nome da cidade muito curto." />
+          <FloatingInput id="state" name="state" label="Estado (UF)" icon={Map} validate={(v) => /^[A-Za-z]{2}$/.test(v.trim())} errorMessage="Use a sigla de 2 letras (ex.: SP)." />
+          <FloatingInput id="zip" name="zip" label="CEP" icon={Hash} validate={hasDigits(8)} errorMessage="O CEP tem 8 dígitos." />
           <div className="sm:col-span-2">
-            <FloatingInput id="street" name="street" label="Logradouro" icon={MapPin} validate={(v) => v.trim().length >= 3} />
+            <FloatingInput id="street" name="street" label="Logradouro" icon={MapPin} validate={(v) => v.trim().length >= 3} errorMessage="Endereço muito curto." />
           </div>
         </div>
       </fieldset>

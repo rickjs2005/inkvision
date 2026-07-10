@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { canTransition, DomainError } from "@inkvision/core";
 import { requireActor } from "@/server/auth-context";
@@ -5,9 +6,11 @@ import { repositories, useCases } from "@/server/container";
 import { signRoomToken } from "@/server/realtime";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/order/status-badge";
+import { NextStepHint } from "@/components/order/next-step-hint";
 import { OrderTimeline } from "@/components/order/order-timeline";
 import { StudioChat } from "@/components/chat/studio-chat";
 import { WhatsAppLink } from "@/lib/whatsapp";
+import { formatBRL } from "@/lib/format-currency";
 import { QuoteForm } from "./quote-form";
 import { SendDesignPanel } from "./send-design-panel";
 import { SessionDoneButton } from "./session-done-button";
@@ -38,14 +41,27 @@ export default async function ArtistOrderDetailPage({
     throw e;
   }
   const { order, conversation, messages, hasMoreMessages } = conv;
-  const roomToken = await signRoomToken(actor.userId, conversation.id);
-  const studio = await repositories.studios.findById(artist.studioId);
   const canQuote = canTransition(order.status, "QUOTED");
   const canDesign = DESIGNABLE.includes(order.status);
-  const latestDesign = canDesign ? await repositories.designs.getLatest(order.id) : null;
+  const [roomToken, studio, latestDesign, availability] = await Promise.all([
+    signRoomToken(actor.userId, conversation.id),
+    repositories.studios.findById(artist.studioId),
+    canDesign ? repositories.designs.getLatest(order.id) : null,
+    // O cliente só consegue agendar se houver horários publicados — sem eles,
+    // o passo trava em silêncio do lado de lá; aqui avisamos quem pode resolver.
+    order.status === "SIMULATION_APPROVED" ? useCases.getAvailability.execute(actor, artistId) : null,
+  ]);
+  const missingAgenda = availability !== null && availability.length === 0;
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
+      <Link
+        href={`/artista/${artistId}/pedidos`}
+        className="ink-link mb-6 inline-block font-mono text-xs uppercase tracking-widest text-muted-foreground hover:text-primary"
+      >
+        ← Pedidos
+      </Link>
+
       {/* Cabeçalho editorial — cliente / peça / status */}
       <div className="flex items-center gap-3">
         <span className="h-px w-8 bg-primary" />
@@ -63,6 +79,16 @@ export default async function ArtistOrderDetailPage({
           label="Falar com o cliente no WhatsApp"
           className="mt-3 inline-block text-sm"
         />
+      )}
+      <NextStepHint status={order.status} perspective="artist" />
+      {missingAgenda && (
+        <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+          Você ainda não publicou horários de atendimento — sem eles, o cliente não consegue
+          agendar a sessão.{" "}
+          <Link href={`/artista/${artistId}/agenda`} className="ink-link font-medium">
+            Publicar agenda
+          </Link>
+        </div>
       )}
 
       <div className="mt-10 grid gap-x-12 gap-y-12 md:grid-cols-[1.7fr_1fr]">
@@ -89,26 +115,40 @@ export default async function ArtistOrderDetailPage({
             )}
           </section>
 
-          <section className="mt-10 border-t border-border pt-8">
-            <span className="eyebrow">
-              {order.quoteAmountCents != null ? "Revisar orçamento" : "Enviar orçamento"}
-            </span>
-            <div className="mt-4">
-              {canQuote ? (
-                <QuoteForm
-                  studioId={artist.studioId}
-                  orderId={order.id}
-                  artistId={artistId}
-                  defaultQuote={order.quoteAmountCents ? order.quoteAmountCents / 100 : undefined}
-                  defaultDeposit={order.depositCents ? order.depositCents / 100 : undefined}
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  O orçamento não pode ser alterado neste estágio do pedido.
-                </p>
-              )}
-            </div>
-          </section>
+          {/* Sem orçamento possível nem valor definido, a seção não diz nada — some. */}
+          {(canQuote || order.quoteAmountCents != null) && (
+            <section className="mt-10 border-t border-border pt-8">
+              <span className="eyebrow">
+                {canQuote
+                  ? order.quoteAmountCents != null
+                    ? "Revisar orçamento"
+                    : "Enviar orçamento"
+                  : "Orçamento"}
+              </span>
+              <div className="mt-4">
+                {canQuote ? (
+                  <QuoteForm
+                    studioId={artist.studioId}
+                    orderId={order.id}
+                    artistId={artistId}
+                    defaultQuote={order.quoteAmountCents ? order.quoteAmountCents / 100 : undefined}
+                    defaultDeposit={order.depositCents ? order.depositCents / 100 : undefined}
+                  />
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    <p className="font-mono text-3xl font-light tracking-tight">
+                      {formatBRL(order.quoteAmountCents!)}
+                    </p>
+                    {order.depositCents != null && (
+                      <p className="text-sm text-muted-foreground">
+                        Sinal: <span className="font-mono text-foreground">{formatBRL(order.depositCents)}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
 
           {order.status === "SCHEDULED" && (
             <section className="mt-10 border-t border-border pt-8">

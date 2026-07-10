@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { WhatsAppLink } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/toaster";
 import type { ActionResult } from "@/server/action-result";
 
 const REALTIME_URL = process.env.NEXT_PUBLIC_REALTIME_URL ?? "http://localhost:4000";
@@ -199,8 +200,13 @@ export function ChatPanel({
     try {
       const up = await uploadFile(file, "chat", studioId);
       await submit({ kind: kindFromMime(file.type), attachmentUrl: up.publicUrl });
-    } catch {
-      /* erro de upload ignorado no dev */
+    } catch (err) {
+      // Sem isto o anexo sumia sem rastro — o usuário achava que enviou.
+      toast.error(
+        err instanceof Error && err.message
+          ? err.message
+          : "Não foi possível enviar o arquivo. Tente de novo.",
+      );
     } finally {
       setBusy(false);
     }

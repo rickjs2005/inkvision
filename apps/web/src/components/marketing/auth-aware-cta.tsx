@@ -22,10 +22,15 @@ export function AuthAwareCta({
   children,
 }: {
   authedHref: string;
-  anonHref: string;
+  /** Default: /cadastro preservando o destino — após criar a conta, o novo
+   * usuário cai onde clicou (ex.: iniciar pedido com o artista escolhido),
+   * não no painel genérico. */
+  anonHref?: string;
   children: React.ReactNode;
 } & Pick<ButtonProps, "size" | "variant" | "className">) {
-  const [href, setHref] = useState(anonHref);
+  const [href, setHref] = useState(
+    anonHref ?? `/cadastro?next=${encodeURIComponent(authedHref)}`,
+  );
 
   useEffect(() => {
     let alive = true;

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { User, Mail } from "lucide-react";
 import { signUp } from "@/lib/auth-client";
+import { sanitizeNext, withNext } from "@/lib/sanitize-next";
 import { Button } from "@/components/ui/button";
 import { Field, PasswordField, SocialButtons, AuthDivider, Benefits, AuthProof } from "@/components/auth/auth-ui";
 import { mapAuthError } from "@/components/auth/auth-errors";
@@ -12,7 +13,18 @@ import { mapAuthError } from "@/components/auth/auth-errors";
 const isEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 
 export default function CadastroPage() {
+  return (
+    <Suspense>
+      <CadastroPageInner />
+    </Suspense>
+  );
+}
+
+function CadastroPageInner() {
   const router = useRouter();
+  // Preserva o destino (ex.: CTA "Simular com X" no perfil do artista) — sem
+  // isso, o recém-cadastrado caía no painel genérico e perdia o artista.
+  const next = sanitizeNext(useSearchParams().get("next"));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -33,7 +45,7 @@ export default function CadastroPage() {
     });
     setLoading(false);
     if (error) return setError(mapAuthError(error, "Não foi possível cadastrar. Tente novamente."));
-    router.push("/painel");
+    router.push(next);
     router.refresh();
   }
 
@@ -97,7 +109,7 @@ export default function CadastroPage() {
 
       <p className="mt-7 text-sm text-muted-foreground">
         Já tem conta?{" "}
-        <Link href="/login" className="ink-link font-medium text-foreground">
+        <Link href={withNext("/login", next)} className="ink-link font-medium text-foreground">
           Entrar
         </Link>
       </p>

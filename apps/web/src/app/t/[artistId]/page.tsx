@@ -178,7 +178,6 @@ export default async function ArtistPublicPage({
           <AuthAwareCta
             size="lg"
             className="group/cta"
-            anonHref="/cadastro"
             authedHref={`/pedidos/novo/${artist.id}`}
           >
             <Sparkles className="transition-transform group-hover/cta:rotate-12" />

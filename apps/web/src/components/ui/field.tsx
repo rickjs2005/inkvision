@@ -15,8 +15,10 @@ const floatLabel = (active: boolean) =>
 
 /**
  * Campo premium com label flutuante, foco elegante (glow vermelhão), ícone
- * opcional e validação em tempo real (check verde). Uncontrolled: funciona com
- * FormData (name) e com defaultValue (edição). Padrão de qualidade do login.
+ * opcional e validação em tempo real (check verde quando válido; borda e
+ * mensagem quando inválido — só depois do primeiro blur, para não gritar
+ * enquanto a pessoa ainda digita). Uncontrolled: funciona com FormData (name)
+ * e com defaultValue (edição). Padrão de qualidade do login.
  */
 export function FloatingInput({
   id,
@@ -25,6 +27,7 @@ export function FloatingInput({
   type = "text",
   icon: Icon,
   validate,
+  errorMessage,
   defaultValue,
   className,
   ...rest
@@ -35,17 +38,21 @@ export function FloatingInput({
   type?: string;
   icon?: LucideIcon;
   validate?: (v: string) => boolean;
+  /** Mensagem inline exibida quando `validate` falha (após o campo perder o foco). */
+  errorMessage?: string;
   defaultValue?: string | number;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "id" | "name" | "type" | "defaultValue">) {
   const [val, setVal] = useState(defaultValue != null ? String(defaultValue) : "");
   const [focused, setFocused] = useState(false);
+  const [touched, setTouched] = useState(false);
   const valid = val.length > 0 && (validate ? validate(val) : false);
+  const invalid = touched && !focused && val.length > 0 && validate != null && !validate(val);
   const active = focused || val.length > 0;
 
   return (
     <div className="relative">
       {Icon && (
-        <Icon className={cn("pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 transition-colors", focused ? "text-primary" : "text-muted-foreground/70")} />
+        <Icon className={cn("pointer-events-none absolute left-3.5 top-5 size-4 transition-colors", focused ? "text-primary" : "text-muted-foreground/70")} />
       )}
       <input
         id={id}
@@ -53,10 +60,22 @@ export function FloatingInput({
         type={type}
         defaultValue={defaultValue}
         placeholder=" "
+        aria-invalid={invalid || undefined}
+        aria-describedby={invalid && errorMessage ? `${id}-error` : undefined}
         onChange={(e) => setVal(e.target.value)}
         onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        className={cn(baseInput, "h-14 px-3.5 pt-4", Icon && "pl-10", valid && "pr-10", className)}
+        onBlur={() => {
+          setFocused(false);
+          setTouched(true);
+        }}
+        className={cn(
+          baseInput,
+          "h-14 px-3.5 pt-4",
+          Icon && "pl-10",
+          valid && "pr-10",
+          invalid && "border-destructive/60 focus:border-destructive/60 focus:ring-destructive/12",
+          className,
+        )}
         // Extensões de navegador (gerenciadores de senha, autofill) costumam
         // injetar atributos/estilos no <input> antes da hidratação do React,
         // gerando um warning de mismatch que não tem relação com nosso código.
@@ -66,7 +85,12 @@ export function FloatingInput({
       <label htmlFor={id} className={cn(floatLabel(active), Icon ? "left-10" : "left-3.5")}>
         {label}
       </label>
-      {valid && <Check className="absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-emerald-500" strokeWidth={2.5} />}
+      {valid && <Check className="absolute right-3.5 top-5 size-4 text-emerald-500" strokeWidth={2.5} />}
+      {invalid && errorMessage && (
+        <p id={`${id}-error`} role="alert" className="mt-1.5 text-xs text-destructive">
+          {errorMessage}
+        </p>
+      )}
     </div>
   );
 }

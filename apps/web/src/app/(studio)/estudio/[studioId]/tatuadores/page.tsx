@@ -7,6 +7,7 @@ import { useCases } from "@/server/container";
 import { prisma } from "@inkvision/db";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { StudioNav } from "@/components/layout/studio-nav";
 import { AddArtistForm } from "./add-artist-form";
 
 export default async function StudioArtistsPage({
@@ -43,6 +44,7 @@ export default async function StudioArtistsPage({
           {artists.length === 1 ? "membro" : "membros"}
         </p>
       </div>
+      <StudioNav studioId={studioId} current="tatuadores" />
 
       {/* Adicionar tatuador */}
       <section className="mt-10 rounded-lg border border-border bg-muted/40 p-6">

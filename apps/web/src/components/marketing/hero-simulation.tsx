@@ -94,10 +94,14 @@ export function HeroSimulation() {
           ))}
         </svg>
 
-        {/* Scanner vertical */}
+        {/* Scanner vertical — anima `x` num wrapper de largura total (100% do
+            wrapper = largura do palco), não `left`: transform é composto na GPU,
+            enquanto `left` força layout/reflow a cada frame do loop infinito. */}
         {!reduce && (
-          <m.div aria-hidden className="absolute inset-y-0 w-px bg-primary shadow-[0_0_24px_5px_var(--primary)]" initial={false} animate={{ left: ["0%", "0%", "100%", "100%", "0%", "0%"] }} transition={t}>
-            <span className="absolute -left-1 top-4 size-2.5 rounded-full bg-primary shadow-[0_0_12px_3px_var(--primary)]" />
+          <m.div aria-hidden className="pointer-events-none absolute inset-0" initial={false} animate={{ x: ["0%", "0%", "100%", "100%", "0%", "0%"] }} transition={t}>
+            <div className="absolute inset-y-0 left-0 w-px bg-primary shadow-[0_0_24px_5px_var(--primary)]">
+              <span className="absolute -left-1 top-4 size-2.5 rounded-full bg-primary shadow-[0_0_12px_3px_var(--primary)]" />
+            </div>
           </m.div>
         )}
 

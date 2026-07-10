@@ -9,6 +9,7 @@ import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 
 type Kind = "IMAGE" | "BEFORE_AFTER";
@@ -78,8 +79,10 @@ export function PortfolioManager({
 
   function remove(itemId: string) {
     if (!confirm("Remover este item do portfólio?")) return;
-    startTransition(() => {
-      void deletePortfolioItemAction(itemId, artistId);
+    startTransition(async () => {
+      const res = await deletePortfolioItemAction(itemId, artistId);
+      if (res.ok) toast.success("Item removido do portfólio.");
+      else toast.error(res.error);
     });
   }
 

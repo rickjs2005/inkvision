@@ -455,7 +455,6 @@ export function SimulatorStudio({ aiEnabled = false }: { aiEnabled?: boolean }) 
           <AuthAwareCta
             size="lg"
             className="group/cta mt-4 w-full"
-            anonHref="/cadastro"
             authedHref="/tatuadores"
           >
             <Sparkles className="transition-transform group-hover/cta:rotate-12" />

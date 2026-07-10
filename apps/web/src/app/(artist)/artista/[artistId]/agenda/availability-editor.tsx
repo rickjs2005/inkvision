@@ -94,7 +94,7 @@ export function AvailabilityEditor({
                 value={d.start}
                 disabled={!d.enabled}
                 onChange={(e) => update(i, { start: e.target.value })}
-                className="h-9 rounded-md border border-input bg-background/40 px-2.5 font-mono text-sm tabular-nums transition-colors focus-visible:border-primary/60 focus-visible:outline-none disabled:opacity-40"
+                className="h-11 rounded-md border border-input bg-background/40 px-2.5 font-mono text-sm tabular-nums transition-[border-color,box-shadow] focus-visible:border-primary/60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/12 disabled:opacity-40"
               />
               <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
                 até
@@ -104,7 +104,7 @@ export function AvailabilityEditor({
                 value={d.end}
                 disabled={!d.enabled}
                 onChange={(e) => update(i, { end: e.target.value })}
-                className="h-9 rounded-md border border-input bg-background/40 px-2.5 font-mono text-sm tabular-nums transition-colors focus-visible:border-primary/60 focus-visible:outline-none disabled:opacity-40"
+                className="h-11 rounded-md border border-input bg-background/40 px-2.5 font-mono text-sm tabular-nums transition-[border-color,box-shadow] focus-visible:border-primary/60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/12 disabled:opacity-40"
               />
             </div>
           </div>

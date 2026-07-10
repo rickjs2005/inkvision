@@ -6,6 +6,7 @@ import { repositories, useCases } from "@/server/container";
 import { prisma } from "@inkvision/db";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { StudioNav } from "@/components/layout/studio-nav";
 import { ConnectButton, SubscribeButton } from "./billing-buttons";
 
 export default async function PlansPage({
@@ -46,6 +47,7 @@ export default async function PlansPage({
       <h1 className="mt-5 font-display text-5xl font-light leading-[0.95] tracking-[-0.025em] sm:text-6xl">
         Assinatura
       </h1>
+      <StudioNav studioId={studioId} current="planos" />
 
       {/* Conta de recebimento */}
       <section className="mt-12 border-t border-border pt-8">

@@ -45,19 +45,32 @@ export function SubscribeButton({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   return (
-    <Button
-      className="w-full"
-      variant={current ? "outline" : "default"}
-      disabled={busy || current}
-      onClick={async () => {
-        setBusy(true);
-        const res = await subscribeStudioAction(studioId, planSlug);
-        if (res.ok) router.push(res.data.url);
-        else setBusy(false);
-      }}
-    >
-      {current ? "Plano atual" : "Assinar"}
-    </Button>
+    <div className="flex w-full flex-col gap-2">
+      <Button
+        className="w-full"
+        variant={current ? "outline" : "default"}
+        disabled={busy || current}
+        onClick={async () => {
+          setBusy(true);
+          setError(null);
+          const res = await subscribeStudioAction(studioId, planSlug);
+          if (res.ok) {
+            router.push(res.data.url);
+          } else {
+            setBusy(false);
+            setError(res.error);
+          }
+        }}
+      >
+        {busy ? "Abrindo…" : current ? "Plano atual" : "Assinar"}
+      </Button>
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }

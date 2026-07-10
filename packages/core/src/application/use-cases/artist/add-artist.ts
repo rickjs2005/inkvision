@@ -46,6 +46,13 @@ export class AddArtistUseCase {
 
     const artist = await this.deps.artists.addArtistWithMembership(studioId, user.id);
 
+    // Sem isto, o tatuador só descobria o vínculo se reabrisse o painel por conta própria.
+    await this.deps.notifications.create({
+      userId: user.id,
+      type: "artist.added_to_studio",
+      payload: { studioId, studioName: studio.name, artistId: artist.id },
+    });
+
     await this.deps.audit.log({
       studioId,
       userId: actor.userId,

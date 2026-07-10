@@ -6,6 +6,7 @@ import type { Artist, ArtistRepository } from "../../ports/artist-repository";
 import type { StyleRepository } from "../../ports/style-repository";
 import type { UserRepository } from "../../ports/user-repository";
 import type { AuditLogger } from "../../ports/audit-logger";
+import type { NotificationRepository } from "../../ports/notification-repository";
 import type { StudioRepository } from "../../ports/studio-repository";
 import type { SubscriptionRepository } from "../../ports/subscription-repository";
 
@@ -16,6 +17,7 @@ export interface ArtistUseCaseDeps {
   studios: Pick<StudioRepository, "addMember" | "findById">;
   subscriptions: Pick<SubscriptionRepository, "getActiveForStudio">;
   audit: AuditLogger;
+  notifications: NotificationRepository;
 }
 
 /**

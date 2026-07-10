@@ -5,6 +5,8 @@ import { repositories } from "@/server/container";
 import { getDiscoveryArtists } from "@/server/public-cache";
 import { getPublicStats } from "@/server/queries/home";
 import { ProofStrip } from "@/components/marketing/proof-strip";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
@@ -75,28 +77,25 @@ export default async function ArtistsDiscoveryPage({
       <form action="/tatuadores" method="GET" className="mt-8 flex flex-wrap gap-3">
         {sp.estilo && <input type="hidden" name="estilo" value={sp.estilo} />}
         {sp.studio && <input type="hidden" name="studio" value={sp.studio} />}
-        <input
+        <Input
           type="text"
           name="q"
           defaultValue={sp.q ?? ""}
           placeholder="Buscar por nome ou estúdio"
           aria-label="Buscar por nome ou estúdio"
-          className="min-w-[200px] flex-1 border border-border bg-transparent px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          className="min-w-[200px] flex-1"
         />
-        <input
+        <Input
           type="text"
           name="city"
           defaultValue={sp.city ?? ""}
           placeholder="Cidade"
           aria-label="Cidade"
-          className="w-full border border-border bg-transparent px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary sm:w-48"
+          className="w-full sm:w-48"
         />
-        <button
-          type="submit"
-          className="border border-border px-5 py-2.5 text-sm font-medium transition-colors hover:border-primary hover:text-primary"
-        >
+        <Button type="submit" variant="outline" className="max-sm:w-full">
           Buscar
-        </button>
+        </Button>
       </form>
 
       {/* Filtros — ticks editoriais, não pílulas */}

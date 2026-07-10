@@ -5,6 +5,7 @@ import { SetArtistStylesUseCase } from "../application/use-cases/artist/set-arti
 import { CreatePortfolioItemUseCase } from "../application/use-cases/portfolio/manage-items";
 import { ToggleLikeUseCase } from "../application/use-cases/portfolio/engagement";
 import { InMemoryAudit, InMemoryStudioRepo, InMemoryUserRepo } from "./fakes";
+import { InMemoryNotificationRepo } from "./fakes-order";
 import {
   InMemoryArtistRepo,
   InMemoryPortfolioRepo,
@@ -36,11 +37,16 @@ describe("Artistas + Portfólio", () => {
     await studios.create({ slug: "alma", name: "Alma" });
     studios.studios[0]!.id = STUDIO; // fixa o id para o teste
     const users = new InMemoryUserRepo([{ id: "u_new", name: "Novo", email: "novo@t.com" }]);
-    const uc = new AddArtistUseCase({ artists, styles, users, studios, audit, subscriptions: new InMemorySubscriptionRepo() });
+    const notifications = new InMemoryNotificationRepo();
+    const uc = new AddArtistUseCase({ artists, styles, users, studios, audit, subscriptions: new InMemorySubscriptionRepo(), notifications });
 
     const artist = await uc.execute(owner, STUDIO, { email: "novo@t.com" });
     expect(artist.userId).toBe("u_new");
     expect(artists.memberships).toContainEqual({ studioId: STUDIO, userId: "u_new", role: "ARTIST" });
+    // O tatuador vinculado é avisado — sem isso ele só descobria por acaso.
+    expect(notifications.items).toContainEqual(
+      expect.objectContaining({ userId: "u_new", type: "artist.added_to_studio" }),
+    );
   });
 
   it("rejeita usuário que já é tatuador em outro estúdio, sem criar StudioMember órfão", async () => {
@@ -51,7 +57,7 @@ describe("Artistas + Portfólio", () => {
     // Usuário já tem ArtistProfile em outro estúdio (ArtistProfile.userId é @unique globalmente).
     artists.seed({ userId: "u_ja_tatuador", studioId: OUTRO_STUDIO });
 
-    const uc = new AddArtistUseCase({ artists, styles, users, studios, audit, subscriptions: new InMemorySubscriptionRepo() });
+    const uc = new AddArtistUseCase({ artists, styles, users, studios, audit, subscriptions: new InMemorySubscriptionRepo(), notifications: new InMemoryNotificationRepo() });
 
     await expect(uc.execute(owner, STUDIO, { email: "ja@t.com" })).rejects.toMatchObject({
       code: "VALIDATION",
@@ -66,7 +72,7 @@ describe("Artistas + Portfólio", () => {
     await studios.create({ slug: "alma", name: "Alma" });
     studios.studios[0]!.id = STUDIO;
     const users = new InMemoryUserRepo([{ id: "u_new", name: "Novo", email: "novo@t.com" }]);
-    const uc = new AddArtistUseCase({ artists, styles, users, studios, audit, subscriptions: new InMemorySubscriptionRepo() });
+    const uc = new AddArtistUseCase({ artists, styles, users, studios, audit, subscriptions: new InMemorySubscriptionRepo(), notifications: new InMemoryNotificationRepo() });
     await expect(uc.execute(stranger, STUDIO, { email: "novo@t.com" })).rejects.toMatchObject({
       code: "FORBIDDEN",
     });

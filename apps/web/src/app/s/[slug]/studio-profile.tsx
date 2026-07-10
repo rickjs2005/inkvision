@@ -73,7 +73,6 @@ export function StudioProfile({
           <AuthAwareCta
             size="lg"
             className="group/cta"
-            anonHref="/cadastro"
             authedHref={`/tatuadores?studio=${encodeURIComponent(studio.name)}`}
           >
             <Sparkles className="transition-transform group-hover/cta:rotate-12" />

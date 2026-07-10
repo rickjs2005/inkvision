@@ -26,6 +26,7 @@ const NOTIF_TEXT: Record<string, string> = {
   "session.rescheduled": "Uma sessão foi reagendada.",
   "order.reviewed": "Você recebeu uma avaliação.",
   "order.session_done": "O tatuador marcou a sessão como realizada.",
+  "artist.added_to_studio": "Você foi adicionado a um estúdio como tatuador.",
 };
 
 const dtFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
@@ -128,7 +129,15 @@ export default async function PainelPage() {
               // Notificação do lado do estúdio (tem artistId no payload) leva
               // direto pro pedido na visão do tatuador; do contrário, é uma
               // notificação do cliente e leva pro pedido na visão dele.
-              const href = !orderId ? null : artistId ? `/artista/${artistId}/pedidos/${orderId}` : `/pedidos/${orderId}`;
+              // Vínculo novo de tatuador (sem pedido) leva pra fila do artista.
+              const href =
+                n.type === "artist.added_to_studio" && artistId
+                  ? `/artista/${artistId}/pedidos`
+                  : !orderId
+                    ? null
+                    : artistId
+                      ? `/artista/${artistId}/pedidos/${orderId}`
+                      : `/pedidos/${orderId}`;
               const body = (
                 <>
                   <span className="flex w-4 shrink-0 justify-center pt-1.5">

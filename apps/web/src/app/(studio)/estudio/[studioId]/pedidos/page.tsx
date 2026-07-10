@@ -5,6 +5,7 @@ import { studioRoleAtLeast } from "@inkvision/shared";
 import { requireActor } from "@/server/auth-context";
 import { prisma, withStudio } from "@inkvision/db";
 import { StatusBadge } from "@/components/order/status-badge";
+import { StudioNav } from "@/components/layout/studio-nav";
 
 const dateFmt = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
@@ -25,20 +26,34 @@ export default async function StudioOrdersPage({
     actor.platformRole === "ADMIN" || (membership && studioRoleAtLeast(membership.role, "MANAGER"));
   if (!canManage) notFound();
 
-  const studio = await prisma.studio.findUnique({ where: { id: studioId }, select: { name: true } });
+  const studio = await prisma.studio.findUnique({
+    where: { id: studioId },
+    select: { name: true, slug: true },
+  });
   if (!studio) notFound();
 
   // Visão agregada — todos os tatuadores do estúdio, não só um. Query direta
   // (sem caso de uso dedicado ainda) escopada por tenant via withStudio.
-  const orders = await withStudio(studioId, (tx) =>
-    tx.order.findMany({
-      include: {
-        artist: { include: { user: { select: { name: true } } } },
+  // select enxuto (a lista só exibe estes campos) + teto de 100: sem ele o
+  // payload cresce sem limite com o histórico do estúdio.
+  const [orders, totalOrders] = await withStudio(studioId, async (tx) => {
+    // Sequencial de propósito: transação interativa roda numa conexão só.
+    const list = await tx.order.findMany({
+      select: {
+        id: true,
+        artistId: true,
+        bodyPart: true,
+        status: true,
+        createdAt: true,
+        artist: { select: { user: { select: { name: true } } } },
         client: { select: { name: true } },
       },
       orderBy: { createdAt: "desc" },
-    }),
-  );
+      take: 100,
+    });
+    const total = await tx.order.count();
+    return [list, total] as const;
+  });
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-16">
@@ -52,14 +67,25 @@ export default async function StudioOrdersPage({
           Todos os pedidos
         </h1>
         <p className="font-mono text-sm text-muted-foreground">
-          {String(orders.length).padStart(2, "0")}{" "}
-          {orders.length === 1 ? "pedido" : "pedidos"}
+          {String(totalOrders).padStart(2, "0")}{" "}
+          {totalOrders === 1 ? "pedido" : "pedidos"}
         </p>
       </div>
+      <StudioNav studioId={studioId} current="pedidos" />
 
       {orders.length === 0 ? (
-        <div className="mt-14 border-t border-border pt-10">
+        <div className="mt-14 flex flex-col items-start gap-4 border-t border-border pt-10">
           <p className="font-display text-2xl text-muted-foreground">Nenhum pedido ainda.</p>
+          <p className="max-w-md text-sm text-muted-foreground">
+            Os pedidos chegam pela página pública do estúdio e dos tatuadores — compartilhe o link
+            para os clientes iniciarem um projeto.
+          </p>
+          <Link
+            href={`/s/${studio.slug}`}
+            className="ink-link font-mono text-xs uppercase tracking-widest text-primary"
+          >
+            Ver página pública do estúdio
+          </Link>
         </div>
       ) : (
         <ul className="mt-10 border-t border-border">
