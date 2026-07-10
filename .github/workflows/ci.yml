@@ -132,6 +132,7 @@ jobs:
           APP_URL=${APP_URL}
           ROOT_DOMAIN=${ROOT_DOMAIN}
           NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+          AUTH_SIGNIN_RATE_MAX=100
           EOF
 
       - name: Build web (com banco semeado — ISR gera páginas com dados)

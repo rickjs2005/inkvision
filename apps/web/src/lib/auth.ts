@@ -91,8 +91,11 @@ export const auth = betterAuth({
     // isso, o mesmo "max: 100" valeria pra tentativas de senha e pra checagens
     // de sessão em série, facilitando força bruta. A chave do balde já é
     // ip+path no better-auth, então isso só ajusta os números por rota.
+    // AUTH_SIGNIN_RATE_MAX existe só para o E2E do CI: lá TODOS os logins da
+    // suíte saem do mesmo IP (localhost) e 5/min derruba testes legítimos.
+    // Sem a env var, vale o default de produção.
     customRules: {
-      "/sign-in/email": { window: 60, max: 5 },
+      "/sign-in/email": { window: 60, max: Number(process.env.AUTH_SIGNIN_RATE_MAX ?? 5) },
       "/sign-up/email": { window: 60, max: 5 },
       "/request-password-reset": { window: 60, max: 3 },
     },
