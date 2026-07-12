@@ -2,6 +2,7 @@ import type { TattooSimulationProvider } from "./ports";
 import { FalProvider } from "./providers/fal";
 import { MockAiProvider } from "./providers/mock";
 import { RemoteProviderStub } from "./providers/remote-stub";
+import { StabilityProvider } from "./providers/stability";
 
 export type ProviderId = "mock" | "fal" | "replicate" | "openai" | "gemini" | "stability";
 
@@ -24,7 +25,7 @@ export function getSimulationProvider(
     case "gemini":
       return new RemoteProviderStub("gemini", "GEMINI_API_KEY");
     case "stability":
-      return new RemoteProviderStub("stability", "STABILITY_API_KEY");
+      return new StabilityProvider();
     default:
       return new MockAiProvider();
   }

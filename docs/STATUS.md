@@ -70,7 +70,8 @@ _Repo: https://github.com/rickjs2005/inkvision (branch `main`)._
 | O quê | Como ativar |
 |---|---|
 | **Login social Google** | `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` (redirect URI: `${BETTER_AUTH_URL}/api/auth/callback/google`) |
-| **IA real de simulação** (Fal) | `FAL_API_KEY` + `AI_SIMULATION_PROVIDER=fal` (dev local usa `mock` por padrão — funciona sem chave) |
+| **IA real de simulação** (Fal, Flux) | `FAL_API_KEY` + `AI_SIMULATION_PROVIDER=fal` (dev local usa `mock` por padrão — funciona sem chave) |
+| **IA real de simulação** (Stability, Stable Diffusion) | `STABILITY_API_KEY` + `AI_SIMULATION_PROVIDER=stability` — segundo provider real (12/07/2026), família de modelo diferente da Fal pra redundância |
 | **Pagamentos reais** (Stripe) | `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` + `STRIPE_PRICE_<PLANO>` |
 | **Redis** (rate limit distribuído, fila BullMQ, adapter realtime) | `REDIS_URL` |
 | **E-mails transacionais** (orçamento, agendamento, lembrete de sessão) | `RESEND_API_KEY` (+ `EMAIL_FROM` opcional) |

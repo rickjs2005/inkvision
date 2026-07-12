@@ -44,4 +44,24 @@ describe("AI registry", () => {
       p.simulate({ bodyPhotoUrl: "x", designUrl: "y", placement: { x: 0, y: 0, scale: 1, rotation: 0 } }),
     ).rejects.toThrow(/não configurado/);
   });
+
+  it("provider real (stability) sem chave falha explicitamente", async () => {
+    const p = getSimulationProvider("stability");
+    expect(p.name).toBe("stability");
+    await expect(
+      p.simulate({
+        bodyPhotoUrl: "x",
+        designUrl: "y",
+        composedImageUrl: "https://cdn/composed.jpg",
+        placement: { x: 0, y: 0, scale: 1, rotation: 0 },
+      }),
+    ).rejects.toThrow(/STABILITY_API_KEY/);
+  });
+
+  it("provider real (stability) sem composedImageUrl falha explicitamente (a arte precisa estar composta na foto)", async () => {
+    const p = getSimulationProvider("stability");
+    await expect(
+      p.simulate({ bodyPhotoUrl: "x", designUrl: "y", placement: { x: 0, y: 0, scale: 1, rotation: 0 } }),
+    ).rejects.toThrow(/composedImageUrl/);
+  });
 });

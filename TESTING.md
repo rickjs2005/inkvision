@@ -83,7 +83,7 @@ Todas com a senha **`inkvision123`**:
 
 - **Uploads (Cloudflare R2)** → não sobem de verdade; imagens resolvem para fotos reais de tatuagem (Unsplash) para o demo parecer real.
 - **Pagamentos (Stripe)** → checkout interno com botão "Simular pagamento"; nenhum valor é cobrado.
-- **IA (simulação)** → a arte é composta sobre a foto no navegador (com o posicionamento que você escolher). Trocar por um provider real (Fal.ai/Replicate) é só configurar `AI_SIMULATION_PROVIDER` + a chave.
+- **IA (simulação)** → a arte é composta sobre a foto no navegador (com o posicionamento que você escolher). Trocar por um provider real (Fal.ai ou Stability AI — os dois já implementados) é só configurar `AI_SIMULATION_PROVIDER` + a chave correspondente.
 
 Trocar qualquer um por real não muda o resto do código — são adapters plugáveis.
 

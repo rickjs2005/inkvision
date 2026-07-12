@@ -88,7 +88,7 @@ packages/ai
 │   ├── replicate.ts        # Replicate (SDXL inpaint, ControlNet)
 │   ├── openai.ts           # gpt-image edit
 │   ├── gemini.ts           # Gemini image
-│   └── stability.ts        # Stable Diffusion (self-host futuro)
+│   └── stability.ts        # Stability AI (Stable Diffusion, inpaint com máscara real) — 2º provider real, 12/07/2026
 └── prompts/                # templates versionados de prompt por operação
 ```
 
