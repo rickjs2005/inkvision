@@ -1,8 +1,14 @@
 # InkVision
 
-SaaS multi-tenant para estúdios de tatuagem — descoberta de artistas, briefing, orçamento, chat em tempo real, geração de arte, **simulação da tatuagem na foto do cliente por IA**, agendamento e pagamentos.
+[Português](README.pt-BR.md)
 
-Arquitetura completa em [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Multi-tenant SaaS for tattoo studios — artist discovery, briefing, quotes, real-time chat, artwork generation, **AI simulation of the tattoo on the client's photo**, scheduling and payments.
+
+Full architecture in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+> **Type:** own product (SaaS) under development, with no production deployment yet. Payments, storage and AI use simulated providers by default. The interface is in Portuguese.
+
+![Home page with demo data](docs/screenshots/home.webp)
 
 ## Stack
 
@@ -15,57 +21,71 @@ apps/     web (Next.js)  ·  realtime (Socket.IO)  ·  worker (BullMQ)
 packages/ core  ·  db (Prisma)  ·  ai  ·  shared  ·  config
 ```
 
-## Setup de desenvolvimento (sem Docker)
+## Development setup (no Docker)
 
 ```bash
 pnpm install
-pnpm setup:local     # sobe o Postgres local do Prisma, configura o .env,
-                     # aplica schema + RLS e o seed de demonstração
+pnpm setup:local     # starts Prisma's local Postgres, writes .env,
+                     # applies schema + RLS and the demo seed
 pnpm dev             # web :3000 · realtime :4000 · worker
 ```
 
-Contas de teste e o roteiro completo de teste estão em **[TESTING.md](TESTING.md)**.
-Healthcheck: `GET /api/health` → `{ status: "ok", db: "up" }`.
+Test accounts and the full manual test script are in **[TESTING.md](TESTING.md)** (Portuguese).
+Health check: `GET /api/health` → `{ status: "ok", db: "up" }`.
 
-> Alternativa com Docker: `cp .env.example .env && pnpm infra:up && pnpm db:migrate && pnpm db:seed`.
+> Docker alternative: `cp .env.example .env && pnpm infra:up && pnpm db:migrate && pnpm db:seed`.
 
-## Camadas (Clean Architecture)
+## Layers (Clean Architecture)
 
 ```
 apps/web  (presentation + composition root)
-  → @inkvision/core       domínio + aplicação (use-cases, ports, DTOs) — puro, sem IO
-  → @inkvision/infra      repositórios Prisma (implementam os ports do core)
-  → @inkvision/db         Prisma client + extensão de tenant + withStudio (RLS)
-  → @inkvision/shared     tipos/constantes compartilhados
+  → @inkvision/core       domain + application (use cases, ports, DTOs) — pure, no IO
+  → @inkvision/infra      Prisma repositories (implement the core ports)
+  → @inkvision/db         Prisma client + tenant extension + withStudio (RLS)
+  → @inkvision/shared     shared types/constants
 ```
 
-## Estado por sprint
+## Status by sprint
 
-- **Sprint 0 — Fundação ✅** monorepo, Docker, Prisma (schema completo + extensão multi-tenant), Better Auth (e-mail/senha + roles), tema dark/light shadcn, build de produção verde.
-- **Sprint 1 — Multi-tenant + Estúdios ✅** RLS (`prisma/rls.sql` + `withStudio`), `packages/core` (use-cases de estúdio com authz), `packages/infra` (repos Prisma), auth UI (login/cadastro), painel admin (CRUD de estúdio), onboarding do dono, página pública `/s/[slug]`.
-- **Sprint 2 — Artistas + Portfólio ✅** dono adiciona tatuador, tatuador edita perfil/estilos, portfólio (imagem/antes-depois) com upload **mockado** (`MockStorageService` — troca por R2 sem tocar use-cases), likes e comentários, descoberta pública `/tatuadores` (filtro por estilo), perfil público `/t/[artistId]`. RLS refinado: `ArtistProfile`/`PortfolioItem` são público-legíveis mas tenant-graváveis. 21 testes.
-- **Sprint 3 — Descoberta + Home + SEO ✅** Home completa e **estática/ISR** (hero animado com busca, categorias, top tatuadores, galeria masonry, depoimentos, FAQ, CTA) com Framer Motion (respeita `prefers-reduced-motion`), layout de marketing compartilhado, `/estudios`, cache com `unstable_cache` + tags, e SEO (metadata, OG, JSON-LD Organization/WebSite/FAQ, `sitemap.xml` dinâmico, `robots.txt`).
-- **Sprint 4 — Pedidos + Orçamento ✅** state machine do `Order` (16 estados, transições validadas no domínio), criar pedido com briefing + upload de referências (storage mock), orçamento do tatuador, aceite do cliente (→ DEPOSIT_PENDING), cancelamento, histórico `OrderEvent` (timeline), notificações in-app. RLS ganhou contexto de cliente (`withUser` + política "tenant OU dono") para o cliente ler pedidos cross-estúdio.
-- **Sprint 5 — Chat realtime ✅** serviço `apps/realtime` (Socket.IO, relay fino autorizado por token de sala assinado — sem DB), chat por pedido (texto/imagem/áudio/vídeo/PDF via storage mock), indicador "digitando", confirmação enviado/lido, notificações de mensagem. Persistência+authz no web (RLS), realtime só relaya. Verificado ponta-a-ponta. Reforço futuro: Redis adapter no realtime.
-- **Sprint 6 — Pagamentos ✅** gateway **mockado** (`MockPaymentGateway`): conectar conta do estúdio, sinal (application fee), confirmação **idempotente** → `DEPOSIT_PAID`, pagamento final, Billing (assinatura + **gate de limite de tatuadores**).
-- **Sprint 7 — Camada de IA ✅** `packages/ai` plugável (ports + registry por env, `MockAiProvider` + stubs). Fluxo: arte → aprovação → foto do corpo → **simulação por IA** (fila in-process no dev, `apps/worker` BullMQ pronto) → cliente vê e aprova. `AiUsageLog`, realtime `simulation:done`.
-- **Sprint 8 — Editor de simulação ✅** editor interativo (arrastar a arte sobre a foto, escala/rotação), geração com o placement escolhido, "ajustar posição", variantes P/M/G.
-- **Sprint 9 — Agendamento ✅** disponibilidade semanal do tatuador + folgas, geração de horários (`generateSlots`, pura), agendamento pelo cliente (`SIMULATION_APPROVED → SCHEDULED`) com bloqueio de conflitos, reagendamento — **destrava o pagamento final** (`SCHEDULED → COMPLETED`).
-- **Sprint 10 — Avaliações ✅** cliente avalia após concluir (`COMPLETED → REVIEWED`), recálculo da nota do tatuador, avaliações no perfil público. **Loop cadastro→avaliação fechado.**
-- **Sprint 11 — Admin + LGPD ✅** dashboard com métricas (MRR, receita, estúdios, uso de IA, gráficos) via bypass de RLS por admin (`withAdmin`), logs de auditoria, e autoatendimento LGPD em `/conta` (exportar dados em JSON + excluir conta com anonimização).
-- **Sprint 12 — Hardening ✅** headers de segurança (CSP, HSTS, X-Frame-Options, etc.) verificados no servidor real, rate limiting (janela deslizante) na rota de upload, checagem de origem (CSRF), sanitização de texto livre, e **PWA** (manifest + service worker offline). Checklist em [docs/SECURITY.md](docs/SECURITY.md).
-- **Fluxo completo verificado ponta-a-ponta contra Postgres real**: `verify-flow.ts` (orçamento→avaliação) e `verify-admin.ts` (métricas cross-tenant + authz). 59 testes.
-- **Deploy pronto ✅** Dockerfiles (web standalone, realtime, worker, migrate/init), `docker/compose.prod.yml`, migration inicial, init que cria o role não-superusuário + aplica RLS, e o guia [docs/DEPLOY.md](docs/DEPLOY.md) (Docker Compose e Coolify). Falta só rodar na VPS.
+- **Sprint 0 — Foundation ✅** monorepo, Docker, Prisma (full schema + multi-tenant extension), Better Auth (e-mail/password + roles), shadcn dark/light theme, green production build.
+- **Sprint 1 — Multi-tenancy + studios ✅** RLS (`prisma/rls.sql` + `withStudio`), `packages/core` (studio use cases with authorization), `packages/infra` (Prisma repositories), auth UI, admin panel (studio CRUD), owner onboarding, public page `/s/[slug]`.
+- **Sprint 2 — Artists + portfolio ✅** owner adds artists, artists edit profile/styles, portfolio (image/before-after) with **mocked** upload (`MockStorageService` — swap for R2 without touching use cases), likes and comments, public discovery `/tatuadores` (style filter), public profile `/t/[artistId]`. Refined RLS: `ArtistProfile`/`PortfolioItem` are publicly readable but tenant-writable. 21 tests.
+- **Sprint 3 — Discovery + home + SEO ✅** complete **static/ISR** home (animated hero with search, categories, top artists, masonry gallery, testimonials, FAQ, CTA) with Framer Motion (respects `prefers-reduced-motion`), shared marketing layout, `/estudios`, caching with `unstable_cache` + tags, and SEO (metadata, OG, JSON-LD Organization/WebSite/FAQ, dynamic `sitemap.xml`, `robots.txt`).
+- **Sprint 4 — Orders + quotes ✅** `Order` state machine (16 states, transitions validated in the domain), order creation with briefing + reference upload (mock storage), artist quote, client acceptance (→ DEPOSIT_PENDING), cancellation, `OrderEvent` history (timeline), in-app notifications. RLS gained a client context (`withUser` + "tenant OR owner" policy) so clients can read their orders across studios.
+- **Sprint 5 — Real-time chat ✅** `apps/realtime` service (Socket.IO, thin relay authorised by signed room tokens — no database), per-order chat (text/image/audio/video/PDF via mock storage), typing indicator, sent/read receipts, message notifications. Persistence and authorisation live in web (RLS); realtime only relays. Verified end to end. Future reinforcement: Redis adapter for realtime.
+- **Sprint 6 — Payments ✅** **mocked** gateway (`MockPaymentGateway`): connect the studio account, deposit (application fee), **idempotent** confirmation → `DEPOSIT_PAID`, final payment, billing (subscription + **artist-limit gate**).
+- **Sprint 7 — AI layer ✅** pluggable `packages/ai` (ports + env-based registry, `MockAiProvider` + stubs). Flow: artwork → approval → body photo → **AI simulation** (in-process queue in dev, BullMQ `apps/worker` ready) → client reviews and approves. `AiUsageLog`, realtime `simulation:done`.
+- **Sprint 8 — Simulation editor ✅** interactive editor (drag the artwork over the photo, scale/rotation), generation with the chosen placement, "adjust position", S/M/L variants.
+- **Sprint 9 — Scheduling ✅** weekly artist availability + days off, slot generation (`generateSlots`, pure), client booking (`SIMULATION_APPROVED → SCHEDULED`) with conflict blocking, rescheduling — **unlocks the final payment** (`SCHEDULED → COMPLETED`).
+- **Sprint 10 — Reviews ✅** client reviews after completion (`COMPLETED → REVIEWED`), artist rating recalculation, reviews on the public profile. **Sign-up → review loop closed.**
+- **Sprint 11 — Admin + LGPD ✅** dashboard metrics (MRR, revenue, studios, AI usage, charts) through an admin RLS bypass (`withAdmin`), audit logs and LGPD self-service at `/conta` (JSON data export + account deletion with anonymisation).
+- **Sprint 12 — Hardening ✅** security headers (CSP, HSTS, X-Frame-Options, etc.) verified on the real server, sliding-window rate limiting on the upload route, origin check (CSRF), free-text sanitisation and **PWA** (manifest + offline service worker). Checklist in [docs/SECURITY.md](docs/SECURITY.md).
+- **Full flow verified end to end against a real Postgres**: `verify-flow.ts` (quote → review) and `verify-admin.ts` (cross-tenant metrics + authorisation). 59 tests.
+- **Deploy ready ✅** Dockerfiles (standalone web, realtime, worker, migrate/init), `docker/compose.prod.yml`, initial migration, init that creates the non-superuser role and applies RLS, and the guide [docs/DEPLOY.md](docs/DEPLOY.md) (Docker Compose and Coolify). Only running it on the VPS is left.
 
-`AI_SIMULATION_PROVIDER=mock` (padrão) roda sem chaves. `pnpm dev` sobe web + realtime + worker.
+`AI_SIMULATION_PROVIDER=mock` (default) runs without keys. `pnpm dev` starts web + realtime + worker.
 
-Para o dev completo: `pnpm dev` sobe web (3000) + realtime (4000) via Turbo.
+For the full dev setup, `pnpm dev` starts web (3000) + realtime (4000) through Turbo.
 
-> Dev: a porta 3000 costuma estar ocupada pelo dev server do projeto AKATSUKI do Rick. Rode o InkVision noutra porta (`pnpm --filter @inkvision/web start -p 3100`) se precisar.
+> If port 3000 is busy, run the web app on another port (`pnpm --filter @inkvision/web start -p 3100`).
 
-### Testes
+### Tests
 
 ```bash
-pnpm -r test                              # unitários (sem DB)
-RUN_DB_TESTS=1 pnpm --filter @inkvision/db test   # integração de isolamento (precisa do Postgres)
+pnpm -r test                              # unit tests (no database)
+RUN_DB_TESTS=1 pnpm --filter @inkvision/db test   # isolation integration tests (needs Postgres)
 ```
+
+CI runs typecheck, unit tests and the web build, plus an end-to-end job (Playwright) against Postgres with the production migration + RLS path.
+
+### Demo seed
+
+`pnpm seed:demo` only runs against a local database. Seeding a remote demo database requires `ALLOW_DEMO_SEED=true` and `DEMO_SEED_PASSWORD` (12+ characters); with `NODE_ENV=production` the seed also requires that opt-in.
+
+## Security
+
+Reporting policy in [SECURITY.md](SECURITY.md); technical checklist in [docs/SECURITY.md](docs/SECURITY.md).
+
+## License
+
+No license has been chosen yet; all rights reserved by the author.
