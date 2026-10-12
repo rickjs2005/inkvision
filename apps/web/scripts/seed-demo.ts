@@ -11,7 +11,35 @@ import { prisma } from "@inkvision/db";
 import { TATTOO_STYLES } from "@inkvision/shared";
 import { MockStorageService } from "@inkvision/infra";
 
-const PASSWORD = "inkvision123";
+// Senha das contas de demo. O valor padrão (documentado no TESTING.md) só vale
+// para banco local; fora dele é preciso liberar explicitamente e definir a senha.
+const LOCAL_DEMO_PASSWORD = "inkvision123";
+const PASSWORD = resolveDemoPassword();
+
+function resolveDemoPassword(): string {
+  let host = "";
+  try {
+    host = new URL(process.env.DATABASE_URL ?? "").hostname;
+  } catch {
+    // URL ausente ou inválida: o Prisma acusa o erro adiante.
+  }
+  const local = ["localhost", "127.0.0.1", "::1", "postgres", "db"].includes(host);
+  const isProd = process.env.NODE_ENV === "production";
+  if (local && !isProd) return process.env.DEMO_SEED_PASSWORD || LOCAL_DEMO_PASSWORD;
+
+  // Banco remoto ou produção: o seed APAGA e recria dados de demo e cria um admin.
+  if (process.env.ALLOW_DEMO_SEED !== "true") {
+    throw new Error(
+      "seed:demo recusado: o banco não é local (ou NODE_ENV=production). " +
+        "Para popular um ambiente de demonstração, defina ALLOW_DEMO_SEED=true e DEMO_SEED_PASSWORD.",
+    );
+  }
+  const senha = process.env.DEMO_SEED_PASSWORD;
+  if (!senha || senha.length < 12) {
+    throw new Error("Defina DEMO_SEED_PASSWORD (12+ caracteres) para semear um banco que não é local.");
+  }
+  return senha;
+}
 const storage = new MockStorageService();
 
 async function photo(seed: string) {
@@ -175,7 +203,11 @@ async function main() {
   });
 
   console.log("\n✓ Seed de demo aplicado.\n");
-  console.log("Contas (senha: " + PASSWORD + "):");
+  console.log(
+    "Contas (senha: " +
+      (PASSWORD === LOCAL_DEMO_PASSWORD ? PASSWORD : "definida em DEMO_SEED_PASSWORD") +
+      "):",
+  );
   console.log("  admin@inkvision.app     → admin da plataforma");
   console.log("  alma@inkvision.app      → dona do Estúdio Alma");
   console.log("  rafa@inkvision.app      → tatuador (tem 1 pedido novo)");

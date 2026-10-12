@@ -90,7 +90,8 @@ Trocar qualquer um por real não muda o resto do código — são adapters plug�
 ## 6. Reaplicar / limpar os dados de demo
 
 ```bash
-pnpm seed:demo      # recria o estúdio, tatuadores e pedido de exemplo
+pnpm seed:demo      # recria o estúdio, tatuadores e pedido de exemplo (só em banco local;
+                    # banco remoto exige ALLOW_DEMO_SEED=true e DEMO_SEED_PASSWORD)
 ```
 
 ## Problemas comuns
