@@ -15,7 +15,7 @@
   "dependencies": {
     "@inkvision/ai": "workspace:*",
     "@inkvision/shared": "workspace:*",
-    "zod": "^4.0.0"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@inkvision/config": "workspace:*",
