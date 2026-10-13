@@ -22,9 +22,9 @@
     "infra:down": "docker compose -f docker/compose.dev.yml down"
   },
   "devDependencies": {
-    "turbo": "^2.3.3",
+    "turbo": "^2.11.7",
     "typescript": "^5.7.2",
-    "prettier": "^3.4.2"
+    "prettier": "^3.9.10"
   },
   "pnpm": {
     "onlyBuiltDependencies": ["@prisma/client", "@prisma/engines", "prisma", "esbuild", "sharp"]
