@@ -44,7 +44,7 @@
     "@playwright/test": "^1.61.1",
     "@prisma/nextjs-monorepo-workaround-plugin": "^7.8.0",
     "@tailwindcss/postcss": "^4.0.0",
-    "@types/node": "^22.10.2",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "eslint": "^9.17.0",
